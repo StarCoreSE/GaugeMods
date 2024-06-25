@@ -94,8 +94,8 @@ namespace FaolonTether
             ModBlock = Entity as IMyTerminalBlock;
             Grid = (MyCubeGrid)ModBlock.CubeGrid;
 
-            requestAttach = new NetSync<PowerlineLink>(Entity, TransferType.ClientToServer);
-            requestDetach = new NetSync<PowerlineLink>(Entity, TransferType.ClientToServer);
+            requestAttach = new NetSync<PowerlineLink>(Entity, TransferType.ClientToServer, new PowerlineLink());
+            requestDetach = new NetSync<PowerlineLink>(Entity, TransferType.ClientToServer, new PowerlineLink());
             sync = new NetSync<PowerlineLink[]>(Entity, TransferType.ServerToClient, new PowerlineLink[0]);
             sync.ValueChangedByNetwork += linesSynced;
             requestAttach.ValueChanged += RequestedAttach;
