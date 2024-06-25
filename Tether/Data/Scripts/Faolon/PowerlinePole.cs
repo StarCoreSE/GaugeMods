@@ -60,9 +60,6 @@ namespace FaolonTether
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TerminalBlock), false, "ChargingStation", "TransformerPylon", "PowerlinePillar", "PowerSockets", "ConveyorHoseAttachment")]
     public class PowerlinePole : MyGameLogicComponent
     {
-
-        public const long ModId = 2648152224;
-        public const ushort NetworkId = 58936;
         public static readonly Guid SETTINGS_GUID = new Guid("73bb9141-0a4e-4c5a-93ae-f0d9ff23c043");
 
         public MyCubeGrid Grid;
@@ -93,11 +90,6 @@ namespace FaolonTether
         {
             ModBlock = Entity as IMyTerminalBlock;
             Grid = (MyCubeGrid)ModBlock.CubeGrid;
-
-            if (!NetworkAPI.IsInitialized)
-            {
-                NetworkAPI.Init(NetworkId, "Tether");
-            }
 
             requestAttach = new NetSync<PowerlineLink>(Entity, TransferType.ClientToServer, new PowerlineLink());
             requestDetach = new NetSync<PowerlineLink>(Entity, TransferType.ClientToServer, new PowerlineLink());

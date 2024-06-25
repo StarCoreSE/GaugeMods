@@ -1,5 +1,6 @@
 ﻿using Sandbox.Definitions;
 using Sandbox.ModAPI;
+using SENetworkAPI;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -10,6 +11,7 @@ using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI.Ingame;
 using VRage.ModAPI;
+using VRage.Network;
 using VRage.Utils;
 using VRageMath;
 using static VRageRender.MyBillboard;
@@ -32,8 +34,15 @@ namespace FaolonTether
         int thick;
         MyStringId cable_vis;
 
+        public const ushort NetworkId = 58936;
+
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
+            if (!NetworkAPI.IsInitialized)
+            {
+                NetworkAPI.Init(NetworkId, "Tether");
+            }
+
             // Setup the highlight visuals.
             MyEnvironmentDefinition envDef = MyDefinitionManager.Static.EnvironmentDefinition;
             color = envDef.ContourHighlightColor;
