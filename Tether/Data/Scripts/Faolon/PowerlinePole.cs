@@ -103,8 +103,14 @@ namespace FaolonTether
 
         public override bool IsSerialized()
         {
+            if (!MyAPIGateway.Multiplayer.IsServer) return base.IsSerialized();
+
             PowerlineLinks links = new PowerlineLinks();
-            links.Links.AddList(Links);
+            lock (Links) 
+            {
+                links.Links.AddList(Links);
+            }
+
 
             foreach (PowerlineLink l in links.Links) 
             {
@@ -137,7 +143,10 @@ namespace FaolonTether
         {
             n.Bloat();
             ConnectGrids(n.PoleAId, n.PoleA.Grid, n.PoleB.Grid);
-            Links.Add(n);
+            lock (Links) 
+            {
+                Links.Add(n);
+            }
 
             sync.SetValue(Links.ToArray(), SyncType.Broadcast);
         }
@@ -146,7 +155,10 @@ namespace FaolonTether
         {
             n.Bloat();
             DisconnectGrids(n.PoleAId, n.PoleA.Grid, n.PoleB.Grid);
-            Links.Remove(n);
+            lock (Links) 
+            {
+                Links.Remove(n);
+            }
 
             sync.SetValue(Links.ToArray(), SyncType.Broadcast);
         }
@@ -183,7 +195,11 @@ namespace FaolonTether
                         {
                             l.LoadPrep();
                         }
-                        Links = links.Links;
+
+                        lock (Links) 
+                        {
+                            Links = links.Links;
+                        }
                     }
                     catch (Exception e) {
                         MyLog.Default.Info($"{e}");
@@ -375,7 +391,10 @@ namespace FaolonTether
             {
                 MyLog.Default.Info($"[Tether] attached pole: {Entity.EntityId} to {targetPole.Entity.EntityId}");
                 ConnectGrids(link.PoleAId, link.PoleA.Grid, link.PoleB.Grid);
-                Links.Add(link);
+                lock (Links) 
+                {
+                    Links.Add(link);
+                }
                 sync.SetValue(Links.ToArray(), SyncType.Broadcast);
             }
             else
