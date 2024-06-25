@@ -43,6 +43,8 @@ namespace FaolonTether
                 NetworkAPI.Init(NetworkId, "Tether");
             }
 
+            NetworkAPI.LogNetworkTraffic = true;
+
             // Setup the highlight visuals.
             MyEnvironmentDefinition envDef = MyDefinitionManager.Static.EnvironmentDefinition;
             color = envDef.ContourHighlightColor;
