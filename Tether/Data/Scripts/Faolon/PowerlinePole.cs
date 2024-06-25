@@ -75,16 +75,7 @@ namespace FaolonTether
 
         private GridLinkTypeEnum LinkType = GridLinkTypeEnum.Logical;
 
-        // HIGHLIGHT
-        public const int HIGHLIGHT_PULSE = 300;
-        Color color;
-        int thick;
-
-        // CABLES & HOSES DESIGN
-        Vector4 col = Color.DarkGray;
         MyStringId cable_vis;
-        MyStringId cable_hose;
-        float line_thickness = 0.05f;
 
         NetSync<PowerlineLink> requestAttach;
         NetSync<PowerlineLink> requestDetach;
@@ -103,14 +94,37 @@ namespace FaolonTether
             ModBlock = Entity as IMyTerminalBlock;
             Grid = (MyCubeGrid)ModBlock.CubeGrid;
 
-            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME | MyEntityUpdateEnum.EACH_FRAME;
-            MyLog.Default.Info($"PowerCable: Init completed for block {ModBlock.EntityId}");
-
             requestAttach = new NetSync<PowerlineLink>(Entity, TransferType.ClientToServer);
             requestDetach = new NetSync<PowerlineLink>(Entity, TransferType.ClientToServer);
             sync = new NetSync<PowerlineLink[]>(Entity, TransferType.ServerToClient, new PowerlineLink[0]);
             sync.ValueChangedByNetwork += linesSynced;
             requestAttach.ValueChanged += RequestedAttach;
+
+            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME | MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.EACH_100TH_FRAME;
+            MyLog.Default.Info($"[Tether] Init completed for block {ModBlock.EntityId}");
+        }
+
+        public override bool IsSerialized()
+        {
+            PowerlineLinks links = new PowerlineLinks();
+            links.Links.AddList(Links);
+
+            foreach (PowerlineLink l in links.Links) 
+            {
+                l.SavePrep();
+            }
+
+            MyModStorageComponentBase storage = Tools.GetStorage(Entity);
+            if (storage.ContainsKey(SETTINGS_GUID))
+            {
+                storage[SETTINGS_GUID] = MyAPIGateway.Utilities.SerializeToXML(links);
+            }
+            else
+            {
+                storage.Add(SETTINGS_GUID, MyAPIGateway.Utilities.SerializeToXML(links));
+            }
+
+            return base.IsSerialized();
         }
 
         public void linesSynced(PowerlineLink[] o, PowerlineLink[] n, ulong steamId)
@@ -153,16 +167,34 @@ namespace FaolonTether
             if (ModBlock.CubeGrid?.Physics == null)
                 return;
 
-            // Setup the highlight visuals.
-            MyEnvironmentDefinition envDef = MyDefinitionManager.Static.EnvironmentDefinition;
-            color = envDef.ContourHighlightColor;
-            thick = (int)envDef.ContourHighlightThickness;
-
             // Setup the cable visuals.
             cable_vis = MyStringId.GetOrCompute("cable");
-            cable_hose = MyStringId.GetOrCompute("cable");
 
-            DummyAttachPoint = Vector3D.Transform(Tools.GetDummyRelativeLocation(ModBlock), ModBlock.WorldMatrix);
+            DummyAttachPoint = Tools.GetDummyRelativeLocation(ModBlock);
+
+            if (Links.Count == 0)
+            {
+                MyModStorageComponentBase storage = Tools.GetStorage(Entity);
+                if (storage.ContainsKey(SETTINGS_GUID))
+                {
+                    MyLog.Default.Info($"{storage[SETTINGS_GUID]}");
+                    try
+                    {
+                        PowerlineLinks links = MyAPIGateway.Utilities.SerializeFromXML<PowerlineLinks>(storage[SETTINGS_GUID]);
+
+                        foreach (PowerlineLink l in links.Links)
+                        {
+                            l.LoadPrep();
+                        }
+                        Links = links.Links;
+                    }
+                    catch (Exception e) {
+                        MyLog.Default.Info($"{e}");
+                    }
+
+                }
+            }
+
         }
 
 
@@ -176,6 +208,7 @@ namespace FaolonTether
                 {
                     PowerlineLink l = Links[i];
                     l.Bloat();
+
                     if (l.PoleA == this && !IsInRange(l.PoleA, l.PoleB))
                     {
                         DisconnectGrids(l.PoleA.Entity.EntityId, l.PoleA.Grid, l.PoleB.Grid);
@@ -197,8 +230,10 @@ namespace FaolonTether
             if (MyAPIGateway.Session?.Player?.Character == null)
                 return;
 
-            if (!ModBlock.IsFunctional)
-                return;
+            if (!Grid.IsStatic)
+            {
+                DummyAttachPoint = Tools.GetDummyRelativeLocation(ModBlock);
+            }
 
             DrawCable();
         }
@@ -411,19 +446,24 @@ namespace FaolonTether
             Vector3 pos2 = Tools.GetDummyRelativeLocation(blockB);
             double distance = (pos1 - pos2).LengthSquared();
 
-            // static to static
-            return !((blockA.CubeGrid.IsStatic && blockB.CubeGrid.IsStatic &&
-                    distance > Settings.Instance.MaxCableDistanceStaticToStatic * Settings.Instance.MaxCableDistanceStaticToStatic) ||
-                    // small to small
-                    (blockA.CubeGrid.GridSizeEnum == MyCubeSize.Small &&
-                    blockB.CubeGrid.GridSizeEnum == MyCubeSize.Small &&
-                    distance > Settings.Instance.MaxCableDistanceSmallToSmall * Settings.Instance.MaxCableDistanceSmallToSmall) ||
-                    // large to large
-                    (blockA.CubeGrid.GridSizeEnum == MyCubeSize.Large &&
-                    blockB.CubeGrid.GridSizeEnum == MyCubeSize.Large &&
-                    distance > Settings.Instance.MaxCableDistanceLargeToLarge * Settings.Instance.MaxCableDistanceLargeToLarge) ||
-                    // small to large
-                    distance > Settings.Instance.MaxCableDistanceSmallToLarge * Settings.Instance.MaxCableDistanceSmallToLarge);
+            if (blockA.CubeGrid.IsStatic && blockB.CubeGrid.IsStatic)
+            {
+                return distance < Settings.Instance.MaxCableDistanceStaticToStatic * Settings.Instance.MaxCableDistanceStaticToStatic;
+            }
+            else if (blockA.CubeGrid.GridSizeEnum == MyCubeSize.Small && blockB.CubeGrid.GridSizeEnum == MyCubeSize.Small)
+            {
+                return distance < Settings.Instance.MaxCableDistanceSmallToSmall * Settings.Instance.MaxCableDistanceSmallToSmall;
+            }
+            else if (blockA.CubeGrid.GridSizeEnum == MyCubeSize.Large && blockB.CubeGrid.GridSizeEnum == MyCubeSize.Large)
+            {
+                return distance < Settings.Instance.MaxCableDistanceLargeToLarge * Settings.Instance.MaxCableDistanceLargeToLarge;
+            }
+            else if (blockA.CubeGrid.GridSizeEnum != blockB.CubeGrid.GridSizeEnum)
+            {
+                return distance < Settings.Instance.MaxCableDistanceSmallToLarge * Settings.Instance.MaxCableDistanceSmallToLarge;
+            }
+
+            return false;
         }
 
 
@@ -436,8 +476,6 @@ namespace FaolonTether
                 PowerlineLink l = Links[i];
                 l.Bloat();
                 if (l.PoleA != this) continue;
-                Vector3D startAttach = l.PoleA.DummyAttachPoint;
-                Vector3D endAttach = l.PoleB.DummyAttachPoint;
 
                 // Check if the local player is close enough to render the cable.
                 bool playerClose = false;
@@ -450,18 +488,11 @@ namespace FaolonTether
 
                 if (playerClose)
                 {
-                    var drawCable = cable_vis;
-                    var drawCableThickness = line_thickness;
-
-                    //// Additional conditions for specific cable types.
-                    //if (ModBlock.BlockDefinition.SubtypeId == "ConveyorHoseAttachment" && attachedBlock.BlockDefinition.SubtypeId == "ConveyorHoseAttachment")
-                    //{
-                    //    drawCable = cable_hose;
-                    //    drawCableThickness = 0.15f;
-                    //}
+                    Vector4 color = Color.DarkGray;
+                    float thickness = 0.05f;
 
                     // Draw the cable line.
-                    MySimpleObjectDraw.DrawLine(startAttach, endAttach, drawCable, ref col, drawCableThickness, BlendTypeEnum.Standard);
+                    MySimpleObjectDraw.DrawLine(l.PoleA.DummyAttachPoint, l.PoleB.DummyAttachPoint, cable_vis, ref color, thickness, BlendTypeEnum.Standard);
                 }
             }
         }

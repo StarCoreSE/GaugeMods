@@ -31,11 +31,6 @@ namespace FaolonTether
         VRageMath.Color color;
         int thick;
         MyStringId cable_vis;
-        MyStringId cable_vis_Green;
-        MyStringId cable_vis_Red;
-        MyStringId cable_hose;
-        float hand_line_thickness = 0.005f;
-        float line_thickness = 0.05f;
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
@@ -46,9 +41,6 @@ namespace FaolonTether
 
             // Setup the cable visuals.
             cable_vis = MyStringId.GetOrCompute("cable");
-            cable_vis_Green = MyStringId.GetOrCompute("cableGreen");
-            cable_vis_Red = MyStringId.GetOrCompute("cableRed");
-            cable_hose = MyStringId.GetOrCompute("cable");
         }
 
         public override void UpdateAfterSimulation()
@@ -131,7 +123,7 @@ namespace FaolonTether
             if (State != PlayerState.Interacting || InteractionObject == null) return;
 
             PowerlinePole target = null;
-            Vector4 col = VRageMath.Color.DarkGray;
+            Vector4 color = VRageMath.Color.DarkGray;
             Vector3 endpoint;
 
             MatrixD playerMatrix = MyAPIGateway.Session.Player.Character.GetHeadMatrix(true);
@@ -152,8 +144,10 @@ namespace FaolonTether
                 endpoint = playerMatrix.Translation + (playerMatrix.Forward * Settings.Instance.InteractionDistance);
             }
 
+            float line_thickness = 0.05f;
+
             // Draw the cable line.
-            MySimpleObjectDraw.DrawLine(InteractionObject.DummyAttachPoint, endpoint, cable_vis, ref col, line_thickness, BlendTypeEnum.Standard);
+            MySimpleObjectDraw.DrawLine(InteractionObject.DummyAttachPoint, endpoint, cable_vis, ref color, line_thickness, BlendTypeEnum.Standard);
 
         }
 

@@ -52,7 +52,7 @@ namespace FaolonTether
                 MaxCableDistanceLargeToLarge = 100f,
                 MaxCableDistanceSmallToSmall = 50f,
                 MaxCableDistanceSmallToLarge = 25f,
-                PlayerDrawDistance = 3000,
+                PlayerDrawDistance = 3000f,
 
             };
         }

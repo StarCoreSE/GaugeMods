@@ -6,6 +6,9 @@ using System.Text;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRageMath;
+using Sandbox.Game.EntityComponents;
+using VRage.Game.Components;
+using VRage.ModAPI;
 
 // Thanks to all the guys who put a lot of work into these.
 // I know some could be called directly instead but wrote these intermediate methods to make it more clear what is what and what it returns.
@@ -54,13 +57,13 @@ namespace FaolonTether
                 {
                     Vector3D DummyLoc = ModelDummy["cable_attach_point_1"].Matrix.Translation;
                     Vector3D worldPosition = Vector3D.Transform(DummyLoc, block.WorldMatrix);
-                    DummyAttachPoint = DummyLoc;
+                    DummyAttachPoint = worldPosition;
                 }
                 else if (ModelDummy.ContainsKey("cable_attach_point"))
                 {
                     Vector3D DummyLoc = ModelDummy["cable_attach_point"].Matrix.Translation;
                     Vector3D worldPosition = Vector3D.Transform(DummyLoc, block.WorldMatrix);
-                    DummyAttachPoint = DummyLoc;
+                    DummyAttachPoint = worldPosition;
                 }
             }
             else
@@ -69,7 +72,7 @@ namespace FaolonTether
                 {
                     Vector3D DummyLoc = ModelDummy["cable_attach_point"].Matrix.Translation;
                     Vector3D worldPosition = Vector3D.Transform(DummyLoc, block.WorldMatrix);
-                    DummyAttachPoint = DummyLoc;
+                    DummyAttachPoint = worldPosition;
                 }
             }
 
@@ -183,6 +186,11 @@ namespace FaolonTether
         public static void ShowNotification(string text)
         {
             MyAPIGateway.Utilities.ShowNotification(text, 1);
+        }
+
+        public static MyModStorageComponentBase GetStorage(IMyEntity entity)
+        {
+            return entity.Storage ?? (entity.Storage = new MyModStorageComponent());
         }
     }
 }
