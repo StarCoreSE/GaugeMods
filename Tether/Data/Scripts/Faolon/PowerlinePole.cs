@@ -105,26 +105,26 @@ namespace FaolonTether
         {
             if (!MyAPIGateway.Multiplayer.IsServer) return base.IsSerialized();
 
-            PowerlineLinks links = new PowerlineLinks();
-            lock (Links) 
+            lock (Links)
             {
-                links.Links.AddList(Links);
-            }
+                PowerlineLinks links = new PowerlineLinks();
 
+                for (int i=0; i<Links.Count; i++)
+                {
+                    Links[i].SavePrep();
+                }
 
-            foreach (PowerlineLink l in links.Links) 
-            {
-                l.SavePrep();
-            }
+                links.Links = Links;
 
-            MyModStorageComponentBase storage = Tools.GetStorage(Entity);
-            if (storage.ContainsKey(SETTINGS_GUID))
-            {
-                storage[SETTINGS_GUID] = MyAPIGateway.Utilities.SerializeToXML(links);
-            }
-            else
-            {
-                storage.Add(SETTINGS_GUID, MyAPIGateway.Utilities.SerializeToXML(links));
+                MyModStorageComponentBase storage = Tools.GetStorage(Entity);
+                if (storage.ContainsKey(SETTINGS_GUID))
+                {
+                    storage[SETTINGS_GUID] = MyAPIGateway.Utilities.SerializeToXML(links);
+                }
+                else
+                {
+                    storage.Add(SETTINGS_GUID, MyAPIGateway.Utilities.SerializeToXML(links));
+                }
             }
 
             return base.IsSerialized();
@@ -143,7 +143,7 @@ namespace FaolonTether
         {
             n.Bloat();
             ConnectGrids(n.PoleAId, n.PoleA.Grid, n.PoleB.Grid);
-            lock (Links) 
+            lock (Links)
             {
                 Links.Add(n);
             }
@@ -155,7 +155,7 @@ namespace FaolonTether
         {
             n.Bloat();
             DisconnectGrids(n.PoleAId, n.PoleA.Grid, n.PoleB.Grid);
-            lock (Links) 
+            lock (Links)
             {
                 Links.Remove(n);
             }
@@ -196,12 +196,13 @@ namespace FaolonTether
                             l.LoadPrep();
                         }
 
-                        lock (Links) 
+                        lock (Links)
                         {
                             Links = links.Links;
                         }
                     }
-                    catch (Exception e) {
+                    catch (Exception e)
+                    {
                         MyLog.Default.Info($"{e}");
                     }
 
@@ -391,7 +392,7 @@ namespace FaolonTether
             {
                 MyLog.Default.Info($"[Tether] attached pole: {Entity.EntityId} to {targetPole.Entity.EntityId}");
                 ConnectGrids(link.PoleAId, link.PoleA.Grid, link.PoleB.Grid);
-                lock (Links) 
+                lock (Links)
                 {
                     Links.Add(link);
                 }
