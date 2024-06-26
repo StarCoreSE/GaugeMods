@@ -76,7 +76,6 @@ namespace FaolonTether
 
         NetSync<PowerlineLink> requestAttach;
         NetSync<PowerlineLink> requestDetach;
-        //NetSync<PowerlineLink[]> sync;
 
 
         /// <summary>
@@ -93,9 +92,8 @@ namespace FaolonTether
 
             requestAttach = new NetSync<PowerlineLink>(Entity, TransferType.Both, new PowerlineLink());
             requestDetach = new NetSync<PowerlineLink>(Entity, TransferType.Both, new PowerlineLink());
-            //sync = new NetSync<PowerlineLink[]>(Entity, TransferType.ServerToClient, new PowerlineLink[0]);
-            //sync.ValueChangedByNetwork += linesSynced;
             requestAttach.ValueChanged += AttachLink;
+            requestDetach.ValueChanged += DetachLink;
 
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME | MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.EACH_100TH_FRAME;
             MyLog.Default.Info($"[Tether] Init completed for block {ModBlock.EntityId}");
@@ -124,20 +122,11 @@ namespace FaolonTether
             return base.IsSerialized();
         }
 
-        //public void linesSynced(PowerlineLink[] o, PowerlineLink[] n, ulong steamId)
-        //{
-        //    MyLog.Default.Info("[Tether] lines are syncing");
-        //    lock (Links)
-        //    {
-        //        Links.Clear();
-        //        Links.AddArray(n);
-
-        //        for (int i = 0; i < Links.Count; i++)
-        //        {
-        //            Links[i].LoadPrep();
-        //        }
-        //    }
-        //}
+        public override void MarkForClose()
+        {
+            UnlinkAllConnections();
+            base.MarkForClose();
+        }
 
         public void AttachLink(PowerlineLink o, PowerlineLink n)
         {
@@ -145,11 +134,18 @@ namespace FaolonTether
             lock (Links)
             {
                 n.LoadPrep();
-                if (!Links.Contains(n))
+
+                for (int i = 0; i < Links.Count; i++)
                 {
-                    ConnectGrids(n.PoleA.Entity.EntityId, n.PoleA.Grid, n.PoleB.Grid);
-                    Links.Add(n);
-                    MyLog.Default.Info($"[Tether] attached pole: {n.PoleA.Entity.EntityId} to {n.PoleB.Entity.EntityId}");
+                    PowerlineLink l = Links[i];
+                    if (!(l.PoleAGridName == n.PoleAGridName && l.PoleAPosition == n.PoleAPosition &&
+                        l.PoleBGridName == n.PoleBGridName && l.PoleBPosition == n.PoleBPosition))
+                    {
+                        ConnectGrids(n.PoleA.Entity.EntityId, n.PoleA.Grid, n.PoleB.Grid);
+                        Links.Add(l);
+                        MyLog.Default.Info($"[Tether] attached pole: {n.PoleA.Entity.EntityId} to {n.PoleB.Entity.EntityId}");
+                        break;
+                    }
                 }
             }
         }
@@ -159,12 +155,19 @@ namespace FaolonTether
             MyLog.Default.Info("[Tether] recieved request to detach");
             lock (Links)
             {
-                if (!Links.Contains(n))
+                n.LoadPrep();
+
+                for (int i = 0; i < Links.Count; i++) 
                 {
-                    n.LoadPrep();
-                    DisconnectGrids(n.PoleA.Entity.EntityId, n.PoleA.Grid, n.PoleB.Grid);
-                    Links.Remove(n);
-                    MyLog.Default.Info($"[Tether] removed pole: {n.PoleA.Entity.EntityId} to {n.PoleB.Entity.EntityId}");
+                    PowerlineLink l = Links[i];
+                    if (l.PoleAGridName == n.PoleAGridName && l.PoleAPosition == n.PoleAPosition &&
+                        l.PoleBGridName == n.PoleBGridName && l.PoleBPosition == n.PoleBPosition) 
+                    {
+                        DisconnectGrids(n.PoleA.Entity.EntityId, n.PoleA.Grid, n.PoleB.Grid);
+                        Links.Remove(l);
+                        MyLog.Default.Info($"[Tether] removed pole: {n.PoleA.Entity.EntityId} to {n.PoleB.Entity.EntityId}");
+                        break;
+                    }
                 }
             }
         }
@@ -221,6 +224,8 @@ namespace FaolonTether
                 for (int i = 0; i < Links.Count; i++)
                 {
                     PowerlineLink l = Links[i];
+
+                    if (l.PoleA == null || l.PoleB == null) continue;
 
                     if (l.PoleA == this && !IsInRange(l.PoleA, l.PoleB))
                     {
