@@ -17,8 +17,8 @@ namespace FaolonTether
     [ProtoContract]
     public class PowerlineLink
     {
-        [ProtoMember(1)]
-        public long PoleAId;
+        //[ProtoMember(1)]
+        //public long PoleAId;
 
         [ProtoMember(2)]
         public string PoleAGridName;
@@ -26,8 +26,8 @@ namespace FaolonTether
         [ProtoMember(3)]
         public Vector3I PoleAPosition;
 
-        [ProtoMember(4)]
-        public long PoleBId;
+        //[ProtoMember(4)]
+        //public long PoleBId;
 
         [ProtoMember(5)]
         public string PoleBGridName;
@@ -45,97 +45,66 @@ namespace FaolonTether
         {
             PowerlineLink link = new PowerlineLink();
             link.PoleA = a;
-            link.PoleAId = a.Entity.EntityId;
-
             link.PoleB = b;
-            link.PoleBId = a.Entity.EntityId;
+            link.SavePrep();
 
             return link;
         }
 
-        public void Bloat()
-        {
-            if (PoleA != null) return;
-
-            IMyEntity a = MyAPIGateway.Entities.GetEntityById(PoleAId);
-            IMyEntity b = MyAPIGateway.Entities.GetEntityById(PoleAId);
-
-            if (a == null)
-            {
-                MyLog.Default.Info("[Tether] Error! could not find Powerline Pole: " + PoleAId);
-                return;
-            }
-
-            if (b == null)
-            {
-                MyLog.Default.Info("[Tether] Error! could not find Powerline Pole: " + PoleBId);
-                return;
-            }
-
-            PoleA = a.GameLogic.GetAs<PowerlinePole>();
-            PoleB = b.GameLogic.GetAs<PowerlinePole>();
-
-        }
-
         public void SavePrep()
         {
-            if (PoleA == null) return;
+            if (PoleA != null && PoleB != null)
+            {
+                PoleAGridName = PoleA.Grid.DisplayName;
+                PoleAPosition = PoleA.ModBlock.Position;
 
-            PoleAGridName = PoleA.Grid.DisplayName;
-            PoleAPosition = PoleA.ModBlock.Position;
-
-            if (PoleB == null) return;
-
-            PoleBGridName = PoleB.Grid.DisplayName;
-            PoleBPosition = PoleB.ModBlock.Position;
-
+                PoleBGridName = PoleB.Grid.DisplayName;
+                PoleBPosition = PoleB.ModBlock.Position;
+            }
+            else
+            {
+                MyLog.Default.Info("[Tether] Warning! Link has null PowerlinePole and cannot generate grid and position");
+            }
         }
 
         public void LoadPrep()
         {
             HashSet<IMyEntity> entities = new HashSet<IMyEntity>();
-            IMyEntity gridA = null;
-            IMyEntity gridB = null;
-            MyAPIGateway.Entities.GetEntities(entities, e => (e.DisplayName == PoleAGridName ? (gridA = e) != e : false));
-            MyAPIGateway.Entities.GetEntities(entities, e => (e.DisplayName == PoleBGridName ? (gridB = e) != e : false)) ;
-
-            if (gridA != null)
+            if (PoleA == null)
             {
-                IMySlimBlock block = ((MyCubeGrid)gridA).GetCubeBlock(PoleAPosition);
-
-                MyLog.Default.Info($"[Tether] gridA cubeblock lookup: {block != null}");
-
-                if (block != null && block.FatBlock != null)
+                IMyEntity gridA = null;
+                MyAPIGateway.Entities.GetEntities(entities, e => (e.DisplayName == PoleAGridName ? (gridA = e) != e : false));
+                if (gridA != null)
                 {
-                    PoleA = block.FatBlock.GameLogic.GetAs<PowerlinePole>();
+                    IMySlimBlock block = ((MyCubeGrid)gridA).GetCubeBlock(PoleAPosition);
 
-                    MyLog.Default.Info($"[Tether] gridA GameLogic lookup: {PoleA != null}");
+                    MyLog.Default.Info($"[Tether] gridA cubeblock lookup: {block != null}");
 
-                    if (PoleA != null)
+                    if (block != null && block.FatBlock != null)
                     {
+                        PoleA = block.FatBlock.GameLogic.GetAs<PowerlinePole>();
 
-                        MyLog.Default.Info($"[Tether] Updating id from: {PoleAId} to: {PoleA.Entity.EntityId}");
-                        PoleAId = PoleA.Entity.EntityId;
+                        MyLog.Default.Info($"[Tether] gridA GameLogic lookup: {PoleA != null}");
                     }
                 }
             }
 
-            if (gridB != null)
+            if (PoleB == null)
             {
-                IMySlimBlock block = ((MyCubeGrid)gridB).GetCubeBlock(PoleBPosition);
-
-                MyLog.Default.Info($"[Tether] gridB cubeblock lookup: {block != null}");
-
-                if (block != null && block.FatBlock != null)
+                IMyEntity gridB = null;
+                MyAPIGateway.Entities.GetEntities(entities, e => (e.DisplayName == PoleBGridName ? (gridB = e) != e : false));
+                if (gridB != null)
                 {
-                    PoleB = block.FatBlock.GameLogic.GetAs<PowerlinePole>();
+                    IMySlimBlock block = ((MyCubeGrid)gridB).GetCubeBlock(PoleBPosition);
 
-                    MyLog.Default.Info($"[Tether] gridB GameLogic lookup: {PoleB != null}");
+                    MyLog.Default.Info($"[Tether] gridB cubeblock lookup: {block != null}");
 
-                    if (PoleB != null)
+                    if (block != null && block.FatBlock != null)
                     {
-                        MyLog.Default.Info($"[Tether] Updating id from: {PoleBId} to: {PoleB.Entity.EntityId}");
-                        PoleBId = PoleB.Entity.EntityId;
+                        PoleB = block.FatBlock.GameLogic.GetAs<PowerlinePole>();
+
+                        MyLog.Default.Info($"[Tether] gridB GameLogic lookup: {PoleB != null}");
+
                     }
                 }
             }

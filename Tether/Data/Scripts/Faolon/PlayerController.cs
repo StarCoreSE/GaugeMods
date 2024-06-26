@@ -179,7 +179,7 @@ namespace FaolonTether
                 return;
             }
 
-            InteractionObject.CreateConnection(pole, MyAPIGateway.Session.Player);
+            InteractionObject.ConnectionPoles(pole, MyAPIGateway.Session.Player);
             Cancel();
 
             MyLog.Default.Info($"[Tether] Connect - State: {State}, Interacting: {((InteractionObject == null) ? "null" : InteractionObject.Entity.EntityId.ToString())}");
@@ -188,7 +188,7 @@ namespace FaolonTether
         private void Disconnect(PowerlinePole pole)
         {
             State = PlayerState.Interacting;
-            InteractionObject = pole.Disconnect(MyAPIGateway.Session.Player.IdentityId);
+            InteractionObject = pole.DisconnectPoles(MyAPIGateway.Session.Player.IdentityId);
 
             MyLog.Default.Info($"[Tether] Disconnect - State: {State}, Interacting: {((InteractionObject == null) ? "null" : InteractionObject.Entity.EntityId.ToString())}");
         }

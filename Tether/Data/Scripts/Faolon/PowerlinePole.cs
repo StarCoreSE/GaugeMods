@@ -70,13 +70,13 @@ namespace FaolonTether
         public Vector3D DummyAttachPoint = new Vector3D(0, 0, 0); // This block's attach start point.
         private Dictionary<string, IMyModelDummy> ModelDummy = new Dictionary<string, IMyModelDummy>();
 
-        private GridLinkTypeEnum LinkType = GridLinkTypeEnum.Logical;
+        private static GridLinkTypeEnum LinkType = GridLinkTypeEnum.Logical;
 
         MyStringId cable_vis;
 
         NetSync<PowerlineLink> requestAttach;
         NetSync<PowerlineLink> requestDetach;
-        NetSync<PowerlineLink[]> sync;
+        //NetSync<PowerlineLink[]> sync;
 
 
         /// <summary>
@@ -91,11 +91,11 @@ namespace FaolonTether
             ModBlock = Entity as IMyTerminalBlock;
             Grid = (MyCubeGrid)ModBlock.CubeGrid;
 
-            requestAttach = new NetSync<PowerlineLink>(Entity, TransferType.ClientToServer, new PowerlineLink());
-            requestDetach = new NetSync<PowerlineLink>(Entity, TransferType.ClientToServer, new PowerlineLink());
-            sync = new NetSync<PowerlineLink[]>(Entity, TransferType.ServerToClient, new PowerlineLink[0]);
-            sync.ValueChangedByNetwork += linesSynced;
-            requestAttach.ValueChanged += RequestedAttach;
+            requestAttach = new NetSync<PowerlineLink>(Entity, TransferType.Both, new PowerlineLink());
+            requestDetach = new NetSync<PowerlineLink>(Entity, TransferType.Both, new PowerlineLink());
+            //sync = new NetSync<PowerlineLink[]>(Entity, TransferType.ServerToClient, new PowerlineLink[0]);
+            //sync.ValueChangedByNetwork += linesSynced;
+            requestAttach.ValueChanged += AttachLink;
 
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME | MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.EACH_100TH_FRAME;
             MyLog.Default.Info($"[Tether] Init completed for block {ModBlock.EntityId}");
@@ -108,12 +108,6 @@ namespace FaolonTether
             lock (Links)
             {
                 PowerlineLinks links = new PowerlineLinks();
-
-                for (int i=0; i<Links.Count; i++)
-                {
-                    Links[i].SavePrep();
-                }
-
                 links.Links = Links;
 
                 MyModStorageComponentBase storage = Tools.GetStorage(Entity);
@@ -130,37 +124,49 @@ namespace FaolonTether
             return base.IsSerialized();
         }
 
-        public void linesSynced(PowerlineLink[] o, PowerlineLink[] n, ulong steamId)
+        //public void linesSynced(PowerlineLink[] o, PowerlineLink[] n, ulong steamId)
+        //{
+        //    MyLog.Default.Info("[Tether] lines are syncing");
+        //    lock (Links)
+        //    {
+        //        Links.Clear();
+        //        Links.AddArray(n);
+
+        //        for (int i = 0; i < Links.Count; i++)
+        //        {
+        //            Links[i].LoadPrep();
+        //        }
+        //    }
+        //}
+
+        public void AttachLink(PowerlineLink o, PowerlineLink n)
         {
+            MyLog.Default.Info("[Tether] recieved request to attach");
             lock (Links)
             {
-                Links.Clear();
-                Links.AddArray(n);
+                n.LoadPrep();
+                if (!Links.Contains(n))
+                {
+                    ConnectGrids(n.PoleA.Entity.EntityId, n.PoleA.Grid, n.PoleB.Grid);
+                    Links.Add(n);
+                    MyLog.Default.Info($"[Tether] attached pole: {n.PoleA.Entity.EntityId} to {n.PoleB.Entity.EntityId}");
+                }
             }
         }
 
-        public void RequestedAttach(PowerlineLink o, PowerlineLink n)
+        public void DetachLink(PowerlineLink o, PowerlineLink n)
         {
-            n.Bloat();
-            ConnectGrids(n.PoleAId, n.PoleA.Grid, n.PoleB.Grid);
+            MyLog.Default.Info("[Tether] recieved request to detach");
             lock (Links)
             {
-                Links.Add(n);
+                if (!Links.Contains(n))
+                {
+                    n.LoadPrep();
+                    DisconnectGrids(n.PoleA.Entity.EntityId, n.PoleA.Grid, n.PoleB.Grid);
+                    Links.Remove(n);
+                    MyLog.Default.Info($"[Tether] removed pole: {n.PoleA.Entity.EntityId} to {n.PoleB.Entity.EntityId}");
+                }
             }
-
-            sync.SetValue(Links.ToArray(), SyncType.Broadcast);
-        }
-
-        public void RequestedDetach(PowerlineLink o, PowerlineLink n)
-        {
-            n.Bloat();
-            DisconnectGrids(n.PoleAId, n.PoleA.Grid, n.PoleB.Grid);
-            lock (Links)
-            {
-                Links.Remove(n);
-            }
-
-            sync.SetValue(Links.ToArray(), SyncType.Broadcast);
         }
 
         /// <summary>
@@ -181,36 +187,30 @@ namespace FaolonTether
 
             DummyAttachPoint = Tools.GetDummyRelativeLocation(ModBlock);
 
-            if (Links.Count == 0)
+            MyModStorageComponentBase storage = Tools.GetStorage(Entity);
+            if (storage.ContainsKey(SETTINGS_GUID))
             {
-                MyModStorageComponentBase storage = Tools.GetStorage(Entity);
-                if (storage.ContainsKey(SETTINGS_GUID))
+                MyLog.Default.Info($"{storage[SETTINGS_GUID]}");
+                try
                 {
-                    MyLog.Default.Info($"{storage[SETTINGS_GUID]}");
-                    try
-                    {
-                        PowerlineLinks links = MyAPIGateway.Utilities.SerializeFromXML<PowerlineLinks>(storage[SETTINGS_GUID]);
+                    PowerlineLinks links = MyAPIGateway.Utilities.SerializeFromXML<PowerlineLinks>(storage[SETTINGS_GUID]);
 
-                        foreach (PowerlineLink l in links.Links)
-                        {
-                            l.LoadPrep();
-                        }
-
-                        lock (Links)
-                        {
-                            Links = links.Links;
-                        }
-                    }
-                    catch (Exception e)
+                    foreach (PowerlineLink l in links.Links)
                     {
-                        MyLog.Default.Info($"{e}");
+                        l.LoadPrep();
                     }
 
+                    lock (Links)
+                    {
+                        Links = links.Links;
+                    }
+                }
+                catch (Exception e)
+                {
+                    MyLog.Default.Info($"{e}");
                 }
             }
-
         }
-
 
         public override void UpdateBeforeSimulation100()
         {
@@ -221,13 +221,10 @@ namespace FaolonTether
                 for (int i = 0; i < Links.Count; i++)
                 {
                     PowerlineLink l = Links[i];
-                    l.Bloat();
 
                     if (l.PoleA == this && !IsInRange(l.PoleA, l.PoleB))
                     {
-                        DisconnectGrids(l.PoleA.Entity.EntityId, l.PoleA.Grid, l.PoleB.Grid);
-                        Links.Remove(l);
-                        sync.SetValue(Links.ToArray(), SyncType.Broadcast);
+                        requestDetach.SetValue(l, SyncType.Broadcast);
                     }
                 }
             }
@@ -273,7 +270,6 @@ namespace FaolonTether
                 for (int i = 0; i < Links.Count; i++)
                 {
                     PowerlineLink l = Links[i];
-                    l.Bloat();
                     if (l.PoleA == this)
                     {
                         p = l.PoleB;
@@ -285,22 +281,17 @@ namespace FaolonTether
 
                     if (p != null)
                     {
-                        DisconnectGrids(Entity.EntityId, Grid, p.Grid);
-                        Links.Remove(l);
+                        requestDetach.SetValue(l, SyncType.Broadcast);
                     }
-
                 }
             }
-
-            sync.SetValue(Links.ToArray(), SyncType.Broadcast);
         }
 
-        public int LinkCount(MyCubeGrid a, MyCubeGrid b)
+        public static int LinkCount(MyCubeGrid a, MyCubeGrid b)
         {
             int linkCount = 0;
             foreach (PowerlineLink l in Links)
             {
-                l.Bloat();
                 if ((l.PoleA.Grid == a || l.PoleB.Grid == a) &&
                     (l.PoleA.Grid == b || l.PoleB.Grid == b))
                 {
@@ -311,7 +302,7 @@ namespace FaolonTether
             return linkCount;
         }
 
-        public void ConnectGrids(long id, MyCubeGrid a, MyCubeGrid b)
+        public static void ConnectGrids(long id, MyCubeGrid a, MyCubeGrid b)
         {
             int linkCount = LinkCount(a, b);
             if (linkCount > 0)
@@ -328,7 +319,7 @@ namespace FaolonTether
             }
         }
 
-        public void DisconnectGrids(long id, MyCubeGrid a, MyCubeGrid b)
+        public static void DisconnectGrids(long id, MyCubeGrid a, MyCubeGrid b)
         {
 
             if (a.IsInSameLogicalGroupAs(b))
@@ -354,7 +345,7 @@ namespace FaolonTether
 
 
 
-        public void CreateConnection(PowerlinePole targetPole, IMyPlayer player)
+        public void ConnectionPoles(PowerlinePole targetPole, IMyPlayer player)
         {
             if (targetPole == this)
             {
@@ -364,7 +355,6 @@ namespace FaolonTether
 
             foreach (PowerlineLink l in Links)
             {
-                l.Bloat();
                 if ((l.PoleA == this || l.PoleB == this) &&
                     (l.PoleA == targetPole || l.PoleB == targetPole))
                 {
@@ -388,26 +378,13 @@ namespace FaolonTether
             }
 
             PowerlineLink link = PowerlineLink.Generate(this, targetPole);
-            if (MyAPIGateway.Multiplayer.IsServer)
-            {
-                MyLog.Default.Info($"[Tether] attached pole: {Entity.EntityId} to {targetPole.Entity.EntityId}");
-                ConnectGrids(link.PoleAId, link.PoleA.Grid, link.PoleB.Grid);
-                lock (Links)
-                {
-                    Links.Add(link);
-                }
-                sync.SetValue(Links.ToArray(), SyncType.Broadcast);
-            }
-            else
-            {
-                requestAttach.SetValue(link, SyncType.Post);
-            }
+            requestAttach.SetValue(link, SyncType.Broadcast);
         }
 
         /// <summary>
         /// Disconnects a line from this pole and returns the power pole that line was connected too
         /// </summary>
-        public PowerlinePole Disconnect(long playerId)
+        public PowerlinePole DisconnectPoles(long playerId)
         {
             MyRelationsBetweenPlayerAndBlock relation = ModBlock.GetUserRelationToOwner(playerId);
 
@@ -423,7 +400,6 @@ namespace FaolonTether
                 for (int i = Links.Count - 1; i >= 0; i--)
                 {
                     PowerlineLink l = Links[i];
-                    l.Bloat();
                     if (l.PoleA == this)
                     {
                         pole = l.PoleB;
@@ -435,17 +411,7 @@ namespace FaolonTether
 
                     if (pole != null)
                     {
-                        if (MyAPIGateway.Multiplayer.IsServer)
-                        {
-                            DisconnectGrids(l.PoleAId, l.PoleA.Grid, l.PoleB.Grid);
-                            Links.Remove(l);
-                        }
-                        else
-                        {
-                            requestDetach.SetValue(l, SyncType.Post);
-                        }
-
-                        MyLog.Default.Info($"[Tether] Pole Disconnect: {Entity.EntityId} from {pole.Entity.EntityId}");
+                        requestDetach.SetValue(l, SyncType.Broadcast);
                         return pole;
                     }
                 }
@@ -491,8 +457,7 @@ namespace FaolonTether
             for (int i = 0; i < Links.Count; i++)
             {
                 PowerlineLink l = Links[i];
-                l.Bloat();
-                if (l.PoleA != this) continue;
+                if (l.PoleA != this || l.PoleB == null) continue;
 
                 // Check if the local player is close enough to render the cable.
                 bool playerClose = false;
