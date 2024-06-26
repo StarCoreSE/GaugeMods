@@ -135,17 +135,24 @@ namespace FaolonTether
             {
                 n.LoadPrep();
 
+                PowerlineLink link = null;
+
                 for (int i = 0; i < Links.Count; i++)
                 {
                     PowerlineLink l = Links[i];
-                    if (!(l.PoleAGridName == n.PoleAGridName && l.PoleAPosition == n.PoleAPosition &&
-                        l.PoleBGridName == n.PoleBGridName && l.PoleBPosition == n.PoleBPosition))
+                    if (l.PoleAGridName == n.PoleAGridName && l.PoleAPosition == n.PoleAPosition &&
+                        l.PoleBGridName == n.PoleBGridName && l.PoleBPosition == n.PoleBPosition)
                     {
-                        ConnectGrids(n.PoleA.Entity.EntityId, n.PoleA.Grid, n.PoleB.Grid);
-                        Links.Add(l);
-                        MyLog.Default.Info($"[Tether] attached pole: {n.PoleA.Entity.EntityId} to {n.PoleB.Entity.EntityId}");
+                        link = l;
                         break;
                     }
+                }
+
+                if (link == null) 
+                {
+                    ConnectGrids(n.PoleA.Entity.EntityId, n.PoleA.Grid, n.PoleB.Grid);
+                    Links.Add(n);
+                    MyLog.Default.Info($"[Tether] attached pole: {n.PoleA.Entity.EntityId} to {n.PoleB.Entity.EntityId}");
                 }
             }
         }
