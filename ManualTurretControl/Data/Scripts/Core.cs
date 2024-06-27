@@ -16,6 +16,8 @@ using VRage.Game.ModAPI;
 using VRageMath;
 using VRage.Input;
 using Sandbox.Game.Entities;
+using Sandbox.ModAPI.Interfaces.Terminal;
+using VRage.Utils;
 
 namespace Gauge.ManualTurret
 {
@@ -23,9 +25,14 @@ namespace Gauge.ManualTurret
     public class Core : MySessionComponentBase
     {
 
-        string highlightName = string.Empty;
-        MyEnvironmentDefinition environment;
+        private string highlightName = string.Empty;
+        private MyEnvironmentDefinition environment;
 
+        private IMyTerminalAction controlAction;
+        private IMyTerminalControl controlControl;
+
+        private bool initialized = false;
+        private bool active = false;
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
@@ -34,11 +41,32 @@ namespace Gauge.ManualTurret
 
         public override void UpdateBeforeSimulation()
         {
-
             if (MyAPIGateway.Utilities.IsDedicated ||
                 MyAPIGateway.Session.Player?.Character == null) return;
 
-            MatrixD playerMatrix = MyAPIGateway.Session.Player.Character.GetHeadMatrix(true);
+            if (!initialized) 
+            {
+                List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
+                MyAPIGateway.TerminalControls.GetActions<IMyLargeTurretBase>(out actions);
+
+                foreach (IMyTerminalAction action in actions)
+                {
+                    if (action.Id == "Control")
+                    {
+                        controlAction = action;
+                    }
+                }
+                initialized = true;
+            }
+
+            // this lets you exit without instantly re-entering the turret
+            if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) && active) 
+            {
+                active = false;
+                return;
+            }
+
+            MatrixD playerMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
             IHitInfo hit = null;
             MyAPIGateway.Physics.CastRay(playerMatrix.Translation + playerMatrix.Forward * 0.1, playerMatrix.Translation + playerMatrix.Forward * 10, out hit);
 
@@ -83,9 +111,15 @@ namespace Gauge.ManualTurret
 
             MyAPIGateway.Utilities.ShowNotification($"[MTurret] is interface: {t is VRage.Game.ModAPI.Interfaces.IMyControllableEntity}, is entity: {t is Sandbox.Game.Entities.IMyControllableEntity}", 1, "White");
 
-            if (MyAPIGateway.Input.IsNewKeyReleased(MyKeys.F))
+            if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F))
             {
-                MyAPIGateway.Session.Player.Controller.TakeControl(t as VRage.Game.ModAPI.Interfaces.IMyControllableEntity);
+                if (controlAction != null) 
+                {
+                    controlAction.Enabled = block => true;
+                    controlAction.Apply(t);
+                    controlAction.Enabled = block => false;
+                    active = true;
+                }
             }
         }
 
