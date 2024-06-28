@@ -29,10 +29,10 @@ namespace Gauge.ManualTurret
         private string highlightName = string.Empty;
         private MyEnvironmentDefinition environment;
 
-        private IMyTerminalAction controlAction;
-
         private bool initialized = false;
         private bool initialized2 = false;
+
+        private IMyTerminalAction controlAction;
 
         private bool active = false;
         private bool isBroadcasting = false;
@@ -170,6 +170,7 @@ namespace Gauge.ManualTurret
             if (action == null)
             {
                 MyLog.Default.Info($"[MTC] could not find the Control action");
+                return;
             }
 
             action.Enabled = block => true;
@@ -178,7 +179,14 @@ namespace Gauge.ManualTurret
 
         public void ExitTurret()
         {
-            controlAction.Enabled = block => false;
+            IMyTerminalAction action = ControlAction();
+            if (action == null)
+            {
+                MyLog.Default.Info($"[MTC] could not find the Control action to finalize closing");
+                return;
+            }
+
+            action.Enabled = block => false;
             active = false;
         }
 
@@ -199,16 +207,24 @@ namespace Gauge.ManualTurret
 
         public IMyTerminalAction ControlAction()
         {
-            List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
-            MyAPIGateway.TerminalControls.GetActions<IMyLargeTurretBase>(out actions);
-
-            foreach (IMyTerminalAction action in actions)
+            if (controlAction != null)
             {
-                if (action.Id == "Control")
+                return controlAction;
+            }
+            else 
+            {
+                List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
+                MyAPIGateway.TerminalControls.GetActions<IMyLargeTurretBase>(out actions);
+
+                foreach (IMyTerminalAction action in actions)
                 {
-                    return action;
+                    if (action.Id == "Control")
+                    {
+                        return (controlAction = action);
+                    }
                 }
             }
+
             return null;
         }
     }
