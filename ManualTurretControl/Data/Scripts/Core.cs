@@ -179,6 +179,7 @@ namespace Gauge.ManualTurret
         {
             if (highlightName != string.Empty)
             {
+                MyLog.Default.Info($"[MTC] Canceling Highlighted turret");
                 Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, -1, 300, environment.ContourHighlightColor, playerId: MyAPIGateway.Session.Player.IdentityId);
                 highlightName = string.Empty;
             }
