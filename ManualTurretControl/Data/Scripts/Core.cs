@@ -67,6 +67,7 @@ namespace Gauge.ManualTurret
                     if (action.Id == "Control")
                     {
                         controlAction = action;
+                        MyLog.Default.Info($"[MTC] found terminal action: {controlAction != null}");
                     }
                 }
 
@@ -77,6 +78,7 @@ namespace Gauge.ManualTurret
             tick++;
             if (turret != null && tick >= 11) 
             {
+                MyLog.Default.Info($"[MTC] entering turret after waiting for broadcasting to be turned on");
                 EnterTurret(turret);
                 turret = null;
             }
@@ -84,6 +86,7 @@ namespace Gauge.ManualTurret
             // this lets you exit without instantly re-entering the turret
             if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) && active) 
             {
+                MyLog.Default.Info($"[MTC] exiting turret");
                 ExitTurret();
                 return;
             }
@@ -119,17 +122,20 @@ namespace Gauge.ManualTurret
 
             if (highlightName == string.Empty)
             {
+                MyLog.Default.Info($"[MTC] Highlighting turret");
                 highlightName = t.Name;
                 Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, (int)environment.ContourHighlightThickness, 300, environment.ContourHighlightColor, playerId: MyAPIGateway.Session.Player.IdentityId);
             }
             else if (t.Name != highlightName)
             {
+                MyLog.Default.Info($"[MTC] Canceling Highlighted turret");
                 Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, -1, 300, environment.ContourHighlightColor, playerId: MyAPIGateway.Session.Player.IdentityId);
                 highlightName = string.Empty;
             }
 
             if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F))
             {
+                MyLog.Default.Info($"[MTC] Interaction pressed");
                 if (controlAction != null) 
                 {
 
@@ -138,6 +144,7 @@ namespace Gauge.ManualTurret
 
                     if (!isBroadcasting) 
                     {
+                        MyLog.Default.Info($"[MTC] turn on broadcasting");
                         controller.SwitchBroadcasting();
                         turret = t;
                         tick = 0;
@@ -152,6 +159,7 @@ namespace Gauge.ManualTurret
         {
             active = true;
             controlAction.Enabled = block => true;
+            MyLog.Default.Info($"[MTC] using terminal action: {controlAction != null}");
             controlAction.Apply(t);
 
         }
