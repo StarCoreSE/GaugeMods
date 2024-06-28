@@ -30,9 +30,6 @@ namespace Gauge.ManualTurret
         private MyEnvironmentDefinition environment;
 
         private bool initialized = false;
-        private bool initialized2 = false;
-
-        private IMyTerminalAction controlAction;
 
         Action<IMyTerminalBlock> action;
 
@@ -47,46 +44,41 @@ namespace Gauge.ManualTurret
             environment = MyDefinitionManager.Static.EnvironmentDefinition;
         }
 
+        private void Initialize() 
+        {
+            MyLog.Default.Info($"[MTC] attempting to initialize");
+            List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
+            MyAPIGateway.TerminalControls.GetActions<IMyLargeTurretBase>(out actions);
+
+            List<IMyTerminalControl> controls = new List<IMyTerminalControl>();
+            MyAPIGateway.TerminalControls.GetControls<IMyLargeTurretBase>(out controls);
+
+            foreach (IMyTerminalAction action in actions)
+            {
+                if (action.Id == "Control")
+                {
+                    MyLog.Default.Info($"[MTC] found the initial action");
+                    action.Enabled = bl => false;
+                    this.action = action.Action;
+                }
+            }
+
+            foreach (IMyTerminalControl control in controls)
+            {
+                if (control.Id == "Control")
+                {
+                    MyLog.Default.Info($"[MTC] found the initial control");
+                    control.Enabled = bl => false;
+                }
+            }
+
+            initialized = true;
+        }
+
         public override void UpdateBeforeSimulation()
         {
             if (MyAPIGateway.Utilities.IsDedicated ||
                 MyAPIGateway.Session.Player?.Character == null) return;
-
-            if (!initialized)
-            {
-                if (!initialized2)
-                {
-                    initialized2 = true;
-                    return;
-                }
-
-                List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
-                MyAPIGateway.TerminalControls.GetActions<IMyLargeTurretBase>(out actions);
-
-                List<IMyTerminalControl> controls = new List<IMyTerminalControl>();
-                MyAPIGateway.TerminalControls.GetControls<IMyLargeTurretBase>(out controls);
-
-                foreach (IMyTerminalAction action in actions)
-                {
-                    if (action.Id == "Control")
-                    {
-                        MyLog.Default.Info($"[MTC] found the initial action");
-                        action.Enabled = bl => false;
-                        this.action = action.Action;
-                    }
-                }
-
-                foreach (IMyTerminalControl control in controls)
-                {
-                    if (control.Id == "Control")
-                    {
-                        MyLog.Default.Info($"[MTC] found the initial control");
-                        control.Enabled = bl => false;
-                    }
-                }
-
-                initialized = true;
-            }
 
 
             tick++;
@@ -159,6 +151,8 @@ namespace Gauge.ManualTurret
 
         public void EnterTurret(IMyLargeTurretBase t)
         {
+            if (!initialized) Initialize();
+
             MyLog.Default.Info($"[MTC] try to enter the turret");
 
             if (action == null)
