@@ -34,7 +34,8 @@ namespace Gauge.ManualTurret
 
         private IMyTerminalAction controlAction;
 
-        private bool active = false;
+        Action<IMyTerminalBlock> action;
+
         private bool isBroadcasting = false;
 
         private IMyLargeTurretBase turret;
@@ -69,7 +70,9 @@ namespace Gauge.ManualTurret
                 {
                     if (action.Id == "Control")
                     {
+                        MyLog.Default.Info($"[MTC] found the initial action");
                         action.Enabled = bl => false;
+                        this.action = action.Action;
                     }
                 }
 
@@ -77,6 +80,7 @@ namespace Gauge.ManualTurret
                 {
                     if (control.Id == "Control")
                     {
+                        MyLog.Default.Info($"[MTC] found the initial control");
                         control.Enabled = bl => false;
                     }
                 }
@@ -91,14 +95,6 @@ namespace Gauge.ManualTurret
                 MyLog.Default.Info($"[MTC] entering turret after waiting for broadcasting to be turned on");
                 EnterTurret(turret);
                 turret = null;
-            }
-
-            // this lets you exit without instantly re-entering the turret
-            if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) && active)
-            {
-                MyLog.Default.Info($"[MTC] exiting turret");
-                ExitTurret();
-                return;
             }
 
             MatrixD playerMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
@@ -164,31 +160,17 @@ namespace Gauge.ManualTurret
         public void EnterTurret(IMyLargeTurretBase t)
         {
             MyLog.Default.Info($"[MTC] try to enter the turret");
-            active = true;
 
-            IMyTerminalAction action = ControlAction();
             if (action == null)
             {
                 MyLog.Default.Info($"[MTC] could not find the Control action");
                 return;
             }
 
-            action.Enabled = block => true;
-            action.Apply(t);
+            action.Invoke(t);
         }
 
-        public void ExitTurret()
-        {
-            IMyTerminalAction action = ControlAction();
-            if (action == null)
-            {
-                MyLog.Default.Info($"[MTC] could not find the Control action to finalize closing");
-                return;
-            }
 
-            action.Enabled = block => false;
-            active = false;
-        }
 
         public StupidControllableEntity PlayerConrollerEntity()
         {
@@ -203,29 +185,6 @@ namespace Gauge.ManualTurret
                 Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, -1, 300, environment.ContourHighlightColor, playerId: MyAPIGateway.Session.Player.IdentityId);
                 highlightName = string.Empty;
             }
-        }
-
-        public IMyTerminalAction ControlAction()
-        {
-            if (controlAction != null)
-            {
-                return controlAction;
-            }
-            else 
-            {
-                List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
-                MyAPIGateway.TerminalControls.GetActions<IMyLargeTurretBase>(out actions);
-
-                foreach (IMyTerminalAction action in actions)
-                {
-                    if (action.Id == "Control")
-                    {
-                        return (controlAction = action);
-                    }
-                }
-            }
-
-            return null;
         }
     }
 }
