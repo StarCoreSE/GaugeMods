@@ -32,6 +32,8 @@ namespace Gauge.ManualTurret
         private IMyTerminalAction controlAction;
 
         private bool initialized = false;
+        private bool initialized2 = false; 
+
         private bool active = false;
         private bool isBroadcasting = false;
 
@@ -51,6 +53,12 @@ namespace Gauge.ManualTurret
 
             if (!initialized) 
             {
+                if (!initialized2) 
+                {
+                    initialized2 = true;
+                    return;
+                }
+
                 List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
                 MyAPIGateway.TerminalControls.GetActions<IMyLargeTurretBase>(out actions);
 
@@ -61,6 +69,7 @@ namespace Gauge.ManualTurret
                         controlAction = action;
                     }
                 }
+
                 initialized = true;
             }
 
@@ -75,7 +84,7 @@ namespace Gauge.ManualTurret
             // this lets you exit without instantly re-entering the turret
             if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) && active) 
             {
-                active = false;
+                ExitTurret();
                 return;
             }
 
@@ -132,20 +141,25 @@ namespace Gauge.ManualTurret
                         controller.SwitchBroadcasting();
                         turret = t;
                         tick = 0;
-                        return;
                     }
 
                     EnterTurret(t);
-                    active = true;
                 }
             }
         }
 
         public void EnterTurret(IMyLargeTurretBase t) 
         {
+            active = true;
             controlAction.Enabled = block => true;
             controlAction.Apply(t);
+
+        }
+
+        public void ExitTurret() 
+        {
             controlAction.Enabled = block => false;
+            active = false;
         }
 
         public StupidControllableEntity PlayerConrollerEntity() 
