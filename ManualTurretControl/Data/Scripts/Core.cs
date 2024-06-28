@@ -75,9 +75,7 @@ namespace Gauge.ManualTurret
             // this lets you exit without instantly re-entering the turret
             if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) && active) 
             {
-                tick2 = 0;
                 active = false;
-                shutdown = true;
                 return;
             }
 
