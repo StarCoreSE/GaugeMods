@@ -18,6 +18,7 @@ using VRage.Input;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
+using StupidControllableEntity = Sandbox.Game.Entities.IMyControllableEntity;
 
 namespace Gauge.ManualTurret
 {
@@ -29,10 +30,14 @@ namespace Gauge.ManualTurret
         private MyEnvironmentDefinition environment;
 
         private IMyTerminalAction controlAction;
-        private IMyTerminalControl controlControl;
 
         private bool initialized = false;
         private bool active = false;
+        private bool isBroadcasting = false;
+
+        private IMyLargeTurretBase turret;
+
+        private int tick = 0;
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
@@ -59,10 +64,20 @@ namespace Gauge.ManualTurret
                 initialized = true;
             }
 
+
+            tick++;
+            if (turret != null && tick >= 11) 
+            {
+                EnterTurret(turret);
+                turret = null;
+            }
+
             // this lets you exit without instantly re-entering the turret
             if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) && active) 
             {
+                tick2 = 0;
                 active = false;
+                shutdown = true;
                 return;
             }
 
@@ -75,7 +90,6 @@ namespace Gauge.ManualTurret
                 CancelHighlight();
                 return;
             }
-            MyAPIGateway.Utilities.ShowNotification($"[MTurret] hit grid", 1, "White");
 
             IMyCubeGrid grid = hit.HitEntity as IMyCubeGrid;
 
@@ -84,7 +98,6 @@ namespace Gauge.ManualTurret
                 CancelHighlight();
                 return;
             }
-            MyAPIGateway.Utilities.ShowNotification($"[MTurret] grid is real", 1, "White");
 
             Vector3I pos = grid.WorldToGridInteger(hit.Position + playerMatrix.Forward * 0.1);
             IMySlimBlock b = grid.GetCubeBlock(pos);
@@ -94,7 +107,6 @@ namespace Gauge.ManualTurret
                 CancelHighlight();
                 return;
             }
-            MyAPIGateway.Utilities.ShowNotification($"[MTurret] found turret", 1, "White");
 
             IMyLargeTurretBase t = b.FatBlock as IMyLargeTurretBase;
 
@@ -109,18 +121,38 @@ namespace Gauge.ManualTurret
                 highlightName = string.Empty;
             }
 
-            MyAPIGateway.Utilities.ShowNotification($"[MTurret] is interface: {t is VRage.Game.ModAPI.Interfaces.IMyControllableEntity}, is entity: {t is Sandbox.Game.Entities.IMyControllableEntity}", 1, "White");
-
             if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F))
             {
                 if (controlAction != null) 
                 {
-                    controlAction.Enabled = block => true;
-                    controlAction.Apply(t);
-                    controlAction.Enabled = block => false;
+
+                    StupidControllableEntity controller = PlayerConrollerEntity();
+                    isBroadcasting = controller.EnabledBroadcasting;
+
+                    if (!isBroadcasting) 
+                    {
+                        controller.SwitchBroadcasting();
+                        turret = t;
+                        tick = 0;
+                        return;
+                    }
+
+                    EnterTurret(t);
                     active = true;
                 }
             }
+        }
+
+        public void EnterTurret(IMyLargeTurretBase t) 
+        {
+            controlAction.Enabled = block => true;
+            controlAction.Apply(t);
+            controlAction.Enabled = block => false;
+        }
+
+        public StupidControllableEntity PlayerConrollerEntity() 
+        {
+            return ((StupidControllableEntity)MyAPIGateway.Session.Player.Controller.ControlledEntity);
         }
 
         public void CancelHighlight()
