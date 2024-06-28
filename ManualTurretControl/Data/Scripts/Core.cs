@@ -32,7 +32,7 @@ namespace Gauge.ManualTurret
         private IMyTerminalAction controlAction;
 
         private bool initialized = false;
-        private bool initialized2 = false; 
+        private bool initialized2 = false;
 
         private bool active = false;
         private bool isBroadcasting = false;
@@ -51,9 +51,9 @@ namespace Gauge.ManualTurret
             if (MyAPIGateway.Utilities.IsDedicated ||
                 MyAPIGateway.Session.Player?.Character == null) return;
 
-            if (!initialized) 
+            if (!initialized)
             {
-                if (!initialized2) 
+                if (!initialized2)
                 {
                     initialized2 = true;
                     return;
@@ -62,12 +62,22 @@ namespace Gauge.ManualTurret
                 List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
                 MyAPIGateway.TerminalControls.GetActions<IMyLargeTurretBase>(out actions);
 
+                List<IMyTerminalControl> controls = new List<IMyTerminalControl>();
+                MyAPIGateway.TerminalControls.GetControls<IMyLargeTurretBase>(out controls);
+
                 foreach (IMyTerminalAction action in actions)
                 {
                     if (action.Id == "Control")
                     {
-                        controlAction = action;
-                        MyLog.Default.Info($"[MTC] found terminal action: {controlAction != null}");
+                        action.Enabled = bl => false;
+                    }
+                }
+
+                foreach (IMyTerminalControl control in controls)
+                {
+                    if (control.Id == "Control")
+                    {
+                        control.Enabled = bl => false;
                     }
                 }
 
@@ -76,7 +86,7 @@ namespace Gauge.ManualTurret
 
 
             tick++;
-            if (turret != null && tick >= 11) 
+            if (turret != null && tick >= 11)
             {
                 MyLog.Default.Info($"[MTC] entering turret after waiting for broadcasting to be turned on");
                 EnterTurret(turret);
@@ -84,7 +94,7 @@ namespace Gauge.ManualTurret
             }
 
             // this lets you exit without instantly re-entering the turret
-            if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) && active) 
+            if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) && active)
             {
                 MyLog.Default.Info($"[MTC] exiting turret");
                 ExitTurret();
@@ -135,42 +145,44 @@ namespace Gauge.ManualTurret
 
             if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F))
             {
-                MyLog.Default.Info($"[MTC] Interaction pressed");
-                if (controlAction != null) 
+                MyLog.Default.Info($"[MTC] Interaction pressed. has_control_action:");
+                StupidControllableEntity controller = PlayerConrollerEntity();
+                isBroadcasting = controller.EnabledBroadcasting;
+
+                if (!isBroadcasting)
                 {
-
-                    StupidControllableEntity controller = PlayerConrollerEntity();
-                    isBroadcasting = controller.EnabledBroadcasting;
-
-                    if (!isBroadcasting) 
-                    {
-                        MyLog.Default.Info($"[MTC] turn on broadcasting");
-                        controller.SwitchBroadcasting();
-                        turret = t;
-                        tick = 0;
-                    }
-
-                    EnterTurret(t);
+                    MyLog.Default.Info($"[MTC] turn on broadcasting");
+                    controller.SwitchBroadcasting();
+                    turret = t;
+                    tick = 0;
                 }
+
+                EnterTurret(t);
             }
         }
 
-        public void EnterTurret(IMyLargeTurretBase t) 
+        public void EnterTurret(IMyLargeTurretBase t)
         {
+            MyLog.Default.Info($"[MTC] try to enter the turret");
             active = true;
-            controlAction.Enabled = block => true;
-            MyLog.Default.Info($"[MTC] using terminal action: {controlAction != null}");
-            controlAction.Apply(t);
 
+            IMyTerminalAction action = ControlAction();
+            if (action == null)
+            {
+                MyLog.Default.Info($"[MTC] could not find the Control action");
+            }
+
+            action.Enabled = block => true;
+            action.Apply(t);
         }
 
-        public void ExitTurret() 
+        public void ExitTurret()
         {
             controlAction.Enabled = block => false;
             active = false;
         }
 
-        public StupidControllableEntity PlayerConrollerEntity() 
+        public StupidControllableEntity PlayerConrollerEntity()
         {
             return ((StupidControllableEntity)MyAPIGateway.Session.Player.Controller.ControlledEntity);
         }
@@ -183,6 +195,21 @@ namespace Gauge.ManualTurret
                 Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, -1, 300, environment.ContourHighlightColor, playerId: MyAPIGateway.Session.Player.IdentityId);
                 highlightName = string.Empty;
             }
+        }
+
+        public IMyTerminalAction ControlAction()
+        {
+            List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
+            MyAPIGateway.TerminalControls.GetActions<IMyLargeTurretBase>(out actions);
+
+            foreach (IMyTerminalAction action in actions)
+            {
+                if (action.Id == "Control")
+                {
+                    return action;
+                }
+            }
+            return null;
         }
     }
 }
