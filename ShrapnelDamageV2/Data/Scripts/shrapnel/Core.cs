@@ -21,26 +21,44 @@ namespace Shrapnel
 
         public void ProcessDamage(object target, ref MyDamageInformation info)
         {
-            if (info.Type != MyDamageType.Bullet && info.Type != MyDamageType.Explosion) return; // missle and collision damage does not need shrapnel
-            if (!(target is IMySlimBlock)) return;
-
             IMySlimBlock slim = target as IMySlimBlock;
-            if (slim.Integrity >= info.Amount) return;
+            if (slim == null) return;
 
-            float overkill = info.Amount - slim.Integrity;
-            info.Amount = slim.Integrity;
-
-            queue.Enqueue(new ShrapnelData()
+            if (info.Type != MyDamageType.Bullet)
             {
-                Neighbours = slim.Neighbours,
-                OverKill = overkill
-            });
+                //// missle and collision damage does not need shrapnel
+                //if (!(target is IMySlimBlock)) return;
+
+                if (slim.Integrity >= info.Amount) return;
+
+                float overkill = info.Amount - slim.Integrity;
+                info.Amount = slim.Integrity;
+
+                queue.Enqueue(new ShrapnelData()
+                {
+                    Neighbours = slim.Neighbours,
+                    OverKill = overkill
+                });
+            }
+            else if (info.Type == MyDamageType.Explosion && !(slim.FatBlock is IMyWarhead))
+            {
+                queue.Enqueue(new ShrapnelData()
+                {
+                    OverKill = info.Amount,
+                    Neighbours = new List<IMySlimBlock>() { slim },
+                });
+                info.Amount *= 0;
+
+            }
+
         }
 
         public override void UpdateBeforeSimulation()
         {
-            while (queue.Count > 0)
+            int tasks = 0;
+            while (queue.Count > 0 && tasks < 200)
             {
+                tasks++;
                 ShrapnelData data = queue.Dequeue();
                 int count = data.Neighbours.Count;
                 foreach (IMySlimBlock neighbour in data.Neighbours)
