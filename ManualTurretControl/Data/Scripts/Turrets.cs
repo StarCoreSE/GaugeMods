@@ -13,17 +13,17 @@ using Sandbox.Game.WorldEnvironment.Modules;
 
 namespace Gauge.ManualTurret
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeGatlingTurret), false)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeGatlingTurret), true)]
     public class BulletTurret : Turrets
     {
     }
 
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_InteriorTurret), false)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_InteriorTurret), true)]
     public class InteriorTurret : Turrets
     {
     }
 
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeMissileTurret), false)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeMissileTurret), true)]
     public class MissileTurret : Turrets
     {
     }
