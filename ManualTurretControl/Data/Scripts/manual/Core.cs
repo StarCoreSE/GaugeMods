@@ -33,6 +33,8 @@ namespace Gauge.ManualTurretControl
         private bool isBroadcasting = false;
         private int broadcastDelay = 0;
 
+        VRageMath.Color deniedColor = new VRageMath.Color(255, 0, 0, 50);
+
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
             environment = MyDefinitionManager.Static.EnvironmentDefinition;
@@ -43,7 +45,7 @@ namespace Gauge.ManualTurretControl
             MyLog.Default.Info($"[MTC] attempting to initialize");
             List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
             MyAPIGateway.TerminalControls.GetActions<IMyLargeTurretBase>(out actions);
-
+            
             List<IMyTerminalControl> controls = new List<IMyTerminalControl>();
             MyAPIGateway.TerminalControls.GetControls<IMyLargeTurretBase>(out controls);
 
@@ -115,38 +117,69 @@ namespace Gauge.ManualTurretControl
                 return;
             }
 
+
+
             IMyLargeTurretBase t = b.FatBlock as IMyLargeTurretBase;
+
+            MyRelationsBetweenPlayerAndBlock relation = t.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
+            bool friendly = isFriendly(relation);
 
             if (highlightName == string.Empty)
             {
                 MyLog.Default.Info($"[MTC] Highlighting turret");
                 highlightName = t.Name;
-                Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, (int)environment.ContourHighlightThickness, 300, environment.ContourHighlightColor, playerId: MyAPIGateway.Session.Player.IdentityId);
+                if (friendly)
+                {
+                    Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, (int)environment.ContourHighlightThickness, 300, environment.ContourHighlightColor, playerId: MyAPIGateway.Session.Player.IdentityId);
+                }
+                else 
+                {
+                    Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, (int)environment.ContourHighlightThickness, 300, deniedColor, playerId: MyAPIGateway.Session.Player.IdentityId);
+                }
             }
             else if (t.Name != highlightName)
             {
                 MyLog.Default.Info($"[MTC] Canceling Highlighted turret");
-                Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, -1, 300, environment.ContourHighlightColor, playerId: MyAPIGateway.Session.Player.IdentityId);
+                if (friendly)
+                {
+                    Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, -1, 300, environment.ContourHighlightColor, playerId: MyAPIGateway.Session.Player.IdentityId);
+                }
+                else
+                {
+
+
+                    Sandbox.Game.MyVisualScriptLogicProvider.SetHighlightLocal(highlightName, -1, 300, deniedColor, playerId: MyAPIGateway.Session.Player.IdentityId);
+                }
+
                 highlightName = string.Empty;
             }
 
-            MyAPIGateway.Utilities.ShowNotification("Press F or T", 1, "Yellow");
-
-            if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) || MyAPIGateway.Input.IsNewKeyPressed(MyKeys.T))
+            if (friendly) 
             {
-                MyLog.Default.Info($"[MTC] Interaction pressed");
-                StupidControllableEntity controller = PlayerConrollerEntity();
-                isBroadcasting = controller.EnabledBroadcasting;
+                MyAPIGateway.Utilities.ShowNotification("Press F or T", 1, "White");
 
-                if (!isBroadcasting)
+                if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) || MyAPIGateway.Input.IsNewKeyPressed(MyKeys.T))
                 {
-                    MyLog.Default.Info($"[MTC] turn on broadcasting");
-                    controller.SwitchBroadcasting();
-                    turret = t;
-                }
+                    MyLog.Default.Info($"[MTC] Interaction pressed");
+                    StupidControllableEntity controller = PlayerConrollerEntity();
+                    isBroadcasting = controller.EnabledBroadcasting;
 
-                EnterTurret(t);
+                    if (!isBroadcasting)
+                    {
+                        MyLog.Default.Info($"[MTC] turn on broadcasting");
+                        controller.SwitchBroadcasting();
+                        turret = t;
+                    }
+
+                    EnterTurret(t);
+                }
             }
+
+        }
+
+        public bool isFriendly(MyRelationsBetweenPlayerAndBlock r) 
+        {
+            return !(r == MyRelationsBetweenPlayerAndBlock.Enemies || r == MyRelationsBetweenPlayerAndBlock.Neutral);
         }
 
         public void EnterTurret(IMyLargeTurretBase t)
