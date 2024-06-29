@@ -37,7 +37,7 @@ namespace Gauge.ManualTurret
 
         private IMyLargeTurretBase turret;
 
-        private int tick = 0;
+        private int broadcastDelay = 0;
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
@@ -81,12 +81,17 @@ namespace Gauge.ManualTurret
                 MyAPIGateway.Session.Player?.Character == null) return;
 
 
-            tick++;
-            if (turret != null && tick >= 11)
+            // handle
+            if (turret != null)
             {
-                MyLog.Default.Info($"[MTC] entering turret after waiting for broadcasting to be turned on");
-                EnterTurret(turret);
-                turret = null;
+                broadcastDelay++;
+                if (broadcastDelay >= 11)
+                {
+                    MyLog.Default.Info($"[MTC] entering turret after waiting for broadcasting to be turned on");
+                    EnterTurret(turret);
+                    turret = null;
+                    broadcastDelay = 0;
+                }
             }
 
             MatrixD playerMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
@@ -109,6 +114,7 @@ namespace Gauge.ManualTurret
 
             Vector3I pos = grid.WorldToGridInteger(hit.Position + playerMatrix.Forward * 0.1);
             IMySlimBlock b = grid.GetCubeBlock(pos);
+
 
             if (b == null || b.FatBlock == null || !(b.FatBlock is IMyLargeTurretBase))
             {
@@ -142,7 +148,6 @@ namespace Gauge.ManualTurret
                     MyLog.Default.Info($"[MTC] turn on broadcasting");
                     controller.SwitchBroadcasting();
                     turret = t;
-                    tick = 0;
                 }
 
                 EnterTurret(t);
