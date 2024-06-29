@@ -23,63 +23,22 @@ namespace Gauge.ManualTurret
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class Core : MySessionComponentBase
     {
-
         private string highlightName = string.Empty;
         private MyEnvironmentDefinition environment;
 
-        //private bool shouldInitialize = false;
-        private bool initialized = false;
-
-        Action<IMyTerminalBlock> action;
-
-        private bool isBroadcasting = false;
+        public static bool initialized = false;
+        private static Action<IMyTerminalBlock> action;
 
         private IMyLargeTurretBase turret;
-
+        private bool isBroadcasting = false;
         private int broadcastDelay = 0;
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
             environment = MyDefinitionManager.Static.EnvironmentDefinition;
-
-            MyAPIGateway.Entities.OnEntityAdd += OnEntityAdded;
         }
 
-        private void OnEntityAdded(VRage.ModAPI.IMyEntity entity)
-        {
-            if (initialized) 
-            {
-                MyLog.Default.Info($"[MTC] unregistering entity {entity.DisplayName}");
-                MyAPIGateway.Entities.OnEntityAdd -= OnEntityAdded;
-                return;
-            }
-
-
-            if (entity is IMyCubeGrid) 
-            {
-                MyLog.Default.Info($"[MTC] registering block added {entity.DisplayName}");
-                (entity as IMyCubeGrid).OnBlockAdded += OnBlockAdded;
-            }
-        }
-
-        private void OnBlockAdded(IMySlimBlock slim)
-        {
-            if (initialized)
-            {
-                MyLog.Default.Info($"[MTC] unregistering block added");
-                slim.CubeGrid.OnBlockAdded -= OnBlockAdded;
-                return;
-            }
-
-            if (slim.FatBlock != null && slim.FatBlock is IMyLargeTurretBase) 
-            {
-                MyLog.Default.Info($"[MTC] found turret base");
-                Initialize();
-                //shouldInitialize = true;
-            }
-        }
-
-        private void Initialize()
+        public static void Initialize()
         {
             MyLog.Default.Info($"[MTC] attempting to initialize");
             List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
@@ -88,13 +47,13 @@ namespace Gauge.ManualTurret
             List<IMyTerminalControl> controls = new List<IMyTerminalControl>();
             MyAPIGateway.TerminalControls.GetControls<IMyLargeTurretBase>(out controls);
 
-            foreach (IMyTerminalAction action in actions)
+            foreach (IMyTerminalAction a in actions)
             {
-                if (action.Id == "Control")
+                if (a.Id == "Control")
                 {
                     MyLog.Default.Info($"[MTC] found the initial action");
-                    action.Enabled = bl => false;
-                    this.action = action.Action;
+                    a.Enabled = bl => false;
+                    action = a.Action;
                 }
             }
 
@@ -114,11 +73,6 @@ namespace Gauge.ManualTurret
         {
             if (MyAPIGateway.Utilities.IsDedicated ||
                 MyAPIGateway.Session.Player?.Character == null) return;
-
-            //if (!initialized && shouldInitialize) 
-            //{
-            //    Initialize();
-            //}
 
             // this handles the delay required before the suites broadcasting turns on
             if (turret != null)
