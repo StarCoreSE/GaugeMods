@@ -10,12 +10,10 @@ using System.Text;
 using System.Threading.Tasks;
 using VRage;
 using VRage.Game;
-using VRage.Game.ModAPI.Interfaces;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRageMath;
 using VRage.Input;
-using Sandbox.Game.Entities;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
 using StupidControllableEntity = Sandbox.Game.Entities.IMyControllableEntity;
@@ -29,6 +27,7 @@ namespace Gauge.ManualTurret
         private string highlightName = string.Empty;
         private MyEnvironmentDefinition environment;
 
+        //private bool shouldInitialize = false;
         private bool initialized = false;
 
         Action<IMyTerminalBlock> action;
@@ -42,9 +41,45 @@ namespace Gauge.ManualTurret
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
             environment = MyDefinitionManager.Static.EnvironmentDefinition;
+
+            MyAPIGateway.Entities.OnEntityAdd += OnEntityAdded;
         }
 
-        private void Initialize() 
+        private void OnEntityAdded(VRage.ModAPI.IMyEntity entity)
+        {
+            if (initialized) 
+            {
+                MyLog.Default.Info($"[MTC] unregistering entity {entity.DisplayName}");
+                MyAPIGateway.Entities.OnEntityAdd -= OnEntityAdded;
+                return;
+            }
+
+
+            if (entity is IMyCubeGrid) 
+            {
+                MyLog.Default.Info($"[MTC] registering block added {entity.DisplayName}");
+                (entity as IMyCubeGrid).OnBlockAdded += OnBlockAdded;
+            }
+        }
+
+        private void OnBlockAdded(IMySlimBlock slim)
+        {
+            if (initialized)
+            {
+                MyLog.Default.Info($"[MTC] unregistering block added");
+                slim.CubeGrid.OnBlockAdded -= OnBlockAdded;
+                return;
+            }
+
+            if (slim.FatBlock != null && slim.FatBlock is IMyLargeTurretBase) 
+            {
+                MyLog.Default.Info($"[MTC] found turret base");
+                Initialize();
+                //shouldInitialize = true;
+            }
+        }
+
+        private void Initialize()
         {
             MyLog.Default.Info($"[MTC] attempting to initialize");
             List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
@@ -80,8 +115,12 @@ namespace Gauge.ManualTurret
             if (MyAPIGateway.Utilities.IsDedicated ||
                 MyAPIGateway.Session.Player?.Character == null) return;
 
+            //if (!initialized && shouldInitialize) 
+            //{
+            //    Initialize();
+            //}
 
-            // handle
+            // this handles the delay required before the suites broadcasting turns on
             if (turret != null)
             {
                 broadcastDelay++;
