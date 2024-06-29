@@ -130,7 +130,9 @@ namespace Gauge.ManualTurretControl
                 highlightName = string.Empty;
             }
 
-            if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F))
+            MyAPIGateway.Utilities.ShowNotification("Press F or T", 1, "Yellow");
+
+            if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) || MyAPIGateway.Input.IsNewKeyPressed(MyKeys.T))
             {
                 MyLog.Default.Info($"[MTC] Interaction pressed");
                 StupidControllableEntity controller = PlayerConrollerEntity();
