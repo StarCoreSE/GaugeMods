@@ -18,7 +18,7 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Utils;
 using StupidControllableEntity = Sandbox.Game.Entities.IMyControllableEntity;
 
-namespace Gauge.ManualTurret
+namespace Gauge.ManualTurretControl
 {
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class Core : MySessionComponentBase
@@ -166,7 +166,7 @@ namespace Gauge.ManualTurret
 
         public StupidControllableEntity PlayerConrollerEntity()
         {
-            return ((StupidControllableEntity)MyAPIGateway.Session.Player.Controller.ControlledEntity);
+            return (StupidControllableEntity)MyAPIGateway.Session.Player.Controller.ControlledEntity;
         }
 
         public void CancelHighlight()
