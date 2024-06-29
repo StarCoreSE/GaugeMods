@@ -121,8 +121,8 @@ namespace Gauge.ManualTurretControl
 
             IMyLargeTurretBase t = b.FatBlock as IMyLargeTurretBase;
 
-            MyRelationsBetweenPlayerAndBlock relation = t.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
-            bool friendly = isFriendly(relation);
+
+            bool friendly = isFriendlyAccessible(IMyTerminalBlock block);
 
             if (highlightName == string.Empty)
             {
@@ -177,8 +177,10 @@ namespace Gauge.ManualTurretControl
 
         }
 
-        public bool isFriendly(MyRelationsBetweenPlayerAndBlock r) 
+        public bool isFriendlyAccessible(IMyTerminalBlock t) 
         {
+            MyRelationsBetweenPlayerAndBlock r = t.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
+
             return !(r == MyRelationsBetweenPlayerAndBlock.Enemies || r == MyRelationsBetweenPlayerAndBlock.Neutral);
         }
 
