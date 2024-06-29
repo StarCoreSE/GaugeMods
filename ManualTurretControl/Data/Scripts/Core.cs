@@ -132,7 +132,7 @@ namespace Gauge.ManualTurret
 
             if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F))
             {
-                MyLog.Default.Info($"[MTC] Interaction pressed. has_control_action:");
+                MyLog.Default.Info($"[MTC] Interaction pressed");
                 StupidControllableEntity controller = PlayerConrollerEntity();
                 isBroadcasting = controller.EnabledBroadcasting;
 

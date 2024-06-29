@@ -10,20 +10,21 @@ using VRage.Game.Components;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using Sandbox.Game.WorldEnvironment.Modules;
+using VRage.Utils;
 
 namespace Gauge.ManualTurret
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeGatlingTurret), true)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeGatlingTurret), false)]
     public class BulletTurret : Turrets
     {
     }
 
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_InteriorTurret), true)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_InteriorTurret), false)]
     public class InteriorTurret : Turrets
     {
     }
 
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeMissileTurret), true)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeMissileTurret), false)]
     public class MissileTurret : Turrets
     {
     }
@@ -34,6 +35,7 @@ namespace Gauge.ManualTurret
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
+            MyLog.Default.Info($"[MTC] turret being initialized. CoreInit:{Core.initialized}");
             if (Core.initialized)
             {
                 NeedsUpdate = MyEntityUpdateEnum.NONE;
@@ -46,6 +48,7 @@ namespace Gauge.ManualTurret
 
         public override void UpdateOnceBeforeFrame()
         {
+            MyLog.Default.Info($"[MTC] turret update before frame. CoreInit:{Core.initialized}");
             if (Core.initialized) 
             {
                 NeedsUpdate = MyEntityUpdateEnum.NONE;
