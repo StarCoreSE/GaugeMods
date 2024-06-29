@@ -120,9 +120,7 @@ namespace Gauge.ManualTurretControl
 
 
             IMyLargeTurretBase t = b.FatBlock as IMyLargeTurretBase;
-
-
-            bool friendly = isFriendlyAccessible(IMyTerminalBlock block);
+            bool friendly = isFriendlyAccessible(t);
 
             if (highlightName == string.Empty)
             {
