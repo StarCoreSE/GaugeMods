@@ -62,7 +62,7 @@ namespace GrappleHook
             }
             else 
             {
-                settings = new NetSync<Settings>(this, TransferType.ServerToClient, new Settings(), true, false);
+                settings = new NetSync<Settings>(this, TransferType.ServerToClient, Settings.GetDefaults(), true, false);
             }
 
             Shooting = new NetSync<ShootData>(this, TransferType.Both, new ShootData());
