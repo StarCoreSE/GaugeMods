@@ -107,19 +107,20 @@ namespace GrappleHook
             if (MyAPIGateway.Utilities.IsDedicated) return;
 
             Vector4 color = VRageMath.Color.DarkGray;
+            MyStringId texture = MyStringId.GetOrCompute("cable");
 
             Vector3D position;
             if (!GrappleAnchered)
             {
                 position = GrapplePosition;
-                MySimpleObjectDraw.DrawLine(gun.GetMuzzlePosition(), position, MyStringId.GetOrCompute("cable"), ref color, 0.05f, BlendTypeEnum.Standard);
+                MySimpleObjectDraw.DrawLine(gun.GetMuzzlePosition(), position, texture, ref color, 0.05f, BlendTypeEnum.Standard);
             }
             else 
             {
                 position = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
 
-
-
+                // add slack calculations
+                MySimpleObjectDraw.DrawLine(gun.GetMuzzlePosition(), position, texture, ref color, 0.05f, BlendTypeEnum.Standard);
             }
         }
 
