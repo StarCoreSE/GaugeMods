@@ -1,3 +1,4 @@
+using BlinkDrive;
 using ProjectilesImproved;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
@@ -8,6 +9,7 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 using SENetworkAPI;
 using System;
 using System.Collections.Generic;
+using System.Reflection.Emit;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
@@ -31,7 +33,7 @@ namespace GrappleHook
         private IMyLargeTurretBase Turret;
         private IMyGunObject<MyGunBase> gun;
 
-        public enum States { idle, active, attached }
+        public enum States { idle, reloading, active, attached }
         private States State = States.idle;
 
         private Vector3 localGrapplePosition = Vector3.Zero;
@@ -42,17 +44,24 @@ namespace GrappleHook
         private NetSync<ShootData> Shooting;
         private NetSync<AttachData> Attachment;
         private NetSync<bool> ResetIndicator;
+        private NetSync<Settings> settings;
+
+        private float reloadTime = 0;
 
         private Vector3D GrapplePosition = Vector3D.Zero;
         private Vector3 GrappleDirection = Vector3.Zero;
 
-
-        private double k = 200000000;
-        private float maxLength = 300;
-        private float GrappleSpeed = 1.5f;
+        private bool terminalShootOn = false;
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
+            if (MyAPIGateway.Session.IsServer)
+            {
+                Settings.Init();
+            }
+
+            settings = new NetSync<Settings>(this, TransferType.ServerToClient, Settings.Instance, true, false);
+
             Shooting = new NetSync<ShootData>(this, TransferType.Both, new ShootData());
             Shooting.ValueChangedByNetwork += ShotFired;
 
@@ -62,7 +71,7 @@ namespace GrappleHook
             ResetIndicator = new NetSync<bool>(this, TransferType.ServerToClient);
             ResetIndicator.ValueChanged += ResetCall;
 
-            GrappleLength = new NetSync<double>(this, 0);
+            GrappleLength = new NetSync<double>(this, TransferType.Both, 0);
 
             gun = Entity as IMyGunObject<MyGunBase>;
             Turret = Entity as IMyLargeTurretBase;
@@ -94,6 +103,7 @@ namespace GrappleHook
             GrapplePosition = data2.position;
             GrappleDirection = data2.direction;
             State = States.active;
+
         }
 
         public override void UpdateOnceBeforeFrame()
@@ -117,7 +127,10 @@ namespace GrappleHook
             switch (State)
             {
                 case States.idle:
-                    if (Turret.IsShooting) Shoot();
+                    Shoot();
+                    break;
+                case States.reloading:
+                    Reload();
                     break;
                 case States.active:
                     UpdateProjectile();
@@ -127,7 +140,6 @@ namespace GrappleHook
                     break;
             }
         }
-
 
         public override void UpdateAfterSimulation()
         {
@@ -142,7 +154,7 @@ namespace GrappleHook
             double currentLength = (direction).Length();
             direction.Normalize();
 
-            double force = k * Math.Max(0, currentLength - GrappleLength.Value);
+            double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value);
 
             Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null);
             connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null);
@@ -151,7 +163,7 @@ namespace GrappleHook
         private void UpdateProjectile()
         {
             Tools.Debug($"Projectile In Flight {(gun.GetMuzzlePosition() - GrapplePosition).Length()}");
-            Vector3 delta = GrappleDirection * GrappleSpeed;
+            Vector3 delta = GrappleDirection * settings.Value.GrappleSpeed;
 
             IHitInfo hit = null;
             MyAPIGateway.Physics.CastRay(GrapplePosition, GrapplePosition + delta, out hit);
@@ -160,14 +172,14 @@ namespace GrappleHook
                 connectedEntity = hit.HitEntity;
                 connectedEntity.OnMarkForClose += attachedEntityClosed;
 
-                if (connectedEntity is IMyCubeGrid) 
+                if (connectedEntity is IMyCubeGrid)
                 {
                     MyCubeGrid grid = (connectedEntity as MyCubeGrid);
                     grid.OnBlockRemoved += Grid_OnBlockRemoved;
 
                     Vector3I pos = grid.WorldToGridInteger(hit.Position + GrappleDirection * 0.1f);
                     IMySlimBlock block = grid.GetCubeBlock(pos);
-                    if (block != null) 
+                    if (block != null)
                     {
                         localGrapplePositionI = block.Position;
                     }
@@ -177,7 +189,7 @@ namespace GrappleHook
                 GrappleLength.Value = (GrapplePosition - gun.GetMuzzlePosition()).Length() + 1f;
                 State = States.attached;
 
-                if (MyAPIGateway.Session.IsServer) 
+                if (MyAPIGateway.Session.IsServer)
                 {
                     AttachData data = new AttachData();
                     data.entityId = hit.HitEntity.EntityId;
@@ -194,7 +206,7 @@ namespace GrappleHook
             GrapplePosition += delta;
 
             // if grapple length goes beyond max length
-            if ((gun.GetMuzzlePosition() - GrapplePosition).LengthSquared() > maxLength * maxLength)
+            if ((gun.GetMuzzlePosition() - GrapplePosition).LengthSquared() > settings.Value.MaxRopeLength * settings.Value.MaxRopeLength)
             {
                 ResetIndicator.Value = !ResetIndicator.Value;
             }
@@ -202,7 +214,7 @@ namespace GrappleHook
 
         private void Grid_OnBlockRemoved(IMySlimBlock block)
         {
-            if (block.Position == localGrapplePositionI) 
+            if (block.Position == localGrapplePositionI)
             {
                 ResetIndicator.Value = !ResetIndicator.Value;
             }
@@ -213,22 +225,35 @@ namespace GrappleHook
             ResetIndicator.Value = !ResetIndicator.Value;
         }
 
-        private void Shoot()
+        private void Shoot(bool terminalShoot = false)
         {
-            Tools.Debug("Shooting!");
-            MatrixD muzzleMatrix = gun.GunBase.GetMuzzleWorldMatrix();
-            Vector3 direction = muzzleMatrix.Forward;
-            Vector3D origin = muzzleMatrix.Translation;
+            if (State == States.idle && (Turret.IsShooting || terminalShoot || terminalShootOn) && reloadTime <= 0)
+            {
+                Tools.Debug("Shooting!");
+                MatrixD muzzleMatrix = gun.GunBase.GetMuzzleWorldMatrix();
+                Vector3 direction = muzzleMatrix.Forward;
+                Vector3D origin = muzzleMatrix.Translation;
 
-            GrappleDirection = direction;
-            GrapplePosition = origin;
-            State = States.active;
+                GrappleDirection = direction;
+                GrapplePosition = origin;
+                State = States.active;
 
-            ShootData shoot = new ShootData();
-            shoot.direction = GrappleDirection;
-            shoot.position = GrapplePosition;
+                ShootData shoot = new ShootData();
+                shoot.direction = GrappleDirection;
+                shoot.position = GrapplePosition;
 
-            Shooting.Value = shoot;
+                reloadTime = (float)gun.GunBase.ReloadTime;
+
+                Shooting.Value = shoot;
+            }
+        }
+
+        private void Reload()
+        {
+            if (reloadTime > 0)
+                reloadTime -= 16.666667f;
+            else
+                State = States.idle;
         }
 
         private void Reset()
@@ -239,10 +264,10 @@ namespace GrappleHook
 
             connectedEntity = null;
             localGrapplePosition = Vector3D.Zero;
-            State = States.idle;
+            State = States.reloading;
         }
 
-        private void Draw() 
+        private void Draw()
         {
             if (MyAPIGateway.Utilities.IsDedicated) return;
 
@@ -263,7 +288,7 @@ namespace GrappleHook
             if (State == States.active)
             {
                 position = GrapplePosition;
-                Vector3D[] points = ComputeCurvePoints(gunPo, position, sagDirection, Vector3D.Distance(gunPo, position)*1.005f);
+                Vector3D[] points = ComputeCurvePoints(gunPo, position, sagDirection, Vector3D.Distance(gunPo, position) * 1.005f);
 
                 for (int i = 0; i < points.Length - 1; i++)
                 {
@@ -392,26 +417,11 @@ namespace GrappleHook
             foreach (IMyTerminalAction a in actions)
             {
                 oldAction = a.Action;
+                oldWriter = a.Writer;
 
                 if (bannedActions.Contains(a.Id))
                 {
                     DisableAction(a);
-                }
-                else if (a.Id == "Shoot") 
-                {
-                    a.Action = (block) =>
-                    {
-                        WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
-                        if (layer != null)
-                        {
-
-                            layer.Shoot();
-                        }
-                        else 
-                        {
-                            oldAction?.Invoke(block);
-                        }
-                    };
                 }
                 else if (a.Id == "Shoot")
                 {
@@ -420,7 +430,121 @@ namespace GrappleHook
                         WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
                         if (layer != null)
                         {
-                            layer.Shoot();
+                            layer.terminalShootOn = !layer.terminalShootOn;
+
+                            if (layer.terminalShootOn)
+                            {
+                                layer.Shoot(true);
+                            }
+                        }
+                        else
+                        {
+                            oldAction?.Invoke(block);
+                        }
+                    };
+
+                    a.Writer = (block, text) =>
+                    {
+                        WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (logic != null)
+                        {
+                            if (logic.terminalShootOn)
+                            {
+                                text.Append("On");
+                            }
+                            else
+                            {
+                                text.Append("Off");
+                            }
+                        }
+                        else
+                        {
+                            oldWriter?.Invoke(block, text);
+                        }
+                    };
+                }
+                else if (a.Id == "Shoot_On")
+                {
+                    a.Action = (block) =>
+                    {
+                        WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (layer != null)
+                        {
+                            layer.terminalShootOn = true;
+                            layer.Shoot(true);
+                        }
+                        else
+                        {
+                            oldAction?.Invoke(block);
+                        }
+                    };
+
+                    a.Writer = (block, text) =>
+                    {
+                        WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (logic != null)
+                        {
+                            if (logic.terminalShootOn)
+                            {
+                                text.Append("On");
+                            }
+                            else
+                            {
+                                text.Append("Off");
+                            }
+                        }
+                        else
+                        {
+                            oldWriter?.Invoke(block, text);
+                        }
+                    };
+
+                }
+                else if (a.Id == "Shoot_Off")
+                {
+                    a.Action = (block) =>
+                    {
+                        WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (layer != null)
+                        {
+                            layer.terminalShootOn = false;
+                        }
+                        else
+                        {
+                            oldAction?.Invoke(block);
+                        }
+                    };
+
+                    a.Writer = (block, text) =>
+                    {
+                        WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (logic != null)
+                        {
+                            if (logic.terminalShootOn)
+                            {
+                                text.Append("On");
+                            }
+                            else
+                            {
+                                text.Append("Off");
+                            }
+                        }
+                        else
+                        {
+                            oldWriter?.Invoke(block, text);
+                        }
+                    };
+                }
+                else if (a.Id == "ShootOnce")
+                {
+                    oldAction = a.Action;
+                    a.Action = (block) =>
+                    {
+                        WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (layer != null)
+                        {
+
+                            layer.Shoot(true);
                         }
                         else
                         {
