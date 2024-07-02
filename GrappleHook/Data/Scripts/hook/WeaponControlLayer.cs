@@ -249,25 +249,34 @@ namespace GrappleHook
             Vector4 color = VRageMath.Color.DarkGray;
             MyStringId texture = MyStringId.GetOrCompute("cable");
 
+            ExternalForceData planetForces = WorldPlanets.GetExternalForces(Turret.WorldMatrix.Translation);
+            Vector3D sagDirection = planetForces.Gravity;
+
+            if (sagDirection == Vector3D.Zero)
+            {
+                sagDirection = Turret.WorldMatrix.Down;
+            }
+
+            Vector3D gunPo = gun.GetMuzzlePosition();
+
             Vector3D position;
             if (State == States.active)
             {
-                //Tools.Debug($"not attached {(gun.GetMuzzlePosition()-GrapplePosition).Length()}");
                 position = GrapplePosition;
-                MySimpleObjectDraw.DrawLine(gun.GetMuzzlePosition(), position, texture, ref color, 0.15f, BlendTypeEnum.Standard);
+                Vector3D[] points = ComputeCurvePoints(gunPo, position, sagDirection, Vector3D.Distance(gunPo, position)*1.005f);
+
+                for (int i = 0; i < points.Length - 1; i++)
+                {
+                    Vector3D start = points[i];
+                    Vector3D end = points[i + 1];
+
+                    MySimpleObjectDraw.DrawLine(start, end, texture, ref color, 0.15f, BlendTypeEnum.Standard);
+                }
             }
             else if (State == States.attached)
             {
                 position = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
-                ExternalForceData planetForces = WorldPlanets.GetExternalForces(Turret.WorldMatrix.Translation);
-                Vector3D sagDirection = planetForces.Gravity;
-
-                if (sagDirection == Vector3D.Zero)
-                {
-                    sagDirection = Turret.WorldMatrix.Down;
-                }
-
-                Vector3D[] points = ComputeCurvePoints(gun.GetMuzzlePosition(), position, sagDirection, GrappleLength.Value);
+                Vector3D[] points = ComputeCurvePoints(gunPo, position, sagDirection, GrappleLength.Value);
 
                 for (int i = 0; i < points.Length - 1; i++)
                 {
