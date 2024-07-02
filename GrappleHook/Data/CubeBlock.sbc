@@ -4,28 +4,28 @@
 		<Definition xsi:type="MyObjectBuilder_LargeTurretBaseDefinition">
 			<Id>
 				<TypeId>LargeMissileTurret</TypeId>
-				<SubtypeId>LargeCalibreTurret</SubtypeId>
+				<SubtypeId>GrappleHookTurret</SubtypeId>
 			</Id>
-			<DisplayName>DisplayName_Block_LargeCalibreTurret</DisplayName>
-			<Icon>Textures\GUI\Icons\Cubes\HeavyCalibreTurret.dds</Icon>
-			<Description>Description_LargeCalibreTurret</Description>
+			<DisplayName>Grapple Hook Turret</DisplayName>
+			<Icon>Textures\GUI\Icons\Cubes\HarpoonTurret.dds</Icon>
+			<Description>Produces a nope rope that will yeet your enemies and sometimes yourself.</Description>
 			<CubeSize>Large</CubeSize>
 			<GuiVisible>false</GuiVisible>
 			<PlaceDecals>false</PlaceDecals>
 			<BlockTopology>TriangleMesh</BlockTopology>
-			<Size x="3" y="3" z="3" />
+			<Size x="1" y="1" z="1" />
 			<ModelOffset x="0" y="0" z="0" />
-			<Model>Models\Cubes\Large\HeavyCalibreTurret.mwm</Model>
+			<Model>Models\Cubes\Large\HarpoonTurret.mwm</Model>
 			<UseModelIntersection>true</UseModelIntersection>
 			<Components>
 				<Component Subtype="SteelPlate" Count="150" />
-				<Component Subtype="Construction" Count="300" />
+				<Component Subtype="Construction" Count="100" />
 				<Component Subtype="MetalGrid" Count="50" />
 				<Component Subtype="LargeTube" Count="40" />
 				<Component Subtype="Motor" Count="30" />
 				<Component Subtype="Computer" Count="20" />
-				<Component Subtype="Construction" Count="100" />
-				<Component Subtype="SteelPlate" Count="300" />
+				<Component Subtype="Construction" Count="200" />
+				<Component Subtype="SteelPlate" Count="400" />
 			</Components>
 			<CriticalComponent Subtype="Computer" Index="0" />
 			<MountPoints>
@@ -34,9 +34,9 @@
 				<MountPoint Side="Bottom" StartX="1" StartY="2" EndX="2" EndY="2.5" />
 			</MountPoints>
 			<BuildProgressModels>
-				<Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\HeavyCalibreTurretConstruction_1.mwm" />
-				<Model BuildPercentUpperBound="0.66" File="Models\Cubes\Large\HeavyCalibreTurretConstruction_2.mwm" />
-				<Model BuildPercentUpperBound="1.00" File="Models\Cubes\Large\HeavyCalibreTurretConstruction_3.mwm" />
+				<Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\HarpoonTurret_BS1.mwm" />
+				<Model BuildPercentUpperBound="0.66" File="Models\Cubes\Large\HarpoonTurret_BS2.mwm" />
+				<Model BuildPercentUpperBound="1.00" File="Models\Cubes\Large\HarpoonTurret_BS3.mwm" />
 			</BuildProgressModels>
 			<VoxelPlacement>
 				<!--Possible settings Both,InVoxel,OutsideVoxel,Volumetric. If volumetric set than MaxAllowed and MinAllowed will be used.-->
@@ -57,7 +57,7 @@
 			<EdgeType>Light</EdgeType>
 			<BuildTimeSeconds>100</BuildTimeSeconds>
 			<OverlayTexture>Textures\GUI\Screens\turret_overlay.dds</OverlayTexture>
-			<WeaponDefinitionId Subtype="LargeCalibreTurret" />
+			<WeaponDefinitionId Subtype="GrappleHookTurret" />
 			<EnabledTargetingOptions>LargeShips Stations Enemies</EnabledTargetingOptions>
 			<HiddenTargetingOptions>Players Asteroids Missiles Friends</HiddenTargetingOptions>
 			<InventoryMaxVolume>0.6</InventoryMaxVolume>
@@ -65,14 +65,14 @@
 			<DamagedSound>ParticleWeapExpl</DamagedSound>
 			<ResourceSinkGroup>Defense</ResourceSinkGroup>
 			<MinElevationDegrees>-15</MinElevationDegrees>
-			<MaxElevationDegrees>60</MaxElevationDegrees>
+			<MaxElevationDegrees>85</MaxElevationDegrees>
 			<MinAzimuthDegrees>-180</MinAzimuthDegrees>
 			<MaxAzimuthDegrees>180</MaxAzimuthDegrees>
 			<AiEnabled>false</AiEnabled>
 			<IdleRotation>false</IdleRotation>
 			<MaxRangeMeters>0</MaxRangeMeters>
-			<RotationSpeed>0.0002</RotationSpeed>
-			<ElevationSpeed>0.0002 </ElevationSpeed>
+			<RotationSpeed>0.0005</RotationSpeed>
+			<ElevationSpeed>0.0005 </ElevationSpeed>
 			<EmissiveColorPreset>Default</EmissiveColorPreset>
 			<MinFov>0.1</MinFov>
 			<MaxFov>1.04719755</MaxFov>

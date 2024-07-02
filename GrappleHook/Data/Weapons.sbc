@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<Weapons>
+		<Weapon>
+			<Id>
+				<TypeId>WeaponDefinition</TypeId>
+				<SubtypeId>GrappleHookTurret</SubtypeId>
+			</Id>
+			<MissileAmmoData RateOfFire="100" ShootSoundName="WepLargeCalibreShot" FlightSoundName="HeavyShellFlightSound" ShotsInBurst="1" />
+			<DeviateShotAngle>0.5</DeviateShotAngle>
+			<DeviateShotAngleAiming>0.5</DeviateShotAngleAiming>
+			<MinimumTimeBetweenIdleRotationsMs>15000</MinimumTimeBetweenIdleRotationsMs>
+			<MaximumTimeBetweenIdleRotationsMs>20000</MaximumTimeBetweenIdleRotationsMs>
+			<AmmoMagazines>
+				<AmmoMagazine Subtype="GrappleHookMagazine" />
+			</AmmoMagazines>
+			<ReloadTime>20000</ReloadTime>
+			<Effects>
+			</Effects>
+		</Weapon>
+	</Weapons>
+</Definitions>

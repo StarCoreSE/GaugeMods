@@ -21,7 +21,7 @@ using static VRageRender.MyBillboard;
 namespace GrappleHook
 {
 
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeMissileTurret), true, "LargeCalibreTurret")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeMissileTurret), true, "GrappleHookTurret")]
     public class WeaponControlLayer : MyGameLogicComponent
     {
         public static bool Hijack = false;
@@ -37,23 +37,32 @@ namespace GrappleHook
         private Vector3 localGrapplePosition = Vector3.Zero;
         private Vector3I localGrapplePositionI = Vector3I.Zero;
         private IMyEntity connectedEntity = null;
-        private double GrappleLength;
+        private NetSync<double> GrappleLength;
 
         private NetSync<ShootData> Shooting;
         private NetSync<AttachData> Attachment;
+        private NetSync<bool> ResetIndicator;
 
         private Vector3D GrapplePosition = Vector3D.Zero;
         private Vector3 GrappleDirection = Vector3.Zero;
-        private float GrappleSpeed = 1f;
+
 
         private double k = 20000000;
-
         private float maxLength = 300;
+        private float GrappleSpeed = 1.5f;
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            Shooting = new NetSync<ShootData>(this, TransferType.ServerToClient, new ShootData());
-            //Shooting.ValueChangedByNetwork += ShotFired;
+            Shooting = new NetSync<ShootData>(this, TransferType.Both, new ShootData());
+            Shooting.ValueChangedByNetwork += ShotFired;
+
+            Attachment = new NetSync<AttachData>(this, TransferType.ServerToClient, new AttachData());
+            Attachment.ValueChangedByNetwork += Attaching;
+
+            ResetIndicator = new NetSync<bool>(this, TransferType.ServerToClient);
+            ResetIndicator.ValueChanged += ResetCall;
+
+            GrappleLength = new NetSync<double>(this, 0);
 
             gun = Entity as IMyGunObject<MyGunBase>;
             Turret = Entity as IMyLargeTurretBase;
@@ -65,6 +74,19 @@ namespace GrappleHook
             {
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             }
+        }
+
+        private void ResetCall(bool arg1, bool arg2)
+        {
+            Reset();
+        }
+
+        private void Attaching(AttachData data1, AttachData data2, ulong arg3)
+        {
+            connectedEntity = MyAPIGateway.Entities.GetEntityById(data2.entityId);
+            localGrapplePosition = data2.localAttachmentPoint;
+            localGrapplePositionI = data2.localAttachmentPointI;
+            State = States.attached;
         }
 
         private void ShotFired(ShootData data1, ShootData data2, ulong steamId)
@@ -120,7 +142,7 @@ namespace GrappleHook
             double currentLength = (direction).Length();
             direction.Normalize();
 
-            double force = k * Math.Max(0, currentLength - GrappleLength);
+            double force = k * Math.Max(0, currentLength - GrappleLength.Value);
 
             Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null);
             connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null);
@@ -152,8 +174,18 @@ namespace GrappleHook
                 }
 
                 localGrapplePosition = Vector3D.Transform(hit.Position + GrappleDirection * 0.1f, MatrixD.Invert(connectedEntity.WorldMatrix));
-                GrappleLength = (GrapplePosition - gun.GetMuzzlePosition()).Length();
+                GrappleLength.Value = (GrapplePosition - gun.GetMuzzlePosition()).Length() + 1f;
                 State = States.attached;
+
+                if (MyAPIGateway.Session.IsServer) 
+                {
+                    AttachData data = new AttachData();
+                    data.entityId = hit.HitEntity.EntityId;
+                    data.localAttachmentPoint = localGrapplePosition;
+                    data.localAttachmentPointI = localGrapplePositionI;
+
+                    Attachment.Value = data;
+                }
 
                 Tools.Debug($"Hit entity: {hit.HitEntity.DisplayName}");
                 return;
@@ -164,7 +196,7 @@ namespace GrappleHook
             // if grapple length goes beyond max length
             if ((gun.GetMuzzlePosition() - GrapplePosition).LengthSquared() > maxLength * maxLength)
             {
-                Reset();
+                ResetIndicator.Value = !ResetIndicator.Value;
             }
         }
 
@@ -172,13 +204,13 @@ namespace GrappleHook
         {
             if (block.Position == localGrapplePositionI) 
             {
-                Reset();
+                ResetIndicator.Value = !ResetIndicator.Value;
             }
         }
 
         private void attachedEntityClosed(IMyEntity entity)
         {
-            Reset();
+            ResetIndicator.Value = !ResetIndicator.Value;
         }
 
         private void Shoot()
@@ -191,6 +223,12 @@ namespace GrappleHook
             GrappleDirection = direction;
             GrapplePosition = origin;
             State = States.active;
+
+            ShootData shoot = new ShootData();
+            shoot.direction = GrappleDirection;
+            shoot.position = GrapplePosition;
+
+            Shooting.Value = shoot;
         }
 
         private void Reset()
@@ -229,7 +267,7 @@ namespace GrappleHook
                     sagDirection = Turret.WorldMatrix.Down;
                 }
 
-                Vector3D[] points = ComputeCurvePoints(gun.GetMuzzlePosition(), position, sagDirection, GrappleLength);
+                Vector3D[] points = ComputeCurvePoints(gun.GetMuzzlePosition(), position, sagDirection, GrappleLength.Value);
 
                 for (int i = 0; i < points.Length - 1; i++)
                 {

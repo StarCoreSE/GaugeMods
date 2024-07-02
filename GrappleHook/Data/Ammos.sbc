@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Ammos>
+        <Ammo xsi:type="MyObjectBuilder_MissileAmmoDefinition">
+            <Id>
+                <TypeId>AmmoDefinition</TypeId>
+                <SubtypeId>GrappleHookAmmo</SubtypeId>
+            </Id>
+            <BasicProperties>
+                <DesiredSpeed>0</DesiredSpeed>
+                <SpeedVariance>0</SpeedVariance>
+                <MaxTrajectory>0</MaxTrajectory>
+                <IsExplosive>false</IsExplosive>
+                <BackkickForce>150000</BackkickForce>
+                <PhysicalMaterial>LargeShell</PhysicalMaterial>
+                <ExplosiveDamageMultiplier>0</ExplosiveDamageMultiplier>
+            </BasicProperties>
+            <MissileProperties>
+                <MissileMass>0</MissileMass>
+                <MissileExplosionRadius>0</MissileExplosionRadius>
+                <MissileModelName>Models\Weapons\LargeCalibreShell.mwm</MissileModelName>
+                <MissileAcceleration>0</MissileAcceleration>
+                <MissileInitialSpeed>0</MissileInitialSpeed>
+                <MissileSkipAcceleration>false</MissileSkipAcceleration>
+                <MissileExplosionDamage>0</MissileExplosionDamage>
+                <MissileHealthPool>1</MissileHealthPool>
+                <MissileTrailEffect>LargeCalibreGun_Tracer</MissileTrailEffect>
+                <MissileGravityEnabled>false</MissileGravityEnabled>
+                <MissileRicochetAngle>0</MissileRicochetAngle>
+                <MissileRicochetDamage>0</MissileRicochetDamage>
+                <MissileRicochetProbability>0</MissileRicochetProbability>
+            </MissileProperties>
+        </Ammo>
+    </Ammos>
+</Definitions>

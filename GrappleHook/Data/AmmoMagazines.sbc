@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <AmmoMagazines>
+        <AmmoMagazine>
+            <Id>
+                <TypeId>AmmoMagazine</TypeId>
+                <SubtypeId>GrappleHookMagazine</SubtypeId>
+            </Id>
+            <DisplayName>Grapple Hook</DisplayName>
+            <Icon>Textures\GUI\Icons\ammo\LargeCalibreShell.dds</Icon>
+            <Size>
+                <X>1.2</X>
+                <Y>0.3</Y>
+                <Z>0.3</Z>
+            </Size>
+            <Mass>300</Mass>
+            <Volume>100</Volume>
+            <Model>Models\Weapons\LargeCalibreShell.mwm</Model>
+            <PhysicalMaterial>Ammo</PhysicalMaterial>
+            <Capacity>1</Capacity>
+            <AmmoDefinitionId Subtype="GrappleHookAmmo" />
+
+            <MinimumOfferAmount>50</MinimumOfferAmount>
+            <MaximumOfferAmount>500</MaximumOfferAmount>
+            <MinimumOrderAmount>100</MinimumOrderAmount>
+            <MaximumOrderAmount>2000</MaximumOrderAmount>
+            <CanPlayerOrder>true</CanPlayerOrder>
+        </AmmoMagazine>
+
+    </AmmoMagazines>
+</Definitions>
