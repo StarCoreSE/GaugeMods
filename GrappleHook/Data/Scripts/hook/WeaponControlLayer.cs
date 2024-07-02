@@ -47,7 +47,7 @@ namespace GrappleHook
         private Vector3 GrappleDirection = Vector3.Zero;
 
 
-        private double k = 20000000;
+        private double k = 200000000;
         private float maxLength = 300;
         private float GrappleSpeed = 1.5f;
 
@@ -391,9 +391,42 @@ namespace GrappleHook
             MyAPIGateway.TerminalControls.GetActions<T>(out actions);
             foreach (IMyTerminalAction a in actions)
             {
+                oldAction = a.Action;
+
                 if (bannedActions.Contains(a.Id))
                 {
                     DisableAction(a);
+                }
+                else if (a.Id == "Shoot") 
+                {
+                    a.Action = (block) =>
+                    {
+                        WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (layer != null)
+                        {
+
+                            layer.Shoot();
+                        }
+                        else 
+                        {
+                            oldAction?.Invoke(block);
+                        }
+                    };
+                }
+                else if (a.Id == "Shoot")
+                {
+                    a.Action = (block) =>
+                    {
+                        WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (layer != null)
+                        {
+                            layer.Shoot();
+                        }
+                        else
+                        {
+                            oldAction?.Invoke(block);
+                        }
+                    };
                 }
             }
 
@@ -408,7 +441,7 @@ namespace GrappleHook
             }
         }
 
-        public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 10)
+        public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 30)
         {
             //returns a list of points in world space of length n. n must be equal or greater than 2
             //n = 3 will produce 2 line segments, n=2 will produce 1 line segment.
