@@ -58,9 +58,12 @@ namespace GrappleHook
             if (MyAPIGateway.Session.IsServer)
             {
                 Settings.Init();
+                settings = new NetSync<Settings>(this, TransferType.ServerToClient, Settings.Instance, true, false);
             }
-
-            settings = new NetSync<Settings>(this, TransferType.ServerToClient, Settings.Instance, true, false);
+            else 
+            {
+                settings = new NetSync<Settings>(this, TransferType.ServerToClient, new Settings(), true, false);
+            }
 
             Shooting = new NetSync<ShootData>(this, TransferType.Both, new ShootData());
             Shooting.ValueChangedByNetwork += ShotFired;
