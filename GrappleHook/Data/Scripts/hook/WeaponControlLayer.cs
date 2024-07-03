@@ -122,6 +122,49 @@ namespace GrappleHook
             }
 
             OverrideDefaultControls<IMyLargeTurretBase>();
+
+            IMyTerminalAction detach = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("Detach");
+            detach.Name = new StringBuilder("Detach");
+            detach.Enabled = (block) => { return block.GameLogic.GetAs<WeaponControlLayer>() != null; };
+            detach.Action = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null) 
+                {
+                    logic.Reset();
+                }
+            };
+            detach.Writer = (block, text) => { text.Append("detach"); };
+
+            IMyTerminalControlButton detachControl = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, IMyTerminalBlock>("Detach");
+            detachControl.Title = MyStringId.GetOrCompute("Detach");
+            detachControl.Tooltip = MyStringId.GetOrCompute("Breaks active connection");
+            detachControl.Visible = (block) =>
+            {
+                return block.GameLogic.GetAs<WeaponControlLayer>() != null;
+            };
+
+            detachControl.Enabled = (block) =>
+            {
+                return block.GameLogic.GetAs<WeaponControlLayer>() != null;
+            };
+
+            detachControl.Action = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null) 
+                {
+                    logic.Reset();
+                }
+            };
+
+            IMyTerminalControlButton increaseButton = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, IMyTerminalBlock>("Slacken");
+            increaseButton.Title = MyStringId.GetOrCompute("");
+
+
+            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(detach);
+            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(detachControl);
+
             Hijack = true;
         }
 
@@ -154,7 +197,7 @@ namespace GrappleHook
             Vector3D turretPostion = gun.GetMuzzlePosition();
             Vector3D entityPostion = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
             Vector3D direction = turretPostion - entityPostion;
-            double currentLength = (direction).Length();
+            double currentLength = direction.Length();
             direction.Normalize();
 
             double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value);
@@ -314,36 +357,6 @@ namespace GrappleHook
                     MySimpleObjectDraw.DrawLine(start, end, texture, ref color, 0.15f, BlendTypeEnum.Standard);
                 }
             }
-        }
-
-        private static void DisableAction(IMyTerminalAction a)
-        {
-            Func<IMyTerminalBlock, bool> oldEnabled = a.Enabled;
-            a.Enabled = (block) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    return false;
-                }
-
-                return oldEnabled.Invoke(block);
-            };
-        }
-
-        private static void HideControl(IMyTerminalControl a)
-        {
-            Func<IMyTerminalBlock, bool> oldVisiable = a.Visible;
-            a.Visible = (block) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    return false;
-                }
-
-                return oldVisiable.Invoke(block);
-            };
         }
 
         private static void OverrideDefaultControls<T>()
@@ -561,12 +574,96 @@ namespace GrappleHook
             MyAPIGateway.TerminalControls.GetControls<T>(out controls);
             foreach (IMyTerminalControl c in controls)
             {
+                
+                Tools.Debug($"{c.Id}");
                 if (bannedControls.Contains(c.Id))
                 {
                     HideControl(c);
                 }
+                else if (c.Id == "Shoot")
+                {
+                    IMyTerminalControlOnOffSwitch onoff = c as IMyTerminalControlOnOffSwitch;
+                    oldGetter = onoff.Getter;
+                    oldSetter = onoff.Setter;
+
+                    onoff.Setter = (block, value) => {
+                        WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (layer != null)
+                        {
+                            layer.terminalShootOn = !layer.terminalShootOn;
+
+                            if (layer.terminalShootOn)
+                            {
+                                layer.Shoot(true);
+                            }
+                        }
+                        else
+                        {
+                            oldSetter?.Invoke(block, value);
+                        }
+                    };
+
+                    onoff.Getter = (block) => {
+                        WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (layer != null)
+                        {
+                            return layer.terminalShootOn;
+                        }
+                        else
+                        {
+                            return oldGetter.Invoke(block);
+                        }
+                    };
+                }
+                else if (c.Id == "ShootOnce") 
+                {
+                    IMyTerminalControlButton button = c as IMyTerminalControlButton;
+                    oldAction = button.Action;
+                    button.Action = (block) => {
+                        WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                        if (layer != null)
+                        {
+                            layer.Shoot(true);
+                        }
+                        else
+                        {
+                            oldAction?.Invoke(block);
+                        }
+                    };
+                }
             }
         }
+
+        private static void DisableAction(IMyTerminalAction a)
+        {
+            Func<IMyTerminalBlock, bool> oldEnabled = a.Enabled;
+            a.Enabled = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    return false;
+                }
+
+                return oldEnabled.Invoke(block);
+            };
+        }
+
+        private static void HideControl(IMyTerminalControl a)
+        {
+            Func<IMyTerminalBlock, bool> oldVisiable = a.Visible;
+            a.Visible = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    return false;
+                }
+
+                return oldVisiable.Invoke(block);
+            };
+        }
+
 
         public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 30)
         {
