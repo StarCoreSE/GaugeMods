@@ -208,6 +208,7 @@ namespace FaolonTether
                     foreach (PowerlineLink l in links.Links)
                     {
                         l.LoadPrep();
+                        ConnectGrids(l.PoleA.Entity.EntityId, l.PoleA.Grid, l.PoleB.Grid);
                     }
 
                     lock (Links)
