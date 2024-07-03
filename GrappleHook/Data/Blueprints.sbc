@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<Blueprints>
+		<Blueprint>
+			<Id>
+				<TypeId>BlueprintDefinition</TypeId>
+				<SubtypeId>GrappleHook</SubtypeId>
+			</Id>
+			<DisplayName>Grapple Hook</DisplayName>
+			<Icon>Textures\GUI\Icons\ammo\LargeCalibreShell.dds</Icon>
+			<Prerequisites>
+				<Item Amount="60" TypeId="Ingot" SubtypeId="Iron" />
+				<Item Amount="8" TypeId="Ingot" SubtypeId="Nickel" />
+				<Item Amount="5" TypeId="Ingot" SubtypeId="Magnesium" />
+			</Prerequisites>
+			<Result Amount="1" TypeId="AmmoMagazine" SubtypeId="LargeCalibreAmmo" />
+			<BaseProductionTimeInSeconds>14</BaseProductionTimeInSeconds>
+		</Blueprint>
+	</Blueprints>
+</Definitions>
