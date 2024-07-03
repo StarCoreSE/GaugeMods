@@ -152,10 +152,9 @@ namespace Gauge.ManualTurretControl
                 highlightName = string.Empty;
             }
 
-            if (friendly) 
+            if (friendly && !(MyAPIGateway.Gui.IsCursorVisible || MyAPIGateway.Gui.ChatEntryVisible)) 
             {
                 MyAPIGateway.Utilities.ShowNotification("Press F or T", 1, "White");
-
                 if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F) || MyAPIGateway.Input.IsNewKeyPressed(MyKeys.T))
                 {
                     MyLog.Default.Info($"[MTC] Interaction pressed");
