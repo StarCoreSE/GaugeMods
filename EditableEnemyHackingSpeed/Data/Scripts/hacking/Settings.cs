@@ -19,7 +19,8 @@ namespace BalancedHacking
 
             HandGunTerminalBlockHackSpeedAboveFunctional = 1f,
             HandGunTerminalBlockHackSpeedBelowFunctional = 1f,
-            HandGunNonTerminalBlockHackSpeed = 0.5f
+            HandGunNonTerminalBlockHackSpeed = 0.5f,
+            ToolDamageToPlayer = 0.25f
         };
 
         [ProtoMember(1)]
@@ -34,6 +35,9 @@ namespace BalancedHacking
         public float HandGunTerminalBlockHackSpeedBelowFunctional { get; set; }
         [ProtoMember(6)]
         public float HandGunNonTerminalBlockHackSpeed { get; set; }
+
+        [ProtoMember(7)]
+        public float ToolDamageToPlayer { get; set; }
 
 
         public static Settings Load()

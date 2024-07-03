@@ -3,10 +3,12 @@ using Sandbox.Game.Weapons;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
 using System.Collections.Generic;
+using System.IO;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
+using VRage.Utils;
 
 namespace BalancedHacking
 {
@@ -23,8 +25,7 @@ namespace BalancedHacking
 
         private void Handler(object target, ref MyDamageInformation info)
         {
-            IMySlimBlock block = target as IMySlimBlock;
-            if (block == null) return; // End: Only reduce damage to blocks
+            MyLog.Default.Info(target.ToString());
 
             IMyEntity ent = MyAPIGateway.Entities.GetEntityById(info.AttackerId);
             if (ent == null) return; // End: Must be a player character
@@ -50,31 +51,45 @@ namespace BalancedHacking
             bool isTool = tool != null;
             long identity = (isTool) ? tool.OwnerIdentityId : gun.OwnerIdentityId;
 
-            List<IMyPlayer> players = new List<IMyPlayer>();
-            MyAPIGateway.Players.GetPlayers(players, p => p.IdentityId == identity);
-            if (players.Count == 0 || // End: Player not found. this can happen if the character is an NPC
-                block.CubeGrid.BigOwners.Count == 0) return;  // End: Unowned structures take full damage
 
-            MyRelationsBetweenPlayerAndBlock relation = players[0].GetRelationTo(block.CubeGrid.BigOwners[0]);
-            if (!(relation == MyRelationsBetweenPlayerAndBlock.Enemies || 
-                relation == MyRelationsBetweenPlayerAndBlock.Neutral)) return; // End: Friendly and unowned structures take full damage
-
-            if (block.FatBlock != null && block.FatBlock is IMyTerminalBlock)
+            IMySlimBlock block = target as IMySlimBlock;
+            if (block != null) 
             {
-                if (block.FatBlock.OwnerId != 0)
+                List<IMyPlayer> players = new List<IMyPlayer>();
+                MyAPIGateway.Players.GetPlayers(players, p => p.IdentityId == identity);
+                if (players.Count == 0 || // End: Player not found. this can happen if the character is an NPC
+                    block.CubeGrid.BigOwners.Count == 0) return;  // End: Unowned structures take full damage
+
+                MyRelationsBetweenPlayerAndBlock relation = players[0].GetRelationTo(block.CubeGrid.BigOwners[0]);
+                if (!(relation == MyRelationsBetweenPlayerAndBlock.Enemies ||
+                    relation == MyRelationsBetweenPlayerAndBlock.Neutral)) return; // End: Friendly and unowned structures take full damage
+
+                if (block.FatBlock != null && block.FatBlock is IMyTerminalBlock)
                 {
-                    info.Amount = info.Amount * (1 + (1 - MyAPIGateway.Session.HackSpeedMultiplier)) * GetTerminalBlockHackSpeedAboveFunctional(isTool);
+                    if (block.FatBlock.OwnerId != 0)
+                    {
+                        info.Amount = info.Amount * (1 + (1 - MyAPIGateway.Session.HackSpeedMultiplier)) * GetTerminalBlockHackSpeedAboveFunctional(isTool);
+                    }
+                    else
+                    {
+                        info.Amount = info.Amount * GetTerminalBlockHackSpeedBelowFunctional(isTool);
+                    }
+
                 }
                 else
                 {
-                    info.Amount = info.Amount * GetTerminalBlockHackSpeedBelowFunctional(isTool);
+                    info.Amount = info.Amount * GetNonTerminalBlockHackSpeed(isTool);
                 }
 
+                return;
             }
-            else
+
+            IMyCharacter character = target as IMyCharacter;
+            if (character != null && isTool) 
             {
-                info.Amount = info.Amount * GetNonTerminalBlockHackSpeed(isTool);
+                info.Amount = info.Amount * config.ToolDamageToPlayer;
             }
+
         }
 
         private float GetTerminalBlockHackSpeedAboveFunctional(bool isTool)
