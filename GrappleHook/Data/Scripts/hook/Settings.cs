@@ -21,18 +21,21 @@ namespace BlinkDrive
 		public double RopeForce;
 
 		[ProtoMember(3)]
-		public float MaxRopeLength;
+		public float MinRopeLength;
 
 		[ProtoMember(4)]
-		public float ShootRopeLength;
+		public float MaxRopeLength;
 
 		[ProtoMember(5)]
-		public float GrappleProjectileSpeed;
+		public float ShootRopeLength;
 
 		[ProtoMember(6)]
-		public float TightenSpeed;
+		public float GrappleProjectileSpeed;
 
 		[ProtoMember(7)]
+		public float TightenSpeed;
+
+		[ProtoMember(8)]
 		public float LoosenSpeed;
 
 
@@ -50,6 +53,7 @@ namespace BlinkDrive
 				Version = 2,
 				RopeForce = 200000000d,
 				ShootRopeLength = 300f,
+				MinRopeLength = 5f,
 				MaxRopeLength = 1000f,
                 GrappleProjectileSpeed = 1.5f,
 				TightenSpeed = 5f,

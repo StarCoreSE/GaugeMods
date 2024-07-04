@@ -74,7 +74,7 @@ namespace GrappleHook
             ResetIndicator = new NetSync<bool>(this, TransferType.ServerToClient);
             ResetIndicator.ValueChanged += ResetCall;
 
-            GrappleLength = new NetSync<double>(this, TransferType.Both, 0);
+            GrappleLength = new NetSync<double>(this, TransferType.ServerToClient, 0);
 
             Winch = new NetSync<float>(this, TransferType.Both, 0);
 
@@ -292,8 +292,12 @@ namespace GrappleHook
                 if (Winch.Value != 0) 
                     speed = Winch.Value * 0.0166667f;
 
-                float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value-speed, settings.Value.MaxRopeLength), 2.5f);
-                GrappleLength.SetValue(speedAfterCheck);
+                float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value-speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
+                if (speedAfterCheck != GrappleLength.Value) 
+                {
+                    GrappleLength.Value = speedAfterCheck;
+                }
+
             }
         }
 
