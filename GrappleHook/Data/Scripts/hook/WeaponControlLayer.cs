@@ -9,6 +9,7 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 using SENetworkAPI;
 using System;
 using System.Collections.Generic;
+using System.Reflection.Emit;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
@@ -134,7 +135,7 @@ namespace GrappleHook
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (logic != null) 
                 {
-                    logic.Reset();
+                    ResetIndicator.Value = !ResetIndicator.Value;
                 }
             };
             detach.Writer = (block, text) => { text.Append("detach"); };
@@ -148,7 +149,7 @@ namespace GrappleHook
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (logic != null)
                 {
-                    Winch.Value = 0;
+                    logic.Winch.Value = 0;
                 }
             };
             resetAction.Writer = (block, text) => { text.Append("Reset"); };
@@ -162,10 +163,16 @@ namespace GrappleHook
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (logic != null)
                 {
-                    Winch.Value = Math.Min(Winch.Value+1, settings.Value.TightenSpeed);
+                    logic.Winch.Value = Math.Min(logic.Winch.Value + 1, logic.settings.Value.TightenSpeed);
                 }
             };
-            tighten.Writer = (block, text) => { text.Append($"{Winch.Value.ToString("n0")}"); };
+            tighten.Writer = (block, text) => {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    text.Append($"{logic.Winch.Value.ToString("n0")}");
+                }
+            };
 
 
             IMyTerminalAction loosen = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("LoosenWinch");
@@ -176,10 +183,16 @@ namespace GrappleHook
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (logic != null)
                 {
-                    Winch.Value = Math.Max(Winch.Value - 1, -settings.Value.LoosenSpeed);
+                    logic.Winch.Value = Math.Max(logic.Winch.Value - 1, -logic.settings.Value.LoosenSpeed);
                 }
             };
-            loosen.Writer = (block, text) => { text.Append($"{Winch.Value.ToString("n0")}"); };
+            loosen.Writer = (block, text) => {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    text.Append($"{logic.Winch.Value.ToString("n0")}");
+                }
+            };
 
 
             IMyTerminalControlButton detachControl = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, IMyTerminalBlock>("Detach");
@@ -192,7 +205,7 @@ namespace GrappleHook
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (logic != null) 
                 {
-                    logic.Reset();
+                    ResetIndicator.Value = !ResetIndicator.Value;
                 }
             };
 
@@ -207,7 +220,7 @@ namespace GrappleHook
                 WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (layer != null)
                 {
-                    return Winch.Value;
+                    return layer.Winch.Value;
                 }
 
                 return 0;
@@ -217,7 +230,7 @@ namespace GrappleHook
                 WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (layer != null)
                 {
-                    Winch.Value = value;
+                    layer.Winch.Value = value;
                 }
             };
             sliderWinch.Writer = (block, builder) => {
@@ -237,7 +250,7 @@ namespace GrappleHook
                 WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (layer != null)
                 {
-                    Winch.Value = 0;
+                    layer.Winch.Value = 0;
                     sliderWinch.UpdateVisual();
                 }
             };
