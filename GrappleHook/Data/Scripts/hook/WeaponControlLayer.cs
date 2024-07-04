@@ -100,6 +100,7 @@ namespace GrappleHook
             connectedEntity = MyAPIGateway.Entities.GetEntityById(data2.entityId);
             localGrapplePosition = data2.localAttachmentPoint;
             localGrapplePositionI = data2.localAttachmentPointI;
+            GrappleLength.SetValue(data2.GrappleLength);
             State = States.attached;
         }
 
@@ -293,9 +294,9 @@ namespace GrappleHook
                     speed = Winch.Value * 0.0166667f;
 
                 float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value-speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
-                if (speedAfterCheck != GrappleLength.Value) 
+                if (speed != 0 && speedAfterCheck != GrappleLength.Value) 
                 {
-                    GrappleLength.Value = speedAfterCheck;
+                    GrappleLength.SetValue(speedAfterCheck);
                 }
 
             }
@@ -355,6 +356,7 @@ namespace GrappleHook
                     data.entityId = hit.HitEntity.EntityId;
                     data.localAttachmentPoint = localGrapplePosition;
                     data.localAttachmentPointI = localGrapplePositionI;
+                    data.GrappleLength = GrappleLength.Value;
 
                     Attachment.Value = data;
                 }

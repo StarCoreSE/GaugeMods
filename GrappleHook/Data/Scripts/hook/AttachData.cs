@@ -17,5 +17,7 @@ namespace GrappleHook
         public Vector3 localAttachmentPoint;
         [ProtoMember(3)]
         public Vector3I localAttachmentPointI;
+        [ProtoMember(4)]
+        public double GrappleLength;
     }
 }
