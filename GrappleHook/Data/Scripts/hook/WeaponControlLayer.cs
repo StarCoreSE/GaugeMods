@@ -42,6 +42,7 @@ namespace GrappleHook
 
         private NetSync<ShootData> Shooting;
         private NetSync<AttachData> Attachment;
+        private AttachData lastAttachData = null;
         private NetSync<bool> ResetIndicator;
         private NetSync<Settings> settings;
         private NetSync<float> Winch;
@@ -97,19 +98,30 @@ namespace GrappleHook
 
         private void Attaching(AttachData data1, AttachData data2, ulong arg3)
         {
-            connectedEntity = MyAPIGateway.Entities.GetEntityById(data2.entityId);
-            localGrapplePosition = data2.localAttachmentPoint;
-            localGrapplePositionI = data2.localAttachmentPointI;
-            GrappleLength.SetValue(data2.GrappleLength);
-            State = States.attached;
+            attach(data2);
+        }
+
+        private void attach(AttachData data)
+        {
+            if (data.entityId != 0) 
+            {
+                connectedEntity = MyAPIGateway.Entities.GetEntityById(data.entityId);
+                localGrapplePosition = data.localAttachmentPoint;
+                localGrapplePositionI = data.localAttachmentPointI;
+                GrappleLength.SetValue(data.GrappleLength);
+                State = States.attached;
+            }
+
         }
 
         private void ShotFired(ShootData data1, ShootData data2, ulong steamId)
         {
-            GrapplePosition = data2.position;
-            GrappleDirection = data2.direction;
-            State = States.active;
-
+            if (GrappleDirection != Vector3.Zero) 
+            {
+                GrapplePosition = data2.position;
+                GrappleDirection = data2.direction;
+                State = States.active;
+            }
         }
 
         public override void UpdateOnceBeforeFrame()
@@ -123,6 +135,8 @@ namespace GrappleHook
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 return;
             }
+
+            attach(Attachment.Value);
 
             Func<IMyTerminalBlock, bool> isThisMod = (block) => { return block.GameLogic.GetAs<WeaponControlLayer>() != null; };
 
