@@ -50,13 +50,13 @@ namespace BlinkDrive
 		public static Settings GetDefaults()
 		{
 			return new Settings {
-				Version = 2,
-				RopeForce = 200000000d,
+				Version = 3,
+				RopeForce = 20000000d,
 				ShootRopeLength = 300f,
 				MinRopeLength = 5f,
 				MaxRopeLength = 1000f,
                 GrappleProjectileSpeed = 1.5f,
-				TightenSpeed = 5f,
+				TightenSpeed = 3f,
 				LoosenSpeed = 10f,
             };
 		}
