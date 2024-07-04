@@ -299,22 +299,22 @@ namespace GrappleHook
                     UpdateProjectile();
                     break;
                 case States.attached:
-                    ApplyGrapplingForce();
+                    UpdateLength();
+                    ApplyForce();
                     break;
             }
+        }
 
-            if (State == States.attached) 
+        public void UpdateLength() 
+        {
+            float speed = 0;
+            if (Winch.Value != 0)
+                speed = Winch.Value * 0.0166667f;
+
+            float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value - speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
+            if (speed != 0 && speedAfterCheck != GrappleLength.Value)
             {
-                float speed = 0;
-                if (Winch.Value != 0) 
-                    speed = Winch.Value * 0.0166667f;
-
-                float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value-speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
-                if (speed != 0 && speedAfterCheck != GrappleLength.Value) 
-                {
-                    GrappleLength.SetValue(speedAfterCheck);
-                    
-                }
+                GrappleLength.SetValue(speedAfterCheck);
 
             }
         }
@@ -324,7 +324,7 @@ namespace GrappleHook
             Draw();
         }
 
-        private void ApplyGrapplingForce()
+        private void ApplyForce()
         {
             Vector3D turretPostion = gun.GetMuzzlePosition();
             Vector3D entityPostion = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
