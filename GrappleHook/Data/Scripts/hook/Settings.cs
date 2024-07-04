@@ -24,7 +24,16 @@ namespace BlinkDrive
 		public float MaxRopeLength;
 
 		[ProtoMember(4)]
-		public float GrappleSpeed;
+		public float ShootRopeLength;
+
+		[ProtoMember(5)]
+		public float GrappleProjectileSpeed;
+
+		[ProtoMember(6)]
+		public float TightenSpeed;
+
+		[ProtoMember(7)]
+		public float LoosenSpeed;
 
 
 		public static void Init() 
@@ -38,10 +47,13 @@ namespace BlinkDrive
 		public static Settings GetDefaults()
 		{
 			return new Settings {
-				Version = 1,
+				Version = 2,
 				RopeForce = 200000000d,
-				MaxRopeLength = 300f,
-                GrappleSpeed = 1.5f,
+				ShootRopeLength = 300f,
+				MaxRopeLength = 1000f,
+                GrappleProjectileSpeed = 1.5f,
+				TightenSpeed = 5f,
+				LoosenSpeed = 10f,
             };
 		}
 

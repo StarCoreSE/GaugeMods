@@ -9,7 +9,6 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 using SENetworkAPI;
 using System;
 using System.Collections.Generic;
-using System.Reflection.Emit;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
@@ -23,12 +22,11 @@ using static VRageRender.MyBillboard;
 namespace GrappleHook
 {
 
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeMissileTurret), true, "GrappleHookTurret")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeMissileTurret), true, "GrappleHookTurretLarge")]
     public class WeaponControlLayer : MyGameLogicComponent
     {
-        public static bool Hijack = false;
-
         private bool waitframe = true;
+        public static bool Hijack = false;
 
         private IMyLargeTurretBase Turret;
         private IMyGunObject<MyGunBase> gun;
@@ -45,6 +43,7 @@ namespace GrappleHook
         private NetSync<AttachData> Attachment;
         private NetSync<bool> ResetIndicator;
         private NetSync<Settings> settings;
+        private NetSync<float> Winch;
 
         private float reloadTime = 0;
 
@@ -75,6 +74,8 @@ namespace GrappleHook
             ResetIndicator.ValueChanged += ResetCall;
 
             GrappleLength = new NetSync<double>(this, TransferType.Both, 0);
+
+            Winch = new NetSync<float>(this, TransferType.Both, 0);
 
             gun = Entity as IMyGunObject<MyGunBase>;
             Turret = Entity as IMyLargeTurretBase;
@@ -121,11 +122,13 @@ namespace GrappleHook
                 return;
             }
 
+            Func<IMyTerminalBlock, bool> isThisMod = (block) => { return block.GameLogic.GetAs<WeaponControlLayer>() != null; };
+
             OverrideDefaultControls<IMyLargeTurretBase>();
 
             IMyTerminalAction detach = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("Detach");
             detach.Name = new StringBuilder("Detach");
-            detach.Enabled = (block) => { return block.GameLogic.GetAs<WeaponControlLayer>() != null; };
+            detach.Enabled = isThisMod;
             detach.Action = (block) =>
             {
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
@@ -136,19 +139,54 @@ namespace GrappleHook
             };
             detach.Writer = (block, text) => { text.Append("detach"); };
 
+
+            IMyTerminalAction resetAction = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("ResetWinch");
+            resetAction.Name = new StringBuilder("Reset");
+            resetAction.Enabled = isThisMod;
+            resetAction.Action = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    Winch.Value = 0;
+                }
+            };
+            resetAction.Writer = (block, text) => { text.Append("Reset"); };
+
+
+            IMyTerminalAction tighten = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("TightenWinch");
+            tighten.Name = new StringBuilder("Tighten");
+            tighten.Enabled = isThisMod;
+            tighten.Action = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    Winch.Value = Math.Min(Winch.Value+1, settings.Value.TightenSpeed);
+                }
+            };
+            tighten.Writer = (block, text) => { text.Append($"{Winch.Value.ToString("n0")}"); };
+
+
+            IMyTerminalAction loosen = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("LoosenWinch");
+            loosen.Name = new StringBuilder("Loosen");
+            loosen.Enabled = isThisMod;
+            loosen.Action = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    Winch.Value = Math.Max(Winch.Value - 1, -settings.Value.LoosenSpeed);
+                }
+            };
+            loosen.Writer = (block, text) => { text.Append($"{Winch.Value.ToString("n0")}"); };
+
+
             IMyTerminalControlButton detachControl = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, IMyTerminalBlock>("Detach");
             detachControl.Title = MyStringId.GetOrCompute("Detach");
             detachControl.Tooltip = MyStringId.GetOrCompute("Breaks active connection");
-            detachControl.Visible = (block) =>
-            {
-                return block.GameLogic.GetAs<WeaponControlLayer>() != null;
-            };
-
-            detachControl.Enabled = (block) =>
-            {
-                return block.GameLogic.GetAs<WeaponControlLayer>() != null;
-            };
-
+            detachControl.Visible = isThisMod;
+            detachControl.Enabled = isThisMod;
             detachControl.Action = (block) =>
             {
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
@@ -158,12 +196,61 @@ namespace GrappleHook
                 }
             };
 
-            IMyTerminalControlButton increaseButton = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, IMyTerminalBlock>("Slacken");
-            increaseButton.Title = MyStringId.GetOrCompute("");
 
+            IMyTerminalControlSlider sliderWinch = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSlider, IMyTerminalBlock>("Winch");
+            sliderWinch.Title = MyStringId.GetOrCompute("Tighten Winch");
+            sliderWinch.Enabled = isThisMod;
+            sliderWinch.Visible = isThisMod;
+            sliderWinch.SetLimits(-settings.Value.LoosenSpeed, settings.Value.TightenSpeed);
+            sliderWinch.Getter = (block) =>
+            {
+                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (layer != null)
+                {
+                    return Winch.Value;
+                }
+
+                return 0;
+            };
+            sliderWinch.Setter = (block, value) =>
+            {
+                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (layer != null)
+                {
+                    Winch.Value = value;
+                }
+            };
+            sliderWinch.Writer = (block, builder) => {
+                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (layer != null)
+                {
+                    builder.Append($"{layer.Winch.Value.ToString("n2")}m/s");
+                }
+            };
+
+            IMyTerminalControlButton resetWinch = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, IMyTerminalBlock>("ResetWinch");
+            resetWinch.Title = MyStringId.GetOrCompute("Reset Winch");
+            resetWinch.Enabled = isThisMod;
+            resetWinch.Visible = isThisMod;
+            resetWinch.Action = (block) =>
+            {
+                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (layer != null)
+                {
+                    Winch.Value = 0;
+                    sliderWinch.UpdateVisual();
+                }
+            };
+
+            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(detachControl);
+            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(resetWinch);
+            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(sliderWinch);
 
             MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(detach);
-            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(detachControl);
+            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(resetAction);
+            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(tighten);
+            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(loosen);
+
 
             Hijack = true;
         }
@@ -184,6 +271,16 @@ namespace GrappleHook
                 case States.attached:
                     ApplyGrapplingForce();
                     break;
+            }
+
+            if (State == States.attached) 
+            {
+                float speed = 0;
+                if (Winch.Value != 0) 
+                    speed = Winch.Value * 0.0166667f;
+
+                float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value-speed, settings.Value.MaxRopeLength), 2.5f);
+                GrappleLength.SetValue(speedAfterCheck);
             }
         }
 
@@ -209,7 +306,7 @@ namespace GrappleHook
         private void UpdateProjectile()
         {
             Tools.Debug($"Projectile In Flight {(gun.GetMuzzlePosition() - GrapplePosition).Length()}");
-            Vector3 delta = GrappleDirection * settings.Value.GrappleSpeed;
+            Vector3 delta = GrappleDirection * settings.Value.GrappleProjectileSpeed;
 
             IHitInfo hit = null;
             MyAPIGateway.Physics.CastRay(GrapplePosition, GrapplePosition + delta, out hit);
@@ -232,7 +329,7 @@ namespace GrappleHook
                 }
 
                 localGrapplePosition = Vector3D.Transform(hit.Position + GrappleDirection * 0.1f, MatrixD.Invert(connectedEntity.WorldMatrix));
-                GrappleLength.Value = (GrapplePosition - gun.GetMuzzlePosition()).Length() + 1f;
+                GrappleLength.Value = (GrapplePosition - gun.GetMuzzlePosition()).Length() + 1.25f;
                 State = States.attached;
 
                 if (MyAPIGateway.Session.IsServer)
@@ -252,7 +349,7 @@ namespace GrappleHook
             GrapplePosition += delta;
 
             // if grapple length goes beyond max length
-            if ((gun.GetMuzzlePosition() - GrapplePosition).LengthSquared() > settings.Value.MaxRopeLength * settings.Value.MaxRopeLength)
+            if ((gun.GetMuzzlePosition() - GrapplePosition).LengthSquared() > settings.Value.ShootRopeLength * settings.Value.ShootRopeLength)
             {
                 ResetIndicator.Value = !ResetIndicator.Value;
             }
@@ -320,21 +417,14 @@ namespace GrappleHook
             Vector4 color = VRageMath.Color.DarkGray;
             MyStringId texture = MyStringId.GetOrCompute("cable");
 
-            ExternalForceData planetForces = WorldPlanets.GetExternalForces(Turret.WorldMatrix.Translation);
-            Vector3D sagDirection = planetForces.Gravity;
-
-            if (sagDirection == Vector3D.Zero)
-            {
-                sagDirection = Turret.WorldMatrix.Down;
-            }
-
-            Vector3D gunPo = gun.GetMuzzlePosition();
+            Vector3D sagDirection = GetSagDirection();
+            Vector3D gunPosition = gun.GetMuzzlePosition();
 
             Vector3D position;
             if (State == States.active)
             {
                 position = GrapplePosition;
-                Vector3D[] points = ComputeCurvePoints(gunPo, position, sagDirection, Vector3D.Distance(gunPo, position) * 1.005f);
+                Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, Vector3D.Distance(gunPosition, position) * 1.005f);
 
                 for (int i = 0; i < points.Length - 1; i++)
                 {
@@ -347,7 +437,7 @@ namespace GrappleHook
             else if (State == States.attached)
             {
                 position = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
-                Vector3D[] points = ComputeCurvePoints(gunPo, position, sagDirection, GrappleLength.Value);
+                Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value);
 
                 for (int i = 0; i < points.Length - 1; i++)
                 {
@@ -357,6 +447,19 @@ namespace GrappleHook
                     MySimpleObjectDraw.DrawLine(start, end, texture, ref color, 0.15f, BlendTypeEnum.Standard);
                 }
             }
+        }
+
+        private Vector3D GetSagDirection() 
+        {
+            ExternalForceData planetForces = WorldPlanets.GetExternalForces(Turret.WorldMatrix.Translation);
+            Vector3D sagDirection = planetForces.Gravity;
+
+            if (sagDirection == Vector3D.Zero)
+            {
+                sagDirection = Turret.WorldMatrix.Down;
+            }
+
+            return sagDirection;
         }
 
         private static void OverrideDefaultControls<T>()
@@ -662,6 +765,16 @@ namespace GrappleHook
 
                 return oldVisiable.Invoke(block);
             };
+        }
+
+        public Vector3D[] GetLinePoints() 
+        {
+            if (State != States.attached) return new Vector3D[0];
+
+            Vector3D gunPosition = gun.GetMuzzlePosition();
+            Vector3D position = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
+            Vector3D sagDirection = GetSagDirection();
+            return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value);
         }
 
 

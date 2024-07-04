@@ -4,7 +4,7 @@
 		<Definition xsi:type="MyObjectBuilder_LargeTurretBaseDefinition">
 			<Id>
 				<TypeId>LargeMissileTurret</TypeId>
-				<SubtypeId>GrappleHookTurret</SubtypeId>
+				<SubtypeId>GrappleHookTurretLarge</SubtypeId>
 			</Id>
 			<DisplayName>Grapple Hook Turret</DisplayName>
 			<Icon>Textures\GUI\Icons\Cubes\HarpoonTurret.dds</Icon>
@@ -63,7 +63,7 @@
 			<DamagedSound>ParticleWeapExpl</DamagedSound>
 			<ResourceSinkGroup>Defense</ResourceSinkGroup>
 			<MinElevationDegrees>-15</MinElevationDegrees>
-			<MaxElevationDegrees>85</MaxElevationDegrees>
+			<MaxElevationDegrees>70</MaxElevationDegrees>
 			<MinAzimuthDegrees>-180</MinAzimuthDegrees>
 			<MaxAzimuthDegrees>180</MaxAzimuthDegrees>
 			<AiEnabled>false</AiEnabled>
@@ -90,11 +90,6 @@
 			</TargetingGroups>
 			<UpCameraOffset>1.0</UpCameraOffset>
 			<ForwardCameraOffset>0.5</ForwardCameraOffset>
-			<AimingOffset>
-				<X>0</X>
-				<Y>-2</Y>
-				<Z>0</Z>
-			</AimingOffset>
 		</Definition>
 	</CubeBlocks>
 </Definitions>

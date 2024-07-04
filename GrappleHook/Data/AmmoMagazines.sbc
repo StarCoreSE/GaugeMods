@@ -18,7 +18,7 @@
             <Model>Models\Weapons\LargeCalibreShell.mwm</Model>
             <PhysicalMaterial>Ammo</PhysicalMaterial>
             <Capacity>1</Capacity>
-            <AmmoDefinitionId Subtype="GrappleHookAmmo" />
+			<AmmoDefinitionId Subtype="GrappleHookAmmo" />
 
             <MinimumOfferAmount>50</MinimumOfferAmount>
             <MaximumOfferAmount>500</MaximumOfferAmount>

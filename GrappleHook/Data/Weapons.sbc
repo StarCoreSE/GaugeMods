@@ -6,17 +6,17 @@
 				<TypeId>WeaponDefinition</TypeId>
 				<SubtypeId>GrappleHookTurret</SubtypeId>
 			</Id>
-			<MissileAmmoData RateOfFire="100" ShootSoundName="WepLargeCalibreShot" FlightSoundName="HeavyShellFlightSound" ShotsInBurst="1" />
-			<DeviateShotAngle>0.5</DeviateShotAngle>
-			<DeviateShotAngleAiming>0.5</DeviateShotAngleAiming>
-			<MinimumTimeBetweenIdleRotationsMs>15000</MinimumTimeBetweenIdleRotationsMs>
-			<MaximumTimeBetweenIdleRotationsMs>20000</MaximumTimeBetweenIdleRotationsMs>
+			<ProjectileAmmoData RateOfFire="100" ShootSoundName="WepShipSmallMissileShot" ShotsInBurst="1" />
+			<ReleaseTimeAfterFire>0</ReleaseTimeAfterFire>
+			<DeviateShotAngle>0</DeviateShotAngle>
+			<DeviateShotAngleAiming>0</DeviateShotAngleAiming>
+			<MuzzleFlashLifeSpan>0</MuzzleFlashLifeSpan>
+			<Effects>
+			</Effects>
 			<AmmoMagazines>
 				<AmmoMagazine Subtype="GrappleHookMagazine" />
 			</AmmoMagazines>
 			<ReloadTime>20000</ReloadTime>
-			<Effects>
-			</Effects>
 		</Weapon>
 	</Weapons>
 </Definitions>

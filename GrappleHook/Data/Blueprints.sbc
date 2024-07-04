@@ -4,7 +4,7 @@
 		<Blueprint>
 			<Id>
 				<TypeId>BlueprintDefinition</TypeId>
-				<SubtypeId>GrappleHook</SubtypeId>
+				<SubtypeId>GrappleHookBlueprint</SubtypeId>
 			</Id>
 			<DisplayName>Grapple Hook</DisplayName>
 			<Icon>Textures\GUI\Icons\ammo\LargeCalibreShell.dds</Icon>
@@ -13,7 +13,7 @@
 				<Item Amount="8" TypeId="Ingot" SubtypeId="Nickel" />
 				<Item Amount="5" TypeId="Ingot" SubtypeId="Magnesium" />
 			</Prerequisites>
-			<Result Amount="1" TypeId="AmmoMagazine" SubtypeId="LargeCalibreAmmo" />
+			<Result Amount="1" TypeId="AmmoMagazine" SubtypeId="GrappleHookMagazine" />
 			<BaseProductionTimeInSeconds>14</BaseProductionTimeInSeconds>
 		</Blueprint>
 	</Blueprints>
