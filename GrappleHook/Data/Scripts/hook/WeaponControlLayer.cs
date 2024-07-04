@@ -20,7 +20,6 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
-using static System.Net.Mime.MediaTypeNames;
 using static VRageRender.MyBillboard;
 
 namespace GrappleHook
