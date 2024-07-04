@@ -9,6 +9,7 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 using SENetworkAPI;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Net.Mail;
 using System.Reflection.Emit;
 using System.Text;
@@ -19,6 +20,7 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
+using static System.Net.Mime.MediaTypeNames;
 using static VRageRender.MyBillboard;
 
 namespace GrappleHook
@@ -66,9 +68,6 @@ namespace GrappleHook
                 settings = new NetSync<Settings>(this, TransferType.ServerToClient, Settings.GetDefaults(), true, false);
             }
 
-            Shooting = new NetSync<ShootData>(this, TransferType.Both, new ShootData());
-            Shooting.ValueChangedByNetwork += ShotFired;
-
             Attachment = new NetSync<AttachData>(this, TransferType.ServerToClient, new AttachData());
             Attachment.ValueChangedByNetwork += Attaching;
 
@@ -76,6 +75,9 @@ namespace GrappleHook
             ResetIndicator.ValueChanged += ResetCall;
 
             GrappleLength = new NetSync<double>(this, TransferType.ServerToClient, 0);
+
+            Shooting = new NetSync<ShootData>(this, TransferType.Both, new ShootData());
+            Shooting.ValueChangedByNetwork += ShotFired;
 
             Winch = new NetSync<float>(this, TransferType.Both, 0);
 
@@ -314,12 +316,14 @@ namespace GrappleHook
             float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value - speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
             if (speed != 0 && speedAfterCheck != GrappleLength.Value)
             {
-                if (MyAPIGateway.Session.IsServer)
+
+                GrappleLength.SetValue(speedAfterCheck);
+
+                if (!MyAPIGateway.Utilities.IsDedicated) 
                 {
-                    GrappleLength.Value = speedAfterCheck;
+                    MyAPIGateway.Utilities.ShowNotification($"Grapple Length: {GrappleLength.Value}", 1, "White");
                 }
 
-                //GrappleLength.SetValue(speedAfterCheck);
 
             }
         }
@@ -339,8 +343,11 @@ namespace GrappleHook
 
             double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value);
 
-            Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null);
-            connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null);
+            if (force > 0) 
+            {
+                Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null);
+                connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null);
+            }
         }
 
         private void UpdateProjectile()
@@ -369,7 +376,7 @@ namespace GrappleHook
                 }
 
                 localGrapplePosition = Vector3D.Transform(hit.Position + GrappleDirection * 0.1f, MatrixD.Invert(connectedEntity.WorldMatrix));
-                GrappleLength.Value = (hit.Position - gun.GetMuzzlePosition()).Length() + 1.25f;
+                GrappleLength.SetValue((hit.Position - gun.GetMuzzlePosition()).Length() + 1.25f);
                 State = States.attached;
 
                 if (MyAPIGateway.Session.IsServer)
