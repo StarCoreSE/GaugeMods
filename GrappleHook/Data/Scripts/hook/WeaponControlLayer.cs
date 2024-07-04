@@ -318,12 +318,10 @@ namespace GrappleHook
 
                 GrappleLength.SetValue(speedAfterCheck);
 
-                if (!MyAPIGateway.Utilities.IsDedicated) 
-                {
-                    MyAPIGateway.Utilities.ShowNotification($"Grapple Length: {GrappleLength.Value}", 1, "White");
-                }
-
-
+                //if (!MyAPIGateway.Utilities.IsDedicated) 
+                //{
+                //    MyAPIGateway.Utilities.ShowNotification($"Grapple Length: {GrappleLength.Value}", 1, "White");
+                //}
             }
         }
 
@@ -344,8 +342,25 @@ namespace GrappleHook
 
             if (force > 0) 
             {
-                Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null);
-                connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null);
+                // There is a bug with dedicated servers that has been very hard to pin down.
+                // this will 
+                if (MyAPIGateway.Utilities.IsDedicated)
+                {
+                    if (Turret.CubeGrid.Physics != null && connectedEntity.Physics != null)
+                    {
+                        Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, Turret.CubeGrid.Physics.CenterOfMassWorld, null);
+                        connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, connectedEntity.Physics.CenterOfMassWorld, null);
+                    }
+                    else 
+                    {
+                        ResetIndicator.Value = !ResetIndicator.Value;
+                    }
+                }
+                else 
+                {
+                    Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null);
+                    connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null);
+                }
             }
         }
 
