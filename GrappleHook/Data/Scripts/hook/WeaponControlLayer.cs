@@ -152,7 +152,7 @@ namespace GrappleHook
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (logic != null) 
                 {
-                    ResetIndicator.Value = !ResetIndicator.Value;
+                    logic.ResetIndicator.Value = !logic.ResetIndicator.Value;
                 }
             };
             detach.Writer = (block, text) => { text.Append("detach"); };
@@ -222,7 +222,7 @@ namespace GrappleHook
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (logic != null) 
                 {
-                    ResetIndicator.Value = !ResetIndicator.Value;
+                    logic.ResetIndicator.Value = !logic.ResetIndicator.Value;
                 }
             };
 
@@ -313,6 +313,7 @@ namespace GrappleHook
                 if (speed != 0 && speedAfterCheck != GrappleLength.Value) 
                 {
                     GrappleLength.SetValue(speedAfterCheck);
+                    
                 }
 
             }
