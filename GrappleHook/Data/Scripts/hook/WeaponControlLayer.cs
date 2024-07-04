@@ -9,6 +9,7 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 using SENetworkAPI;
 using System;
 using System.Collections.Generic;
+using System.Net.Mail;
 using System.Reflection.Emit;
 using System.Text;
 using VRage.Game;
@@ -42,7 +43,6 @@ namespace GrappleHook
 
         private NetSync<ShootData> Shooting;
         private NetSync<AttachData> Attachment;
-        private AttachData lastAttachData = null;
         private NetSync<bool> ResetIndicator;
         private NetSync<Settings> settings;
         private NetSync<float> Winch;
@@ -106,12 +106,14 @@ namespace GrappleHook
             if (data.entityId != 0) 
             {
                 connectedEntity = MyAPIGateway.Entities.GetEntityById(data.entityId);
-                localGrapplePosition = data.localAttachmentPoint;
-                localGrapplePositionI = data.localAttachmentPointI;
-                GrappleLength.SetValue(data.GrappleLength);
-                State = States.attached;
+                if (connectedEntity != null) 
+                {
+                    localGrapplePosition = data.localAttachmentPoint;
+                    localGrapplePositionI = data.localAttachmentPointI;
+                    GrappleLength.SetValue(data.GrappleLength);
+                    State = States.attached;
+                }
             }
-
         }
 
         private void ShotFired(ShootData data1, ShootData data2, ulong steamId)
@@ -136,7 +138,7 @@ namespace GrappleHook
                 return;
             }
 
-            attach(Attachment.Value);
+            Attachment.Fetch();
 
             Func<IMyTerminalBlock, bool> isThisMod = (block) => { return block.GameLogic.GetAs<WeaponControlLayer>() != null; };
 
