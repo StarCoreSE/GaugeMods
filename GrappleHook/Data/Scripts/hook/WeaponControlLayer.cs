@@ -314,7 +314,12 @@ namespace GrappleHook
             float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value - speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
             if (speed != 0 && speedAfterCheck != GrappleLength.Value)
             {
-                GrappleLength.SetValue(speedAfterCheck);
+                if (MyAPIGateway.Session.IsServer)
+                {
+                    GrappleLength.Value = speedAfterCheck;
+                }
+
+                //GrappleLength.SetValue(speedAfterCheck);
 
             }
         }
