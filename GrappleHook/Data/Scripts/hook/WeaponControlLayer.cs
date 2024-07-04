@@ -363,7 +363,7 @@ namespace GrappleHook
                 }
 
                 localGrapplePosition = Vector3D.Transform(hit.Position + GrappleDirection * 0.1f, MatrixD.Invert(connectedEntity.WorldMatrix));
-                GrappleLength.Value = (GrapplePosition - gun.GetMuzzlePosition()).Length() + 1.25f;
+                GrappleLength.Value = (hit.Position - gun.GetMuzzlePosition()).Length() + 1.25f;
                 State = States.attached;
 
                 if (MyAPIGateway.Session.IsServer)
@@ -811,7 +811,6 @@ namespace GrappleHook
             Vector3D sagDirection = GetSagDirection();
             return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value);
         }
-
 
         public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 30)
         {
