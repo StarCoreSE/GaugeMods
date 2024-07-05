@@ -68,6 +68,10 @@ namespace GrappleHook
                 settings = new NetSync<Settings>(this, TransferType.ServerToClient, Settings.GetDefaults(), true, false);
             }
 
+
+            Shooting = new NetSync<ShootData>(this, TransferType.Both, new ShootData());
+            Shooting.ValueChangedByNetwork += ShotFired;
+
             Attachment = new NetSync<AttachData>(this, TransferType.ServerToClient, new AttachData());
             Attachment.ValueChangedByNetwork += Attaching;
 
@@ -75,9 +79,6 @@ namespace GrappleHook
             ResetIndicator.ValueChanged += ResetCall;
 
             GrappleLength = new NetSync<double>(this, TransferType.ServerToClient, 0);
-
-            Shooting = new NetSync<ShootData>(this, TransferType.Both, new ShootData());
-            Shooting.ValueChangedByNetwork += ShotFired;
 
             Winch = new NetSync<float>(this, TransferType.Both, 0);
 
@@ -95,6 +96,8 @@ namespace GrappleHook
 
         private void ResetCall(bool o, bool n)
         {
+            if (o == n) return;
+
             Reset();
         }
 
@@ -118,6 +121,7 @@ namespace GrappleHook
                     localGrapplePosition = Attachment.Value.localAttachmentPoint;
                     localGrapplePositionI = Attachment.Value.localAttachmentPointI;
                     GrappleLength.SetValue(Attachment.Value.GrappleLength);
+                    GrappleLength.Fetch();
                     Tools.Debug($"Grid connection established");
                 }
             }
@@ -147,152 +151,8 @@ namespace GrappleHook
                 return;
             }
 
-            Attachment.Fetch();
-
-            Func<IMyTerminalBlock, bool> isThisMod = (block) => { return block.GameLogic.GetAs<WeaponControlLayer>() != null; };
-
             OverrideDefaultControls<IMyLargeTurretBase>();
-
-            IMyTerminalAction detach = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("Detach");
-            detach.Name = new StringBuilder("Detach");
-            detach.Enabled = isThisMod;
-            detach.Action = (block) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    logic.ResetIndicator.Value = !logic.ResetIndicator.Value;
-                }
-            };
-            detach.Writer = (block, text) => { text.Append("detach"); };
-
-
-            IMyTerminalAction resetAction = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("ResetWinch");
-            resetAction.Name = new StringBuilder("Reset");
-            resetAction.Enabled = isThisMod;
-            resetAction.Action = (block) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    logic.Winch.Value = 0;
-                }
-            };
-            resetAction.Writer = (block, text) => { text.Append("Reset"); };
-
-
-            IMyTerminalAction tighten = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("TightenWinch");
-            tighten.Name = new StringBuilder("Tighten");
-            tighten.Enabled = isThisMod;
-            tighten.Action = (block) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    logic.Winch.Value = Math.Min(logic.Winch.Value + 1, logic.settings.Value.TightenSpeed);
-                }
-            };
-            tighten.Writer = (block, text) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    text.Append($"{logic.Winch.Value.ToString("n0")}");
-                }
-            };
-
-
-            IMyTerminalAction loosen = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("LoosenWinch");
-            loosen.Name = new StringBuilder("Loosen");
-            loosen.Enabled = isThisMod;
-            loosen.Action = (block) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    logic.Winch.Value = Math.Max(logic.Winch.Value - 1, -logic.settings.Value.LoosenSpeed);
-                }
-            };
-            loosen.Writer = (block, text) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    text.Append($"{logic.Winch.Value.ToString("n0")}");
-                }
-            };
-
-
-            IMyTerminalControlButton detachControl = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, IMyTerminalBlock>("Detach");
-            detachControl.Title = MyStringId.GetOrCompute("Detach");
-            detachControl.Tooltip = MyStringId.GetOrCompute("Breaks active connection");
-            detachControl.Visible = isThisMod;
-            detachControl.Enabled = isThisMod;
-            detachControl.Action = (block) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    logic.ResetIndicator.Value = !logic.ResetIndicator.Value;
-                }
-            };
-
-
-            IMyTerminalControlSlider sliderWinch = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSlider, IMyTerminalBlock>("Winch");
-            sliderWinch.Title = MyStringId.GetOrCompute("Tighten Winch");
-            sliderWinch.Enabled = isThisMod;
-            sliderWinch.Visible = isThisMod;
-            sliderWinch.SetLimits(-settings.Value.LoosenSpeed, settings.Value.TightenSpeed);
-            sliderWinch.Getter = (block) =>
-            {
-                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (layer != null)
-                {
-                    return layer.Winch.Value;
-                }
-
-                return 0;
-            };
-            sliderWinch.Setter = (block, value) =>
-            {
-                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (layer != null)
-                {
-                    layer.Winch.Value = value;
-                }
-            };
-            sliderWinch.Writer = (block, builder) =>
-            {
-                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (layer != null)
-                {
-                    builder.Append($"{layer.Winch.Value.ToString("n2")}m/s");
-                }
-            };
-
-            IMyTerminalControlButton resetWinch = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, IMyTerminalBlock>("ResetWinch");
-            resetWinch.Title = MyStringId.GetOrCompute("Reset Winch");
-            resetWinch.Enabled = isThisMod;
-            resetWinch.Visible = isThisMod;
-            resetWinch.Action = (block) =>
-            {
-                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (layer != null)
-                {
-                    layer.Winch.Value = 0;
-                    sliderWinch.UpdateVisual();
-                }
-            };
-
-            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(detachControl);
-            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(resetWinch);
-            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(sliderWinch);
-
-            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(detach);
-            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(resetAction);
-            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(tighten);
-            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(loosen);
-
+            CreateControls();
 
             Hijack = true;
         }
@@ -319,29 +179,6 @@ namespace GrappleHook
             }
 
 
-        }
-
-        private void UpdateZipLine()
-        {
-            //    Vector3D[] points = GetLinePoints();
-
-            //    for (int i = 0; i < points.Length; i++) 
-            //    {
-
-            //    }
-        }
-
-        private void UpdateLength()
-        {
-            float speed = 0;
-            if (Winch.Value != 0)
-                speed = Winch.Value * 0.0166667f;
-
-            float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value - speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
-            if (speed != 0 && speedAfterCheck != GrappleLength.Value)
-            {
-                GrappleLength.SetValue(speedAfterCheck);
-            }
         }
 
         public override void UpdateAfterSimulation()
@@ -441,6 +278,29 @@ namespace GrappleHook
         private void attachedEntityClosed(IMyEntity entity)
         {
             ResetIndicator.Value = !ResetIndicator.Value;
+        }
+
+        private void UpdateZipLine()
+        {
+            //    Vector3D[] points = GetLinePoints();
+
+            //    for (int i = 0; i < points.Length; i++) 
+            //    {
+
+            //    }
+        }
+
+        private void UpdateLength()
+        {
+            float speed = 0;
+            if (Winch.Value != 0)
+                speed = Winch.Value * 0.0166667f;
+
+            float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value - speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
+            if (speed != 0 && speedAfterCheck != GrappleLength.Value)
+            {
+                GrappleLength.SetValue(speedAfterCheck);
+            }
         }
 
         private void Shoot(bool terminalShoot = false)
@@ -894,6 +754,154 @@ namespace GrappleHook
         public double ComputeRopeSag(double x)
         {
             return -4 * x * x + 4 * x;
+        }
+
+
+
+        private void CreateControls() 
+        {
+            Func<IMyTerminalBlock, bool> isThisMod = (block) => { return block.GameLogic.GetAs<WeaponControlLayer>() != null; };
+
+            IMyTerminalAction detach = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("Detach");
+            detach.Name = new StringBuilder("Detach");
+            detach.Enabled = isThisMod;
+            detach.Action = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    logic.ResetIndicator.Value = !logic.ResetIndicator.Value;
+                }
+            };
+            detach.Writer = (block, text) => { text.Append("detach"); };
+
+
+            IMyTerminalAction resetAction = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("ResetWinch");
+            resetAction.Name = new StringBuilder("Reset");
+            resetAction.Enabled = isThisMod;
+            resetAction.Action = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    logic.Winch.Value = 0;
+                }
+            };
+            resetAction.Writer = (block, text) => { text.Append("Reset"); };
+
+
+            IMyTerminalAction tighten = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("TightenWinch");
+            tighten.Name = new StringBuilder("Tighten");
+            tighten.Enabled = isThisMod;
+            tighten.Action = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    logic.Winch.Value = Math.Min(logic.Winch.Value + 1, logic.settings.Value.TightenSpeed);
+                }
+            };
+            tighten.Writer = (block, text) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    text.Append($"{logic.Winch.Value.ToString("n0")}");
+                }
+            };
+
+
+            IMyTerminalAction loosen = MyAPIGateway.TerminalControls.CreateAction<IMyTerminalBlock>("LoosenWinch");
+            loosen.Name = new StringBuilder("Loosen");
+            loosen.Enabled = isThisMod;
+            loosen.Action = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    logic.Winch.Value = Math.Max(logic.Winch.Value - 1, -logic.settings.Value.LoosenSpeed);
+                }
+            };
+            loosen.Writer = (block, text) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    text.Append($"{logic.Winch.Value.ToString("n0")}");
+                }
+            };
+
+
+            IMyTerminalControlButton detachControl = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, IMyTerminalBlock>("Detach");
+            detachControl.Title = MyStringId.GetOrCompute("Detach");
+            detachControl.Tooltip = MyStringId.GetOrCompute("Breaks active connection");
+            detachControl.Visible = isThisMod;
+            detachControl.Enabled = isThisMod;
+            detachControl.Action = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    logic.ResetIndicator.Value = !logic.ResetIndicator.Value;
+                }
+            };
+
+
+            IMyTerminalControlSlider sliderWinch = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSlider, IMyTerminalBlock>("Winch");
+            sliderWinch.Title = MyStringId.GetOrCompute("Tighten Winch");
+            sliderWinch.Enabled = isThisMod;
+            sliderWinch.Visible = isThisMod;
+            sliderWinch.SetLimits(-settings.Value.LoosenSpeed, settings.Value.TightenSpeed);
+            sliderWinch.Getter = (block) =>
+            {
+                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (layer != null)
+                {
+                    return layer.Winch.Value;
+                }
+
+                return 0;
+            };
+            sliderWinch.Setter = (block, value) =>
+            {
+                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (layer != null)
+                {
+                    layer.Winch.Value = value;
+                }
+            };
+            sliderWinch.Writer = (block, builder) =>
+            {
+                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (layer != null)
+                {
+                    builder.Append($"{layer.Winch.Value.ToString("n2")}m/s");
+                }
+            };
+
+            IMyTerminalControlButton resetWinch = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, IMyTerminalBlock>("ResetWinch");
+            resetWinch.Title = MyStringId.GetOrCompute("Reset Winch");
+            resetWinch.Enabled = isThisMod;
+            resetWinch.Visible = isThisMod;
+            resetWinch.Action = (block) =>
+            {
+                WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (layer != null)
+                {
+                    layer.Winch.Value = 0;
+                    sliderWinch.UpdateVisual();
+                }
+            };
+
+            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(detachControl);
+            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(resetWinch);
+            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(sliderWinch);
+
+            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(detach);
+            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(resetAction);
+            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(tighten);
+            MyAPIGateway.TerminalControls.AddAction<IMyTerminalBlock>(loosen);
+
         }
     }
 }
