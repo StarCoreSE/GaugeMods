@@ -92,38 +92,36 @@ namespace GrappleHook
             }
         }
 
-        private void ResetCall(bool arg1, bool arg2)
+        private void ResetCall(bool o, bool n)
         {
             Reset();
         }
 
-        private void Attaching(AttachData data1, AttachData data2, ulong arg3)
+        private void Attaching(AttachData o, AttachData n, ulong arg3)
         {
-            attach(data2);
-        }
-
-        private void attach(AttachData data)
-        {
-            if (data.entityId != 0)
+            if (n.entityId != 0) 
             {
-                connectedEntity = MyAPIGateway.Entities.GetEntityById(data.entityId);
+                connectedEntity = MyAPIGateway.Entities.GetEntityById(n.entityId);
                 if (connectedEntity != null)
                 {
-                    localGrapplePosition = data.localAttachmentPoint;
-                    localGrapplePositionI = data.localAttachmentPointI;
-                    GrappleLength.SetValue(data.GrappleLength);
+                    localGrapplePosition = n.localAttachmentPoint;
+                    localGrapplePositionI = n.localAttachmentPointI;
+                    GrappleLength.SetValue(n.GrappleLength);
                     State = States.attached;
                 }
+
+                Attachment.SetValue(new AttachData());
             }
         }
 
-        private void ShotFired(ShootData data1, ShootData data2, ulong steamId)
+        private void ShotFired(ShootData o, ShootData n, ulong steamId)
         {
-            if (GrappleDirection != Vector3.Zero)
+            if (State != States.attached && GrappleDirection != Vector3.Zero)
             {
-                GrapplePosition = data2.position;
-                GrappleDirection = data2.direction;
+                GrapplePosition = n.position;
+                GrappleDirection = n.direction;
                 State = States.active;
+                Shooting.SetValue(new ShootData());
             }
         }
 
@@ -139,7 +137,7 @@ namespace GrappleHook
                 return;
             }
 
-            Attachment.Fetch();
+            //Attachment.Fetch();
 
             Func<IMyTerminalBlock, bool> isThisMod = (block) => { return block.GameLogic.GetAs<WeaponControlLayer>() != null; };
 
@@ -454,6 +452,7 @@ namespace GrappleHook
                 reloadTime = (float)gun.GunBase.ReloadTime;
 
                 Shooting.Value = shoot;
+
             }
         }
 
@@ -474,6 +473,11 @@ namespace GrappleHook
             connectedEntity = null;
             localGrapplePosition = Vector3D.Zero;
             State = States.reloading;
+
+            if (MyAPIGateway.Session.IsServer) 
+            {
+                Attachment.Value = new AttachData();
+            }
         }
 
         private void Draw()
