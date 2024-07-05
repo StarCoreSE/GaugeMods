@@ -62,7 +62,7 @@ namespace GrappleHook
                 Settings.Init();
                 settings = new NetSync<Settings>(this, TransferType.ServerToClient, Settings.Instance, true, false);
             }
-            else 
+            else
             {
                 settings = new NetSync<Settings>(this, TransferType.ServerToClient, Settings.GetDefaults(), true, false);
             }
@@ -104,10 +104,10 @@ namespace GrappleHook
 
         private void attach(AttachData data)
         {
-            if (data.entityId != 0) 
+            if (data.entityId != 0)
             {
                 connectedEntity = MyAPIGateway.Entities.GetEntityById(data.entityId);
-                if (connectedEntity != null) 
+                if (connectedEntity != null)
                 {
                     localGrapplePosition = data.localAttachmentPoint;
                     localGrapplePositionI = data.localAttachmentPointI;
@@ -119,7 +119,7 @@ namespace GrappleHook
 
         private void ShotFired(ShootData data1, ShootData data2, ulong steamId)
         {
-            if (GrappleDirection != Vector3.Zero) 
+            if (GrappleDirection != Vector3.Zero)
             {
                 GrapplePosition = data2.position;
                 GrappleDirection = data2.direction;
@@ -151,7 +151,7 @@ namespace GrappleHook
             detach.Action = (block) =>
             {
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null) 
+                if (logic != null)
                 {
                     logic.ResetIndicator.Value = !logic.ResetIndicator.Value;
                 }
@@ -184,7 +184,8 @@ namespace GrappleHook
                     logic.Winch.Value = Math.Min(logic.Winch.Value + 1, logic.settings.Value.TightenSpeed);
                 }
             };
-            tighten.Writer = (block, text) => {
+            tighten.Writer = (block, text) =>
+            {
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (logic != null)
                 {
@@ -204,7 +205,8 @@ namespace GrappleHook
                     logic.Winch.Value = Math.Max(logic.Winch.Value - 1, -logic.settings.Value.LoosenSpeed);
                 }
             };
-            loosen.Writer = (block, text) => {
+            loosen.Writer = (block, text) =>
+            {
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (logic != null)
                 {
@@ -221,7 +223,7 @@ namespace GrappleHook
             detachControl.Action = (block) =>
             {
                 WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null) 
+                if (logic != null)
                 {
                     logic.ResetIndicator.Value = !logic.ResetIndicator.Value;
                 }
@@ -251,7 +253,8 @@ namespace GrappleHook
                     layer.Winch.Value = value;
                 }
             };
-            sliderWinch.Writer = (block, builder) => {
+            sliderWinch.Writer = (block, builder) =>
+            {
                 WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
                 if (layer != null)
                 {
@@ -302,11 +305,24 @@ namespace GrappleHook
                 case States.attached:
                     UpdateLength();
                     ApplyForce();
+                    UpdateZipLine();
                     break;
             }
+
+
         }
 
-        public void UpdateLength() 
+        private void UpdateZipLine()
+        {
+            //    Vector3D[] points = GetLinePoints();
+
+            //    for (int i = 0; i < points.Length; i++) 
+            //    {
+
+            //    }
+        }
+
+        private void UpdateLength()
         {
             float speed = 0;
             if (Winch.Value != 0)
@@ -332,6 +348,12 @@ namespace GrappleHook
 
         private void ApplyForce()
         {
+            if (connectedEntity == null && connectedEntity.Physics == null)
+            {
+                ResetIndicator.Value = !ResetIndicator.Value;
+                return;
+            }
+
             Vector3D turretPostion = gun.GetMuzzlePosition();
             Vector3D entityPostion = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
             Vector3D direction = turretPostion - entityPostion;
@@ -340,27 +362,13 @@ namespace GrappleHook
 
             double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value);
 
-            if (force > 0) 
+            if (!MyAPIGateway.Utilities.IsDedicated && force > 0)
             {
-                // There is a bug with dedicated servers that has been very hard to pin down.
-                // this will 
-                if (MyAPIGateway.Utilities.IsDedicated)
-                {
-                    if (Turret.CubeGrid.Physics != null && connectedEntity.Physics != null)
-                    {
-                        Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, Turret.CubeGrid.Physics.CenterOfMassWorld, null);
-                        connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, connectedEntity.Physics.CenterOfMassWorld, null);
-                    }
-                    else 
-                    {
-                        ResetIndicator.Value = !ResetIndicator.Value;
-                    }
-                }
-                else 
-                {
-                    Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null);
-                    connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null);
-                }
+                Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null, null, true, true);
+                connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null, null, true, true);
+
+                //Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, Turret.CubeGrid.Physics.CenterOfMassWorld, null);
+                //connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, connectedEntity.Physics.CenterOfMassWorld, null);
             }
         }
 
@@ -511,7 +519,7 @@ namespace GrappleHook
             }
         }
 
-        private Vector3D GetSagDirection() 
+        private Vector3D GetSagDirection()
         {
             ExternalForceData planetForces = WorldPlanets.GetExternalForces(Turret.WorldMatrix.Translation);
             Vector3D sagDirection = planetForces.Gravity;
@@ -739,7 +747,7 @@ namespace GrappleHook
             MyAPIGateway.TerminalControls.GetControls<T>(out controls);
             foreach (IMyTerminalControl c in controls)
             {
-                
+
                 Tools.Debug($"{c.Id}");
                 if (bannedControls.Contains(c.Id))
                 {
@@ -751,7 +759,8 @@ namespace GrappleHook
                     oldGetter = onoff.Getter;
                     oldSetter = onoff.Setter;
 
-                    onoff.Setter = (block, value) => {
+                    onoff.Setter = (block, value) =>
+                    {
                         WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
                         if (layer != null)
                         {
@@ -768,7 +777,8 @@ namespace GrappleHook
                         }
                     };
 
-                    onoff.Getter = (block) => {
+                    onoff.Getter = (block) =>
+                    {
                         WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
                         if (layer != null)
                         {
@@ -780,11 +790,12 @@ namespace GrappleHook
                         }
                     };
                 }
-                else if (c.Id == "ShootOnce") 
+                else if (c.Id == "ShootOnce")
                 {
                     IMyTerminalControlButton button = c as IMyTerminalControlButton;
                     oldAction = button.Action;
-                    button.Action = (block) => {
+                    button.Action = (block) =>
+                    {
                         WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
                         if (layer != null)
                         {
@@ -829,7 +840,7 @@ namespace GrappleHook
             };
         }
 
-        public Vector3D[] GetLinePoints() 
+        public Vector3D[] GetLinePoints()
         {
             if (State != States.attached) return new Vector3D[0];
 
@@ -839,7 +850,7 @@ namespace GrappleHook
             return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value);
         }
 
-        public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 30)
+        public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 15)
         {
             //returns a list of points in world space of length n. n must be equal or greater than 2
             //n = 3 will produce 2 line segments, n=2 will produce 1 line segment.
