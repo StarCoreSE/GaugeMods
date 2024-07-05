@@ -35,21 +35,22 @@ namespace GrappleHook
         private IMyLargeTurretBase Turret;
         private IMyGunObject<MyGunBase> gun;
 
-        public enum States { idle, reloading, active, attached }
-        private States State = States.idle;
+        public enum States { idle, reloading, projectile, attached }
+        
+        private NetSync<States> State;
+        private NetSync<long> ConnectedEntityId;
+        private IMyEntity ConnectedEntity = null;
+        private NetSync<Vector3> LocalGrapplePosition;
+        private NetSync<Vector3I> LocalGrapplePositionI;
 
-        private Vector3 localGrapplePosition = Vector3.Zero;
-        private Vector3I localGrapplePositionI = Vector3I.Zero;
-        private IMyEntity connectedEntity = null;
         private NetSync<double> GrappleLength;
 
         private NetSync<ShootData> Shooting;
-        private NetSync<AttachData> Attachment;
         private NetSync<bool> ResetIndicator;
         private NetSync<Settings> settings;
         private NetSync<float> Winch;
 
-        private float reloadTime = 0;
+        private NetSync<float> ReloadTime;
 
         private Vector3D GrapplePosition = Vector3D.Zero;
         private Vector3 GrappleDirection = Vector3.Zero;
@@ -68,19 +69,25 @@ namespace GrappleHook
                 settings = new NetSync<Settings>(this, TransferType.ServerToClient, Settings.GetDefaults(), true, false);
             }
 
+            State = new NetSync<States>(this, TransferType.ServerToClient, States.idle);
+
+            ConnectedEntityId = new NetSync<long>(this, TransferType.ServerToClient, 0);
+            ConnectedEntityId.ValueChangedByNetwork += AttemptConnect;
+
+            LocalGrapplePosition = new NetSync<Vector3>(this, TransferType.ServerToClient, Vector3.Zero);
+            LocalGrapplePositionI = new NetSync<Vector3I>(this, TransferType.ServerToClient, Vector3I.Zero);
 
             Shooting = new NetSync<ShootData>(this, TransferType.Both, new ShootData());
-            Shooting.ValueChangedByNetwork += ShotFired;
+            Shooting.ValueChanged += Shoot;
 
-            Attachment = new NetSync<AttachData>(this, TransferType.ServerToClient, new AttachData());
-            Attachment.ValueChangedByNetwork += Attaching;
-
-            ResetIndicator = new NetSync<bool>(this, TransferType.Both);
-            ResetIndicator.ValueChanged += ResetCall;
+            ResetIndicator = new NetSync<bool>(this, TransferType.ClientToServer, false);
+            ResetIndicator.ValueChanged += Reset;
 
             GrappleLength = new NetSync<double>(this, TransferType.ServerToClient, 0);
 
             Winch = new NetSync<float>(this, TransferType.Both, 0);
+
+            ReloadTime = new NetSync<float>(this, TransferType.ServerToClient, 0);
 
             gun = Entity as IMyGunObject<MyGunBase>;
             Turret = Entity as IMyLargeTurretBase;
@@ -94,48 +101,43 @@ namespace GrappleHook
             }
         }
 
-        private void ResetCall(bool o, bool n)
+        private void Reset(bool o, bool n)
         {
-            if (o == n) return;
-
             Reset();
         }
-
-        private void Attaching(AttachData o, AttachData n, ulong arg3)
+        private void Reset()
         {
-            if (n.entityId != 0) 
-            {
-                State = States.attached;
-                Tools.Debug($"State Change: {State}");
-                AttemptConnect();
-            }
+            GrapplePosition = Vector3D.Zero;
+            GrappleDirection = Vector3D.Zero;
+
+            if (ConnectedEntity != null)
+                ConnectedEntity.OnMarkForClose -= attachedEntityClosed;
+            if (ConnectedEntity is IMyCubeGrid)
+                (ConnectedEntity as IMyCubeGrid).OnBlockRemoved -= Grid_OnBlockRemoved;
+
+            ConnectedEntity = null;
+            ConnectedEntityId.Value = 0;
+            LocalGrapplePosition.Value = Vector3.Zero;
+            LocalGrapplePositionI.Value = Vector3I.Zero;
+            State.Value = States.reloading;
+
+            Tools.Debug($"Reset - State Change: {State}");
+        }
+
+        private void AttemptConnect(long o, long n, ulong steamId) 
+        {
+            AttemptConnect();
         }
 
         private void AttemptConnect()
         {
-            if (Attachment.Value.entityId != 0 && connectedEntity == null)
+            if (ConnectedEntityId.Value != 0 && ConnectedEntity == null)
             {
-                connectedEntity = MyAPIGateway.Entities.GetEntityById(Attachment.Value.entityId);
-                if (connectedEntity != null)
+                ConnectedEntity = MyAPIGateway.Entities.GetEntityById(ConnectedEntityId.Value);
+                if (ConnectedEntity != null) 
                 {
-                    localGrapplePosition = Attachment.Value.localAttachmentPoint;
-                    localGrapplePositionI = Attachment.Value.localAttachmentPointI;
-                    GrappleLength.SetValue(Attachment.Value.GrappleLength);
-                    GrappleLength.Fetch();
-                    Tools.Debug($"Grid connection established");
+                    ConnectedEntity.OnMarkForClose += attachedEntityClosed;
                 }
-            }
-        }
-
-        private void ShotFired(ShootData o, ShootData n, ulong steamId)
-        {
-            if (State != States.attached && GrappleDirection != Vector3.Zero)
-            {
-                GrapplePosition = n.position;
-                GrappleDirection = n.direction;
-                State = States.active;
-                Tools.Debug($"Shot fired - State Change: {State}");
-                Shooting.SetValue(new ShootData());
             }
         }
 
@@ -159,15 +161,15 @@ namespace GrappleHook
 
         public override void UpdateBeforeSimulation()
         {
-            switch (State)
+            switch (State.Value)
             {
                 case States.idle:
-                    Shoot();
+                    VerifyAndRequestShoot();
                     break;
                 case States.reloading:
                     Reload();
                     break;
-                case States.active:
+                case States.projectile:
                     UpdateProjectile();
                     break;
                 case States.attached:
@@ -186,18 +188,111 @@ namespace GrappleHook
             Draw();
         }
 
+        private void VerifyAndRequestShoot(bool terminalShoot = false)
+        {
+            if (State.Value == States.idle && (Turret.IsShooting || terminalShoot || terminalShootOn) && ReloadTime.Value <= 0)
+            {
+                Tools.Debug("Requesting Shoot");
+                MatrixD muzzleMatrix = gun.GunBase.GetMuzzleWorldMatrix();
+                Vector3 direction = muzzleMatrix.Forward;
+                Vector3D origin = Turret.PositionComp.WorldMatrixRef.Translation;
+
+                ShootData shoot = new ShootData();
+                shoot.direction = direction;
+                shoot.position = origin;
+
+                Shooting.Value = shoot;
+            }
+        }
+
+        private void Shoot(ShootData o, ShootData n)
+        {
+            if (State.Value != States.attached && n.direction != Vector3.Zero)
+            {
+                GrapplePosition = Turret.PositionComp.WorldMatrixRef.Translation;
+                GrappleDirection = n.direction;
+                State.Value = States.projectile;
+                ReloadTime.Value = (float)gun.GunBase.ReloadTime;
+                Shooting.SetValue(new ShootData());
+                Tools.Debug($"Shooting - State Change: {State.Value}");
+            }
+        }
+
+        private void Reload()
+        {
+            if (ReloadTime.Value > 0)
+                ReloadTime.SetValue( ReloadTime.Value-16.666667f);
+            else
+                State.Value = States.idle;
+        }
+
+        private void UpdateProjectile()
+        {
+            //Tools.Debug($"Projectile In Flight {(Turret.PositionComp.WorldMatrixRef.Translation - GrapplePosition).Length()}");
+            Vector3 delta = GrappleDirection * settings.Value.GrappleProjectileSpeed;
+
+            IHitInfo hit = null;
+            MyAPIGateway.Physics.CastRay(GrapplePosition, GrapplePosition + delta, out hit);
+            if (hit != null && !hit.HitEntity.MarkedForClose)
+            {
+                ConnectedEntityId.Value = hit.HitEntity.EntityId;
+                ConnectedEntity = hit.HitEntity;
+                ConnectedEntity.OnMarkForClose += attachedEntityClosed;
+
+                if (ConnectedEntity is IMyCubeGrid)
+                {
+                    MyCubeGrid grid = (ConnectedEntity as MyCubeGrid);
+                    grid.OnBlockRemoved += Grid_OnBlockRemoved;
+
+                    Vector3I pos = grid.WorldToGridInteger(hit.Position + GrappleDirection * 0.1f);
+                    IMySlimBlock block = grid.GetCubeBlock(pos);
+                    if (block != null)
+                    {
+                        LocalGrapplePositionI.Value = block.Position;
+                    }
+                }
+
+                LocalGrapplePosition.Value = Vector3D.Transform(hit.Position + GrappleDirection * 0.1f, MatrixD.Invert(ConnectedEntity.WorldMatrix));
+                GrappleLength.Value = (hit.Position - Turret.PositionComp.WorldMatrixRef.Translation).Length() + 1.25f;
+                State.Value = States.attached;
+                Tools.Debug($"Attached {hit.HitEntity.DisplayName} - State Change: {State}");
+            }
+            else 
+            {
+                GrapplePosition += delta;
+
+                // if grapple length goes beyond max length
+                if ((Turret.PositionComp.WorldMatrixRef.Translation - GrapplePosition).LengthSquared() > settings.Value.ShootRopeLength * settings.Value.ShootRopeLength)
+                {
+                    ResetIndicator.Value = !ResetIndicator.Value;
+                }
+            }
+        }
+
+        private void UpdateLength()
+        {
+            float speed = 0;
+            if (Winch.Value != 0)
+                speed = Winch.Value * 0.0166667f;
+
+            float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value - speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
+            if (speed != 0 && speedAfterCheck != GrappleLength.Value)
+            {
+                GrappleLength.SetValue(speedAfterCheck);
+            }
+        }
+
         public void ApplyForce()
         {
             try
             {
-                if (Turret.CubeGrid.Physics == null || connectedEntity == null || connectedEntity.Physics == null || Entity.MarkedForClose || connectedEntity.MarkedForClose)
+                if (Turret.CubeGrid.Physics == null || ConnectedEntity == null || ConnectedEntity.Physics == null || Entity.MarkedForClose || ConnectedEntity.MarkedForClose)
                 {
-                    //ResetIndicator.Value = !ResetIndicator.Value;
                     return;
                 }
 
-                Vector3D turretPostion = Turret.WorldMatrix.Translation; //gun.GetMuzzlePosition();
-                Vector3D entityPostion = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
+                Vector3D turretPostion = Turret.PositionComp.WorldMatrixRef.Translation;
+                Vector3D entityPostion = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix);
                 Vector3D direction = turretPostion - entityPostion;
                 double currentLength = direction.Length();
                 direction.Normalize();
@@ -207,69 +302,18 @@ namespace GrappleHook
                 if (force > 0 && turretPostion != Vector3D.Zero && entityPostion != Vector3D.Zero)
                 {
                     Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null, null, true);
-                    connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null, null, true);
+                    ConnectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null, null, true);
                 }
             }
-            catch { }
-        }
-
-        private void UpdateProjectile()
-        {
-            Tools.Debug($"Projectile In Flight {(Turret.WorldMatrix.Translation - GrapplePosition).Length()}");
-            Vector3 delta = GrappleDirection * settings.Value.GrappleProjectileSpeed;
-
-            IHitInfo hit = null;
-            MyAPIGateway.Physics.CastRay(GrapplePosition, GrapplePosition + delta, out hit);
-            if (hit != null && !hit.HitEntity.MarkedForClose)
+            catch(Exception e)
             {
-                connectedEntity = hit.HitEntity;
-                connectedEntity.OnMarkForClose += attachedEntityClosed;
-
-                if (connectedEntity is IMyCubeGrid)
-                {
-                    MyCubeGrid grid = (connectedEntity as MyCubeGrid);
-                    grid.OnBlockRemoved += Grid_OnBlockRemoved;
-
-                    Vector3I pos = grid.WorldToGridInteger(hit.Position + GrappleDirection * 0.1f);
-                    IMySlimBlock block = grid.GetCubeBlock(pos);
-                    if (block != null)
-                    {
-                        localGrapplePositionI = block.Position;
-                    }
-                }
-
-                localGrapplePosition = Vector3D.Transform(hit.Position + GrappleDirection * 0.1f, MatrixD.Invert(connectedEntity.WorldMatrix));
-                GrappleLength.SetValue((hit.Position - Turret.WorldMatrix.Translation).Length() + 1.25f);
-                State = States.attached;
-                Tools.Debug($"Attached - State Change: {State}");
-
-                if (MyAPIGateway.Session.IsServer)
-                {
-                    AttachData data = new AttachData();
-                    data.entityId = hit.HitEntity.EntityId;
-                    data.localAttachmentPoint = localGrapplePosition;
-                    data.localAttachmentPointI = localGrapplePositionI;
-                    data.GrappleLength = GrappleLength.Value;
-
-                    Attachment.Value = data;
-                }
-
-                Tools.Debug($"Hit entity: {hit.HitEntity.DisplayName}");
-                return;
-            }
-
-            GrapplePosition += delta;
-
-            // if grapple length goes beyond max length
-            if ((Turret.WorldMatrix.Translation - GrapplePosition).LengthSquared() > settings.Value.ShootRopeLength * settings.Value.ShootRopeLength)
-            {
-                ResetIndicator.Value = !ResetIndicator.Value;
+                Tools.Debug(e.ToString());
             }
         }
 
         private void Grid_OnBlockRemoved(IMySlimBlock block)
         {
-            if (block.Position == localGrapplePositionI)
+            if (block.Position == LocalGrapplePositionI.Value)
             {
                 ResetIndicator.Value = !ResetIndicator.Value;
             }
@@ -290,64 +334,6 @@ namespace GrappleHook
             //    }
         }
 
-        private void UpdateLength()
-        {
-            float speed = 0;
-            if (Winch.Value != 0)
-                speed = Winch.Value * 0.0166667f;
-
-            float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value - speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
-            if (speed != 0 && speedAfterCheck != GrappleLength.Value)
-            {
-                GrappleLength.SetValue(speedAfterCheck);
-            }
-        }
-
-        private void Shoot(bool terminalShoot = false)
-        {
-            if (State == States.idle && (Turret.IsShooting || terminalShoot || terminalShootOn) && reloadTime <= 0)
-            {
-                Tools.Debug("Shooting!");
-                MatrixD muzzleMatrix = gun.GunBase.GetMuzzleWorldMatrix();
-                Vector3 direction = muzzleMatrix.Forward;
-                Vector3D origin = Turret.WorldMatrix.Translation;
-
-                GrappleDirection = direction;
-                GrapplePosition = origin;
-                State = States.active;
-
-                ShootData shoot = new ShootData();
-                shoot.direction = GrappleDirection;
-                shoot.position = GrapplePosition;
-
-                reloadTime = (float)gun.GunBase.ReloadTime;
-
-                Shooting.Value = shoot;
-
-            }
-        }
-
-        private void Reload()
-        {
-            if (reloadTime > 0)
-                reloadTime -= 16.666667f;
-            else
-                State = States.idle;
-        }
-
-        private void Reset()
-        {
-            Tools.Debug("Resetting!");
-            GrapplePosition = Vector3D.Zero;
-            GrappleDirection = Vector3D.Zero;
-
-            connectedEntity = null;
-            localGrapplePosition = Vector3D.Zero;
-            State = States.reloading;
-            Attachment.SetValue(new AttachData());
-            Tools.Debug($"Reset - State Change: {State}");
-        }
-
         private void Draw()
         {
             try
@@ -358,10 +344,10 @@ namespace GrappleHook
                 MyStringId texture = MyStringId.GetOrCompute("cable");
 
                 Vector3D sagDirection = GetSagDirection();
-                Vector3D gunPosition = Turret.WorldMatrix.Translation; //gun.GetMuzzlePosition();
+                Vector3D gunPosition = Turret.PositionComp.WorldMatrixRef.Translation; //gun.GetMuzzlePosition();
 
                 Vector3D position;
-                if (State == States.active)
+                if (State.Value == States.projectile)
                 {
                     position = GrapplePosition;
                     Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, Vector3D.Distance(gunPosition, position) * 1.005f, settings.Value.RopeSegments);
@@ -374,9 +360,9 @@ namespace GrappleHook
                         MySimpleObjectDraw.DrawLine(start, end, texture, ref color, 0.15f, BlendTypeEnum.Standard);
                     }
                 }
-                else if (State == States.attached)
+                else if (State.Value == States.attached)
                 {
-                    position = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
+                    position = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix);
                     Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value, settings.Value.RopeSegments);
 
                     for (int i = 0; i < points.Length - 1; i++)
@@ -388,12 +374,15 @@ namespace GrappleHook
                     }
                 }
             }
-            catch { }
+            catch(Exception e) 
+            {
+                Tools.Debug(e.ToString());
+            }
         }
 
         private Vector3D GetSagDirection()
         {
-            ExternalForceData planetForces = WorldPlanets.GetExternalForces(Turret.WorldMatrix.Translation);
+            ExternalForceData planetForces = WorldPlanets.GetExternalForces(Turret.PositionComp.WorldMatrixRef.Translation);
             Vector3D sagDirection = planetForces.Gravity;
 
             if (sagDirection == Vector3D.Zero)
@@ -402,6 +391,81 @@ namespace GrappleHook
             }
 
             return sagDirection;
+        }
+
+        public Vector3D[] GetLinePoints()
+        {
+            if (State.Value != States.attached) return new Vector3D[0];
+
+
+            Vector3D gunPosition = Turret.PositionComp.WorldMatrixRef.Translation; //gun.GetMuzzlePosition();
+            Vector3D position = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix);
+            Vector3D sagDirection = GetSagDirection();
+            return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value,settings.Value.RopeSegments);
+        }
+
+        public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 10)
+        {
+            //returns a list of points in world space of length n. n must be equal or greater than 2
+            //n = 3 will produce 2 line segments, n=2 will produce 1 line segment.
+            if (n < 2) n = 2;
+
+            double ropeLength = Vector3D.Distance(start, end);
+            double sagAmount = Math.Max(0, referenceLength - ropeLength) * 0.5;
+
+            //Tools.Debug($"rope: {ropeLength}, sag: {sagAmount}, ref: {referenceLength} direction: {sagDirection}");
+
+            Vector3D[] result = new Vector3D[n];
+            for (int i = 0; i < n; i++)
+            {
+                double u = (double)i / ((double)n - 1);
+                double v = 1d - u;
+
+                Vector3D newPt = start * v + end * u;
+                if (sagAmount > 0)
+                {
+                    newPt += sagDirection * ComputeRopeSag(u) * sagAmount;
+                }
+                result[i] = newPt;
+            }
+
+            return result;
+        }
+
+        public double ComputeRopeSag(double x)
+        {
+            return -4 * x * x + 4 * x;
+        }
+
+
+        private static void DisableAction(IMyTerminalAction a)
+        {
+            Func<IMyTerminalBlock, bool> oldEnabled = a.Enabled;
+            a.Enabled = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    return false;
+                }
+
+                return oldEnabled.Invoke(block);
+            };
+        }
+
+        private static void HideControl(IMyTerminalControl a)
+        {
+            Func<IMyTerminalBlock, bool> oldVisiable = a.Visible;
+            a.Visible = (block) =>
+            {
+                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
+                if (logic != null)
+                {
+                    return false;
+                }
+
+                return oldVisiable.Invoke(block);
+            };
         }
 
         private static void OverrideDefaultControls<T>()
@@ -495,7 +559,7 @@ namespace GrappleHook
 
                             if (layer.terminalShootOn)
                             {
-                                layer.Shoot(true);
+                                layer.VerifyAndRequestShoot(true);
                             }
                         }
                         else
@@ -532,7 +596,7 @@ namespace GrappleHook
                         if (layer != null)
                         {
                             layer.terminalShootOn = true;
-                            layer.Shoot(true);
+                            layer.VerifyAndRequestShoot(true);
                         }
                         else
                         {
@@ -605,7 +669,7 @@ namespace GrappleHook
                         if (layer != null)
                         {
 
-                            layer.Shoot(true);
+                            layer.VerifyAndRequestShoot(true);
                         }
                         else
                         {
@@ -640,7 +704,7 @@ namespace GrappleHook
 
                             if (layer.terminalShootOn)
                             {
-                                layer.Shoot(true);
+                                layer.VerifyAndRequestShoot(true);
                             }
                         }
                         else
@@ -671,7 +735,7 @@ namespace GrappleHook
                         WeaponControlLayer layer = block.GameLogic.GetAs<WeaponControlLayer>();
                         if (layer != null)
                         {
-                            layer.Shoot(true);
+                            layer.VerifyAndRequestShoot(true);
                         }
                         else
                         {
@@ -681,82 +745,6 @@ namespace GrappleHook
                 }
             }
         }
-
-        private static void DisableAction(IMyTerminalAction a)
-        {
-            Func<IMyTerminalBlock, bool> oldEnabled = a.Enabled;
-            a.Enabled = (block) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    return false;
-                }
-
-                return oldEnabled.Invoke(block);
-            };
-        }
-
-        private static void HideControl(IMyTerminalControl a)
-        {
-            Func<IMyTerminalBlock, bool> oldVisiable = a.Visible;
-            a.Visible = (block) =>
-            {
-                WeaponControlLayer logic = block.GameLogic.GetAs<WeaponControlLayer>();
-                if (logic != null)
-                {
-                    return false;
-                }
-
-                return oldVisiable.Invoke(block);
-            };
-        }
-
-        public Vector3D[] GetLinePoints()
-        {
-            if (State != States.attached) return new Vector3D[0];
-
-
-            Vector3D gunPosition = Turret.WorldMatrix.Translation; //gun.GetMuzzlePosition();
-            Vector3D position = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
-            Vector3D sagDirection = GetSagDirection();
-            return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value,settings.Value.RopeSegments);
-        }
-
-        public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 10)
-        {
-            //returns a list of points in world space of length n. n must be equal or greater than 2
-            //n = 3 will produce 2 line segments, n=2 will produce 1 line segment.
-            if (n < 2) n = 2;
-
-            double ropeLength = Vector3D.Distance(start, end);
-            double sagAmount = Math.Max(0, referenceLength - ropeLength) * 0.5;
-
-            //Tools.Debug($"rope: {ropeLength}, sag: {sagAmount}, ref: {referenceLength} direction: {sagDirection}");
-
-            Vector3D[] result = new Vector3D[n];
-            for (int i = 0; i < n; i++)
-            {
-                double u = (double)i / ((double)n - 1);
-                double v = 1d - u;
-
-                Vector3D newPt = start * v + end * u;
-                if (sagAmount > 0)
-                {
-                    newPt += sagDirection * ComputeRopeSag(u) * sagAmount;
-                }
-                result[i] = newPt;
-            }
-
-            return result;
-        }
-
-        public double ComputeRopeSag(double x)
-        {
-            return -4 * x * x + 4 * x;
-        }
-
-
 
         private void CreateControls() 
         {
