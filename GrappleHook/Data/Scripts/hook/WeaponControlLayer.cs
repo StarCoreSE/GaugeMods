@@ -101,13 +101,21 @@ namespace GrappleHook
         {
             if (n.entityId != 0) 
             {
-                connectedEntity = MyAPIGateway.Entities.GetEntityById(n.entityId);
+                State = States.attached;
+                AttemptConnect();
+            }
+        }
+
+        private void AttemptConnect()
+        {
+            if (Attachment.Value.entityId != 0)
+            {
+                connectedEntity = MyAPIGateway.Entities.GetEntityById(Attachment.Value.entityId);
                 if (connectedEntity != null)
                 {
-                    localGrapplePosition = n.localAttachmentPoint;
-                    localGrapplePositionI = n.localAttachmentPointI;
-                    GrappleLength.SetValue(n.GrappleLength);
-                    State = States.attached;
+                    localGrapplePosition = Attachment.Value.localAttachmentPoint;
+                    localGrapplePositionI = Attachment.Value.localAttachmentPointI;
+                    GrappleLength.SetValue(Attachment.Value.GrappleLength);
                 }
             }
         }
@@ -122,6 +130,8 @@ namespace GrappleHook
                 Shooting.SetValue(new ShootData());
             }
         }
+
+
 
         public override void UpdateOnceBeforeFrame()
         {
@@ -299,6 +309,7 @@ namespace GrappleHook
                     UpdateProjectile();
                     break;
                 case States.attached:
+                    AttemptConnect();
                     UpdateLength();
                     ApplyForce();
                     UpdateZipLine();
