@@ -10,6 +10,7 @@ using SENetworkAPI;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq.Expressions;
 using System.Net.Mail;
 using System.Reflection.Emit;
 using System.Text;
@@ -487,41 +488,45 @@ namespace GrappleHook
 
         private void Draw()
         {
-            if (MyAPIGateway.Utilities.IsDedicated) return;
-
-            Vector4 color = VRageMath.Color.DarkGray;
-            MyStringId texture = MyStringId.GetOrCompute("cable");
-
-            Vector3D sagDirection = GetSagDirection();
-            Vector3D gunPosition = Turret.WorldMatrix.Translation; //gun.GetMuzzlePosition();
-
-            Vector3D position;
-            if (State == States.active)
+            try
             {
-                position = GrapplePosition;
-                Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, Vector3D.Distance(gunPosition, position) * 1.005f, settings.Value.RopeSegments);
+                if (MyAPIGateway.Utilities.IsDedicated) return;
 
-                for (int i = 0; i < points.Length - 1; i++)
+                Vector4 color = VRageMath.Color.DarkGray;
+                MyStringId texture = MyStringId.GetOrCompute("cable");
+
+                Vector3D sagDirection = GetSagDirection();
+                Vector3D gunPosition = Turret.WorldMatrix.Translation; //gun.GetMuzzlePosition();
+
+                Vector3D position;
+                if (State == States.active)
                 {
-                    Vector3D start = points[i];
-                    Vector3D end = points[i + 1];
+                    position = GrapplePosition;
+                    Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, Vector3D.Distance(gunPosition, position) * 1.005f, settings.Value.RopeSegments);
 
-                    MySimpleObjectDraw.DrawLine(start, end, texture, ref color, 0.15f, BlendTypeEnum.Standard);
+                    for (int i = 0; i < points.Length - 1; i++)
+                    {
+                        Vector3D start = points[i];
+                        Vector3D end = points[i + 1];
+
+                        MySimpleObjectDraw.DrawLine(start, end, texture, ref color, 0.15f, BlendTypeEnum.Standard);
+                    }
+                }
+                else if (State == States.attached)
+                {
+                    position = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
+                    Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value, settings.Value.RopeSegments);
+
+                    for (int i = 0; i < points.Length - 1; i++)
+                    {
+                        Vector3D start = points[i];
+                        Vector3D end = points[i + 1];
+
+                        MySimpleObjectDraw.DrawLine(start, end, texture, ref color, 0.15f, BlendTypeEnum.Standard);
+                    }
                 }
             }
-            else if (State == States.attached)
-            {
-                position = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
-                Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value, settings.Value.RopeSegments);
-
-                for (int i = 0; i < points.Length - 1; i++)
-                {
-                    Vector3D start = points[i];
-                    Vector3D end = points[i + 1];
-
-                    MySimpleObjectDraw.DrawLine(start, end, texture, ref color, 0.15f, BlendTypeEnum.Standard);
-                }
-            }
+            catch { }
         }
 
         private Vector3D GetSagDirection()
