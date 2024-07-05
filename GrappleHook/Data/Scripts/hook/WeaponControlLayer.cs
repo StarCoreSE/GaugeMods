@@ -103,6 +103,7 @@ namespace GrappleHook
             if (n.entityId != 0) 
             {
                 State = States.attached;
+                Tools.Debug($"State Change: {State}");
                 AttemptConnect();
             }
         }
@@ -117,6 +118,7 @@ namespace GrappleHook
                     localGrapplePosition = Attachment.Value.localAttachmentPoint;
                     localGrapplePositionI = Attachment.Value.localAttachmentPointI;
                     GrappleLength.SetValue(Attachment.Value.GrappleLength);
+                    Tools.Debug($"Grid connection established");
                 }
             }
         }
@@ -128,11 +130,10 @@ namespace GrappleHook
                 GrapplePosition = n.position;
                 GrappleDirection = n.direction;
                 State = States.active;
+                Tools.Debug($"Shot fired - State Change: {State}");
                 Shooting.SetValue(new ShootData());
             }
         }
-
-
 
         public override void UpdateOnceBeforeFrame()
         {
@@ -339,7 +340,6 @@ namespace GrappleHook
             float speedAfterCheck = (float)Math.Max(Math.Min(GrappleLength.Value - speed, settings.Value.MaxRopeLength), settings.Value.MinRopeLength);
             if (speed != 0 && speedAfterCheck != GrappleLength.Value)
             {
-
                 GrappleLength.SetValue(speedAfterCheck);
             }
         }
@@ -404,6 +404,7 @@ namespace GrappleHook
                 localGrapplePosition = Vector3D.Transform(hit.Position + GrappleDirection * 0.1f, MatrixD.Invert(connectedEntity.WorldMatrix));
                 GrappleLength.SetValue((hit.Position - Turret.WorldMatrix.Translation).Length() + 1.25f);
                 State = States.attached;
+                Tools.Debug($"Attached - State Change: {State}");
 
                 if (MyAPIGateway.Session.IsServer)
                 {
@@ -484,6 +485,7 @@ namespace GrappleHook
             localGrapplePosition = Vector3D.Zero;
             State = States.reloading;
             Attachment.SetValue(new AttachData());
+            Tools.Debug($"Reset - State Change: {State}");
         }
 
         private void Draw()
