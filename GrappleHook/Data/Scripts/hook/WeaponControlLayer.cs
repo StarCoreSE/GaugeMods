@@ -345,9 +345,9 @@ namespace GrappleHook
         {
             try
             {
-                if (Entity.Physics == null || connectedEntity == null || connectedEntity.Physics == null || Entity.MarkedForClose || connectedEntity.MarkedForClose)
+                if (Turret.CubeGrid.Physics == null || connectedEntity == null || connectedEntity.Physics == null || Entity.MarkedForClose || connectedEntity.MarkedForClose)
                 {
-                    ResetIndicator.Value = !ResetIndicator.Value;
+                    //ResetIndicator.Value = !ResetIndicator.Value;
                     return;
                 }
 
