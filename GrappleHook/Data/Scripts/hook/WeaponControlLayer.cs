@@ -109,8 +109,6 @@ namespace GrappleHook
                     GrappleLength.SetValue(n.GrappleLength);
                     State = States.attached;
                 }
-
-                Attachment.SetValue(new AttachData());
             }
         }
 
@@ -473,11 +471,7 @@ namespace GrappleHook
             connectedEntity = null;
             localGrapplePosition = Vector3D.Zero;
             State = States.reloading;
-
-            if (MyAPIGateway.Session.IsServer) 
-            {
-                Attachment.Value = new AttachData();
-            }
+            Attachment.SetValue(new AttachData());
         }
 
         private void Draw()
