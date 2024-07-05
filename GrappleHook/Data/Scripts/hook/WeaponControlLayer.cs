@@ -362,7 +362,7 @@ namespace GrappleHook
 
             double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value);
 
-            if (!MyAPIGateway.Utilities.IsDedicated && force > 0)
+            if (force > 0)
             {
                 Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null, null, true);
                 connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null, null, true);
