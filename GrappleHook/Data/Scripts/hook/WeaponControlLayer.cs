@@ -358,7 +358,7 @@ namespace GrappleHook
                     return;
                 }
 
-                Vector3D turretPostion = gun.GetMuzzlePosition();
+                Vector3D turretPostion = Turret.WorldMatrix.Translation; //gun.GetMuzzlePosition();
                 Vector3D entityPostion = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
                 Vector3D direction = turretPostion - entityPostion;
                 double currentLength = direction.Length();
@@ -380,7 +380,7 @@ namespace GrappleHook
 
         private void UpdateProjectile()
         {
-            Tools.Debug($"Projectile In Flight {(gun.GetMuzzlePosition() - GrapplePosition).Length()}");
+            Tools.Debug($"Projectile In Flight {(Turret.WorldMatrix.Translation - GrapplePosition).Length()}");
             Vector3 delta = GrappleDirection * settings.Value.GrappleProjectileSpeed;
 
             IHitInfo hit = null;
@@ -404,7 +404,7 @@ namespace GrappleHook
                 }
 
                 localGrapplePosition = Vector3D.Transform(hit.Position + GrappleDirection * 0.1f, MatrixD.Invert(connectedEntity.WorldMatrix));
-                GrappleLength.SetValue((hit.Position - gun.GetMuzzlePosition()).Length() + 1.25f);
+                GrappleLength.SetValue((hit.Position - Turret.WorldMatrix.Translation).Length() + 1.25f);
                 State = States.attached;
 
                 if (MyAPIGateway.Session.IsServer)
@@ -425,7 +425,7 @@ namespace GrappleHook
             GrapplePosition += delta;
 
             // if grapple length goes beyond max length
-            if ((gun.GetMuzzlePosition() - GrapplePosition).LengthSquared() > settings.Value.ShootRopeLength * settings.Value.ShootRopeLength)
+            if ((Turret.WorldMatrix.Translation - GrapplePosition).LengthSquared() > settings.Value.ShootRopeLength * settings.Value.ShootRopeLength)
             {
                 ResetIndicator.Value = !ResetIndicator.Value;
             }
@@ -451,7 +451,7 @@ namespace GrappleHook
                 Tools.Debug("Shooting!");
                 MatrixD muzzleMatrix = gun.GunBase.GetMuzzleWorldMatrix();
                 Vector3 direction = muzzleMatrix.Forward;
-                Vector3D origin = muzzleMatrix.Translation;
+                Vector3D origin = Turret.WorldMatrix.Translation;
 
                 GrappleDirection = direction;
                 GrapplePosition = origin;
@@ -494,13 +494,13 @@ namespace GrappleHook
             MyStringId texture = MyStringId.GetOrCompute("cable");
 
             Vector3D sagDirection = GetSagDirection();
-            Vector3D gunPosition = gun.GetMuzzlePosition();
+            Vector3D gunPosition = Turret.WorldMatrix.Translation; //gun.GetMuzzlePosition();
 
             Vector3D position;
             if (State == States.active)
             {
                 position = GrapplePosition;
-                Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, Vector3D.Distance(gunPosition, position) * 1.005f);
+                Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, Vector3D.Distance(gunPosition, position) * 1.005f, settings.Value.RopeSegments);
 
                 for (int i = 0; i < points.Length - 1; i++)
                 {
@@ -513,7 +513,7 @@ namespace GrappleHook
             else if (State == States.attached)
             {
                 position = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
-                Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value);
+                Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value, settings.Value.RopeSegments);
 
                 for (int i = 0; i < points.Length - 1; i++)
                 {
@@ -850,13 +850,14 @@ namespace GrappleHook
         {
             if (State != States.attached) return new Vector3D[0];
 
-            Vector3D gunPosition = gun.GetMuzzlePosition();
+
+            Vector3D gunPosition = Turret.WorldMatrix.Translation; //gun.GetMuzzlePosition();
             Vector3D position = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
             Vector3D sagDirection = GetSagDirection();
-            return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value);
+            return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value,settings.Value.RopeSegments);
         }
 
-        public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 15)
+        public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 10)
         {
             //returns a list of points in world space of length n. n must be equal or greater than 2
             //n = 3 will produce 2 line segments, n=2 will produce 1 line segment.
