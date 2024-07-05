@@ -110,7 +110,7 @@ namespace GrappleHook
 
         private void AttemptConnect()
         {
-            if (Attachment.Value.entityId != 0)
+            if (Attachment.Value.entityId != 0 && connectedEntity == null)
             {
                 connectedEntity = MyAPIGateway.Entities.GetEntityById(Attachment.Value.entityId);
                 if (connectedEntity != null)
