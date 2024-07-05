@@ -135,7 +135,7 @@ namespace GrappleHook
                 return;
             }
 
-            //Attachment.Fetch();
+            Attachment.Fetch();
 
             Func<IMyTerminalBlock, bool> isThisMod = (block) => { return block.GameLogic.GetAs<WeaponControlLayer>() != null; };
 
