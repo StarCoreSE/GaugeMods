@@ -84,15 +84,19 @@ namespace GrappleHook
             Turret = Entity as IMyLargeTurretBase;
             Turret.Range = 0;
 
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-            NeedsUpdate |= MyEntityUpdateEnum.SIMULATE;
+            Core.Add(this);
 
-            Turret.CubeGrid.NeedsUpdate |= MyEntityUpdateEnum.SIMULATE;
+            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
 
             if (!Hijack)
             {
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             }
+        }
+
+        public override void OnRemovedFromScene()
+        {
+            Core.Remove(this);
         }
 
         private void ResetCall(bool arg1, bool arg2)
@@ -294,7 +298,6 @@ namespace GrappleHook
 
         public override void UpdateBeforeSimulation()
         {
-            Turret.CubeGrid.Physics.Activate();
             switch (State)
             {
                 case States.idle:
@@ -308,7 +311,7 @@ namespace GrappleHook
                     break;
                 case States.attached:
                     UpdateLength();
-                    ApplyForce();
+                    //ApplyForce();
                     UpdateZipLine();
                     break;
             }
@@ -337,11 +340,6 @@ namespace GrappleHook
             {
 
                 GrappleLength.SetValue(speedAfterCheck);
-
-                //if (!MyAPIGateway.Utilities.IsDedicated) 
-                //{
-                //    MyAPIGateway.Utilities.ShowNotification($"Grapple Length: {GrappleLength.Value}", 1, "White");
-                //}
             }
         }
 
@@ -350,30 +348,34 @@ namespace GrappleHook
             Draw();
         }
 
-        private void ApplyForce()
+        public void ApplyForce()
         {
-            if (connectedEntity == null && connectedEntity.Physics == null)
+            try
             {
-                ResetIndicator.Value = !ResetIndicator.Value;
-                return;
+                if (Entity.Physics == null && connectedEntity == null && connectedEntity.Physics == null)
+                {
+                    ResetIndicator.Value = !ResetIndicator.Value;
+                    return;
+                }
+
+                Vector3D turretPostion = gun.GetMuzzlePosition();
+                Vector3D entityPostion = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
+                Vector3D direction = turretPostion - entityPostion;
+                double currentLength = direction.Length();
+                direction.Normalize();
+
+                double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value);
+
+                if (force > 0)
+                {
+                    Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null, null, true);
+                    connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null, null, true);
+
+                    //Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, Turret.CubeGrid.Physics.CenterOfMassWorld, null);
+                    //connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, connectedEntity.Physics.CenterOfMassWorld, null);
+                }
             }
-
-            Vector3D turretPostion = gun.GetMuzzlePosition();
-            Vector3D entityPostion = Vector3D.Transform(localGrapplePosition, connectedEntity.WorldMatrix);
-            Vector3D direction = turretPostion - entityPostion;
-            double currentLength = direction.Length();
-            direction.Normalize();
-
-            double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value);
-
-            if (force > 0)
-            {
-                Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null, null, true);
-                connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null, null, true);
-
-                //Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, Turret.CubeGrid.Physics.CenterOfMassWorld, null);
-                //connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, connectedEntity.Physics.CenterOfMassWorld, null);
-            }
+            catch { }
         }
 
         private void UpdateProjectile()
