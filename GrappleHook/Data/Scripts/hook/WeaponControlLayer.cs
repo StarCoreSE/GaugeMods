@@ -255,7 +255,7 @@ namespace GrappleHook
                 LocalGrapplePosition.Value = Vector3D.Transform(hit.Position + GrappleDirection * 0.1f, MatrixD.Invert(ConnectedEntity.WorldMatrix));
                 GrappleLength.Value = (hit.Position - Turret.PositionComp.WorldMatrixRef.Translation).Length() + 1.25f;
                 State.Value = States.attached;
-                Tools.Debug($"Attached {hit.HitEntity.DisplayName} - State Change: {State}");
+                Tools.Debug($"Attached {hit.HitEntity.DisplayName} - State Change: {State.Value}");
             }
             else 
             {
@@ -315,13 +315,13 @@ namespace GrappleHook
         {
             if (block.Position == LocalGrapplePositionI.Value)
             {
-                ResetIndicator.Value = !ResetIndicator.Value;
+                Reset();
             }
         }
 
         private void attachedEntityClosed(IMyEntity entity)
         {
-            ResetIndicator.Value = !ResetIndicator.Value;
+            Reset();
         }
 
         private void UpdateZipLine()
