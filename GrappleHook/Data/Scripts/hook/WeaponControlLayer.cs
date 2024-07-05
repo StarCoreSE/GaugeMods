@@ -85,6 +85,9 @@ namespace GrappleHook
             Turret.Range = 0;
 
             NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            NeedsUpdate |= MyEntityUpdateEnum.SIMULATE;
+
+            Turret.CubeGrid.NeedsUpdate |= MyEntityUpdateEnum.SIMULATE;
 
             if (!Hijack)
             {
@@ -291,6 +294,7 @@ namespace GrappleHook
 
         public override void UpdateBeforeSimulation()
         {
+            Turret.CubeGrid.Physics.Activate();
             switch (State)
             {
                 case States.idle:
