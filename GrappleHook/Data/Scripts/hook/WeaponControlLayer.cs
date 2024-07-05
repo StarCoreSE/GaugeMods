@@ -70,7 +70,7 @@ namespace GrappleHook
             Attachment = new NetSync<AttachData>(this, TransferType.ServerToClient, new AttachData());
             Attachment.ValueChangedByNetwork += Attaching;
 
-            ResetIndicator = new NetSync<bool>(this, TransferType.ServerToClient);
+            ResetIndicator = new NetSync<bool>(this, TransferType.Both);
             ResetIndicator.ValueChanged += ResetCall;
 
             GrappleLength = new NetSync<double>(this, TransferType.ServerToClient, 0);
@@ -84,19 +84,12 @@ namespace GrappleHook
             Turret = Entity as IMyLargeTurretBase;
             Turret.Range = 0;
 
-            Core.Add(this);
-
             NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
 
             if (!Hijack)
             {
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             }
-        }
-
-        public override void OnRemovedFromScene()
-        {
-            Core.Remove(this);
         }
 
         private void ResetCall(bool arg1, bool arg2)
@@ -311,7 +304,7 @@ namespace GrappleHook
                     break;
                 case States.attached:
                     UpdateLength();
-                    //ApplyForce();
+                    ApplyForce();
                     UpdateZipLine();
                     break;
             }
@@ -352,7 +345,7 @@ namespace GrappleHook
         {
             try
             {
-                if (Entity.Physics == null && connectedEntity == null && connectedEntity.Physics == null)
+                if (Entity.Physics == null || connectedEntity == null || connectedEntity.Physics == null || Entity.MarkedForClose || connectedEntity.MarkedForClose)
                 {
                     ResetIndicator.Value = !ResetIndicator.Value;
                     return;
@@ -366,13 +359,10 @@ namespace GrappleHook
 
                 double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value);
 
-                if (force > 0)
+                if (force > 0 && turretPostion != Vector3D.Zero && entityPostion != Vector3D.Zero)
                 {
                     Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null, null, true);
                     connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null, null, true);
-
-                    //Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, Turret.CubeGrid.Physics.CenterOfMassWorld, null);
-                    //connectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, connectedEntity.Physics.CenterOfMassWorld, null);
                 }
             }
             catch { }

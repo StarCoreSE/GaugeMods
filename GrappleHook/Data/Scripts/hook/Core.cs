@@ -12,7 +12,7 @@ using VRageMath;
 
 namespace GrappleHook
 {
-	[MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
+	[MySessionComponentDescriptor(MyUpdateOrder.NoUpdate)]
 	public class Core : MySessionComponentBase
 	{
 
@@ -30,45 +30,6 @@ namespace GrappleHook
 				NetworkAPI.Init(ModId, ModName);
 			}
 		}
-
-        public override void UpdateBeforeSimulation()
-        {
-			if (!MyAPIGateway.Utilities.IsDedicated) 
-			{
-                MyAPIGateway.Utilities.ShowNotification($"hooks: {hooks.Count}", 1);
-            }
-
-			try
-			{
-				lock (hooks)
-				{
-					for (int i = 0; i < hooks.Count; i++)
-					{
-						hooks[i].ApplyForce();
-					}
-				}
-			}
-			catch { }
-
-        }
-
-		public static void Add(WeaponControlLayer w) 
-		{
-            try
-            {
-                hooks.Add(w);
-            }
-            catch { }
-        }
-
-        public static void Remove(WeaponControlLayer w)
-        {
-			try
-			{
-				hooks.Remove(w);
-			}
-			catch { }
-        }
     }
 }
 
