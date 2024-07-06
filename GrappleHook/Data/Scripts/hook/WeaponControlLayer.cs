@@ -359,7 +359,7 @@ namespace GrappleHook
 
                 double? result;
                 bounds.Intersects(ref camRay, out result);
-                if (result.HasValue && result.Value < 5f)
+                if (result.HasValue && result.Value < 3.5f)
                 {
                     interactable = true;
                     break;
@@ -532,7 +532,7 @@ namespace GrappleHook
                 // ADD BACK IN 'a' when you fix it
                 double velocitySquared = Math.Max(velocityCalc, min*min);
                 double velocityToApply = Math.Sqrt(velocitySquared);
-                Tools.Debug($"V0: {v0}, a:{a}, xd:{xDelta} => Velocity: {velocityCalc}, min: {min*min}");
+                //Tools.Debug($"V0: {v0}, a:{a}, xd:{xDelta} => Velocity: {velocityCalc}, min: {min*min}");
                 
                 double distanceRemaining = velocityToApply;
 
@@ -572,10 +572,7 @@ namespace GrappleHook
 
 
 
-                    //Tools.Debug($"Start: {start}, End: {end}, pulley: {zipEntity.pulley}, dot start: {Vector3D.Dot(startNorm, segmentNorm)}({Vector3D.Dot(startNorm, segmentNorm) >0}), distance: {Math.Abs((zipEntity.pulley - startDirection).Length())}, dot end: {Vector3D.Dot(endNorm, segmentNorm)}({Vector3D.Dot(endNorm, segmentNorm) < 0})");
-
-                    if ((Vector3D.Dot(startNorm, segmentNorm) <= 0 || Math.Abs((zipEntity.pulley - startDirection).Length()) < 0.01f) &&
-                        Vector3D.Dot(endNorm, segmentNorm) >= 0) 
+                    if ((Vector3D.Dot(startNorm, segmentNorm) <= 0 || Math.Abs((zipEntity.pulley - startDirection).Length()) < 0.01f) && Vector3D.Dot(endNorm, segmentNorm) >= 0) 
                     {
                         double length = endDirection.Length();
                         Vector3D segmentDirectionNorm = endDirection.Normalized();

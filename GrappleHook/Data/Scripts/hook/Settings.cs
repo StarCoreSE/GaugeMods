@@ -71,7 +71,7 @@ namespace BlinkDrive
 		public static Settings GetDefaults()
 		{
 			return new Settings {
-				Version = 10,
+				Version = 11,
 				RopeForce = 8000000d,
 				RopeDamping = 0.5f,
 				ShootRopeLength = 300f,
@@ -81,9 +81,9 @@ namespace BlinkDrive
 				TightenSpeed = 3f,
 				LoosenSpeed = 10f,
 				RopeSegments = 15,
-				ZiplineTetherLength = 0.5f,
-				ZiplineTetherForce = 3000f,
-				ZiplineDamping = 175f,
+				ZiplineTetherLength = 0f,
+				ZiplineTetherForce = 2600f,
+				ZiplineDamping = 140f,
 				ZiplinePulleyMinSpeed = 5f,
 				ZiplineGraveForce = 9.8f
             };
