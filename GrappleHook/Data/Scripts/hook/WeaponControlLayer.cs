@@ -702,7 +702,7 @@ namespace GrappleHook
                     IMyCharacter character = zipEntity.player.Character;
                     if (character == null) return;
 
-                    MySimpleObjectDraw.DrawLine(character.WorldMatrix.Translation + character.WorldMatrix.Up * 1.7f, zipEntity.pulley, texture, ref color, 0.05f, BlendTypeEnum.Standard);
+                    MySimpleObjectDraw.DrawLine(character.WorldMatrix.Translation + character.WorldMatrix.Up * 1.85f, zipEntity.pulley, texture, ref color, 0.05f, BlendTypeEnum.Standard);
                 }
 
             }
