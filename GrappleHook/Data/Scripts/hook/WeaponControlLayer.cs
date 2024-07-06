@@ -353,7 +353,6 @@ namespace GrappleHook
                 if (interactKeyPressed)
                 {
                     RequestZiplineDisconnect.Value = e;
-
                 }
                 return;
             }
@@ -664,7 +663,6 @@ namespace GrappleHook
         {
             if (ZiplineContainsPlayer(n.playerId))
             {
-                AttachToZipline(n);
                 ZiplinePlayers.Value.Remove(n);
                 ZiplinePlayers.Push();
                 Tools.Debug($"Player {n.playerId} was removed from the zipline. Active zipliners {ZiplinePlayers.Value.Count}");
