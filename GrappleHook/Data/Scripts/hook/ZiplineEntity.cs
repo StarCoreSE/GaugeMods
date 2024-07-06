@@ -21,7 +21,17 @@ namespace GrappleHook
         public bool direction;
 
         [ProtoMember(3)]
-        public Vector3D pulley;
+        public Vector3D pulley = Vector3D.Zero;
+
+        [ProtoMember(4)]
+        public double pulleyVelocity;
+
+        [ProtoMember(5)]
+        public Vector3D lastPulley = Vector3D.Zero;
+
+        [ProtoMember(6)]
+        public double lastPulleyVelocity;
+
 
         [XmlIgnore]
         public IMyPlayer player;
@@ -32,15 +42,11 @@ namespace GrappleHook
         {
             playerId = pid;
             direction = d;
+
+
         }
 
-        public ZiplineEntity(long pid, bool d, float t) 
-        {
-            playerId = pid;
-            direction = d;
-        }
-
-        public static void Populate(ZiplineEntity ziplineData)
+        public static void Populate(ref ZiplineEntity ziplineData)
         {
             if (ziplineData.player == null)
             {

@@ -2,20 +2,15 @@ using BlinkDrive;
 using ProjectilesImproved;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Weapons;
-using Sandbox.Gui;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using SENetworkAPI;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq.Expressions;
-using System.Net.Mail;
-using System.Reflection.Emit;
+using System.Security.Policy;
 using System.Text;
-using VRage;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
@@ -139,10 +134,10 @@ namespace GrappleHook
 
         private void AttemptConnect(long o, long n, ulong steamId)
         {
-            AttemptConnect();
+            ValidateConnectedEntity();
         }
 
-        private void AttemptConnect()
+        private void ValidateConnectedEntity()
         {
             if (ConnectedEntityId.Value != 0 && ConnectedEntity == null)
             {
@@ -186,8 +181,8 @@ namespace GrappleHook
                     UpdateProjectile();
                     break;
                 case States.attached:
-                    AttemptConnect();
-                    UpdateLength();
+                    ValidateConnectedEntity();
+                    UpdateGrappleLength();
                     ApplyForce();
                     UpdateZiplineInteract();
                     UpdateZiplineForces();
@@ -283,7 +278,7 @@ namespace GrappleHook
             }
         }
 
-        private void UpdateLength()
+        private void UpdateGrappleLength()
         {
             float speed = 0;
             if (Winch.Value != 0)
@@ -378,16 +373,23 @@ namespace GrappleHook
 
                     bool direction = Vector3D.Dot(ziplineDirection, cam.WorldMatrix.Forward) >= 0;
 
-                    RequestZiplineActivation.Value = new ZiplineEntity(MyAPIGateway.Session.Player.IdentityId, direction, 0);
+                    RequestZiplineActivation.Value = new ZiplineEntity(MyAPIGateway.Session.Player.IdentityId, direction);
                 }
             }
         }
 
         private void AttachToZipline(ZiplineEntity ziplineData)
         {
+            Tools.Debug($"Attaching to zipline");
+            ZiplineEntity.Populate(ref ziplineData);
+            
+            if (ziplineData.player == null || !(ziplineData.player.Controller.ControlledEntity is IMyCharacter)) 
+            {
+                Tools.Info($"Warning could not find the player in the list of players. This should never be happening!");
+                return;
+            }
 
             IMyCharacter character = ziplineData.player.Character;
-
             Vector3D[] points = GetLinePoints();
 
             double nearIndex = 0;
@@ -448,7 +450,7 @@ namespace GrappleHook
             Vector3D pulley;
             if (directionDot < 0)
             {
-                double sinTheta = GetSinAngle(anchorToNext, -playerToAnchor);
+                double sinTheta = Tools.GetSinAngle(anchorToNext, -playerToAnchor);
                 double playerPulleyMag = sinTheta * playerToAnchorMag;
                 double pulleyToAnchorMag = Math.Sqrt(playerToAnchorMag * playerToAnchorMag - playerPulleyMag * playerPulleyMag);
                 Vector3D anchorToNextNorm = Vector3D.Normalize(anchorToNext);
@@ -458,7 +460,7 @@ namespace GrappleHook
             }
             else
             {
-                double sinTheta = GetSinAngle(previousToAnchor, playerToAnchor);
+                double sinTheta = Tools.GetSinAngle(previousToAnchor, playerToAnchor);
                 double playerPulleyMag = sinTheta * playerToAnchorMag;
                 double pulleyToAnchorMag = Math.Sqrt(playerToAnchorMag * playerToAnchorMag - playerPulleyMag * playerPulleyMag);
                 Vector3D previousToAnchorNorm = -Vector3D.Normalize(previousToAnchor);
@@ -467,19 +469,141 @@ namespace GrappleHook
 
             }
 
+            Tools.Debug($"Got pulley location {pulley}");
+
             ziplineData.pulley = pulley;
+            ziplineData.lastPulley = pulley;
         }
 
         private void UpdateZiplineForces()
         {
+            Vector3D[] points = GetLinePoints();
+            //Tools.Debug("UpdateZiplineForces");
             for (int i = 0; i < ZiplinePlayers.Value.Count; i++)
             {
-                ZiplineEntity ent = ZiplinePlayers.Value[i];
-                ZiplineEntity.Populate(ent);
+                ZiplineEntity zipEntity = ZiplinePlayers.Value[i];
+                //Tools.Debug($"Updating: {ent.playerId} with pulley: {ent.pulley} has player {ent.player != null}");
 
-                if (ent.player == null || !(ent.player.Controller.ControlledEntity is IMyCharacter)) 
+                ZiplineEntity.Populate(ref zipEntity);
+
+                //Tools.Debug($"Updating2: {ent.playerId} with pulley: {ent.pulley} has player {ent.player != null}");
+
+                if (zipEntity.player == null || !(zipEntity.player.Controller.ControlledEntity is IMyCharacter)) return;
+
+                //Tools.Debug($"Null Check 1");
+
+                IMyCharacter character = zipEntity.player.Character;
+
+                if (character == null) return;
+
+                //Tools.Debug($"Null Check 2");
+
+                Vector3D characterPosition = character.WorldMatrix.Translation + character.WorldMatrix.Up * 1.7f;
+                Vector3D ropeForceDirection = zipEntity.pulley - characterPosition;
+                Vector3D ropeForceDirectionNorm = ropeForceDirection.Normalized();
+
+
+                VRageMath.Vector4 color = VRageMath.Color.DarkGray;
+                MyStringId texture = MyStringId.GetOrCompute("cable");
+                MySimpleObjectDraw.DrawLine(characterPosition, zipEntity.pulley, texture, ref color, 0.05f, BlendTypeEnum.Standard);
+
+                double force = settings.Value.ZiplineTetherForce * Math.Max(0, ropeForceDirection.Length() - settings.Value.ZiplineTetherLength);
+
+                Vector3D forceVector = ropeForceDirectionNorm * force - 50f * character.Physics.LinearVelocity;
+                Tools.Debug($"Force: {force} character mass: {character.Physics.Mass}");
+
+                if (force > 0)
                 {
-                    IMyCharacter character = ent.player.Controller.ControlledEntity as IMyCharacter;
+                    character.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceVector, characterPosition, null, null, true);
+                }
+
+                double v = zipEntity.pulleyVelocity;
+                double v0 = zipEntity.lastPulleyVelocity;
+
+                Vector3D deltaVector = (zipEntity.pulley - zipEntity.lastPulley);
+                double xDelta = deltaVector.Length();
+
+                double g = 9.80d;
+                double a = 0;
+                if (deltaVector != Vector3D.Zero) 
+                {
+                    a = Vector3D.Dot(-ropeForceDirectionNorm, deltaVector.Normalized()) * g;
+                }
+
+                double min = settings.Value.ZiplinePulleyMinSpeed;
+
+                // ADD BACK IN 'a' when you fix it
+                double velocitySquared = Math.Max(v0 * v0 + 2 * a * xDelta, min*min);
+                double velocityToApply = Math.Sqrt(velocitySquared) * 0.01666667f;
+                //Tools.Debug($"velocity to apply: {velocityToApply}, a: {a}, deltaxVector: {deltaVector}, force direction:{ropeForceDirectionNorm}");
+                double distanceRemaining = velocityToApply;
+
+                zipEntity.lastPulley = zipEntity.pulley;
+                zipEntity.lastPulleyVelocity = zipEntity.pulleyVelocity;
+
+                zipEntity.pulleyVelocity = velocityToApply;
+
+                for (int j = 0; j < points.Length - 1; j++)
+                {
+                    if (distanceRemaining == 0) break;
+
+                    int index = j;
+                    int index2 = j + 1;
+                    if (!zipEntity.direction)
+                    {
+                        index = points.Length - 1 - j;
+                        index2 = index - 1;
+                    }
+
+                    Vector3D start = points[index];
+                    Vector3D end = points[index2];
+
+                    Vector3D segmentDiretion = end - start;
+                    Vector3D segmentNorm = segmentDiretion.Normalized();
+
+                    Vector3D startDirection = start - zipEntity.pulley;
+                    Vector3D startNorm = Vector3D.Zero;
+                    if (startDirection != Vector3D.Zero) 
+                    { 
+                        startNorm = startDirection.Normalized();
+                    }
+
+                    Vector3D endDirection = end - zipEntity.pulley;
+                    Vector3D endNorm = endDirection.Normalized();
+
+
+
+
+                    //Tools.Debug($"Start: {start}, End: {end}, pulley: {zipEntity.pulley}, dot start: {Vector3D.Dot(startNorm, segmentNorm)}({Vector3D.Dot(startNorm, segmentNorm) >0}), distance: {Math.Abs((zipEntity.pulley - startDirection).Length())}, dot end: {Vector3D.Dot(endNorm, segmentNorm)}({Vector3D.Dot(endNorm, segmentNorm) < 0})");
+
+                    if ((Vector3D.Dot(startNorm, segmentNorm) <= 0 || Math.Abs((zipEntity.pulley - startDirection).Length()) < 0.01f) &&
+                        Vector3D.Dot(endNorm, segmentNorm) >= 0) 
+                    {
+                        double length = endDirection.Length();
+                        Vector3D segmentDirectionNorm = endDirection.Normalized();
+
+                        Vector3D addition;
+                        if (distanceRemaining < length)
+                        {
+                            addition = segmentDirectionNorm * distanceRemaining;
+                            distanceRemaining = 0;
+                        }
+                        else
+                        {
+                            distanceRemaining -= length;
+                            addition = segmentDirectionNorm * length;
+                        }
+
+                        zipEntity.pulley += addition;
+                    }
+                }
+
+                //Tools.Debug($"pulley move: {zipEntity.pulley}");
+
+                if (distanceRemaining > 0) 
+                {
+                    ZiplinePlayers.Value.Remove(zipEntity);
+                    ZiplinePlayers.Push(SyncType.Broadcast);
                 }
 
             }
@@ -487,11 +611,16 @@ namespace GrappleHook
 
         private bool ZiplineContainsPlayer(IMyPlayer player)
         {
+            return ZiplineContainsPlayer(player.IdentityId);
+        }
+
+        private bool ZiplineContainsPlayer(long playerId) 
+        {
             for (int i = 0; i < ZiplinePlayers.Value.Count; i++)
             {
                 ZiplineEntity ent = ZiplinePlayers.Value[i];
 
-                if (ent.playerId == player.IdentityId) return true;
+                if (ent.playerId == playerId) return true;
             }
             return false;
         }
@@ -500,12 +629,16 @@ namespace GrappleHook
 
         private void ZiplineActivation(ZiplineEntity o, ZiplineEntity n)
         {
-            if (!ZiplinePlayers.Value.Contains(n))
+            if (!ZiplineContainsPlayer(n.playerId))
             {
-                Tools.Debug($"Player {n.playerId} activated the zipline");
                 AttachToZipline(n);
                 ZiplinePlayers.Value.Add(n);
                 ZiplinePlayers.Push(SyncType.Broadcast);
+                Tools.Debug($"Player {n.playerId} activated the zipline. Active zipliners {ZiplinePlayers.Value.Count}");
+            }
+            else 
+            {
+                Tools.Debug($"Player {n.playerId} is already active!");
             }
         }
 
