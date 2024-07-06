@@ -20,35 +20,44 @@ namespace BlinkDrive
         [ProtoMember(2)]
 		public double RopeForce;
 
-		[ProtoMember(3)]
+        [ProtoMember(3)]
+        public float RopeDamping;
+
+        [ProtoMember(4)]
 		public float MinRopeLength;
 
-		[ProtoMember(4)]
+		[ProtoMember(5)]
 		public float MaxRopeLength;
 
-		[ProtoMember(5)]
+        [ProtoMember(6)]
 		public float ShootRopeLength;
 
-		[ProtoMember(6)]
+		[ProtoMember(7)]
 		public float GrappleProjectileSpeed;
 
-		[ProtoMember(7)]
+		[ProtoMember(8)]
 		public float TightenSpeed;
 
-		[ProtoMember(8)]
+		[ProtoMember(9)]
 		public float LoosenSpeed;
 
-		[ProtoMember(9)]
+		[ProtoMember(10)]
 		public int RopeSegments;
 
-		[ProtoMember(10)]
+		[ProtoMember(11)]
 		public float ZiplineTetherLength;
 
-        [ProtoMember(11)]
+        [ProtoMember(12)]
         public float ZiplineTetherForce;
 
-        [ProtoMember(10)]
+        [ProtoMember(13)]
+        public float ZiplineDamping;
+
+        [ProtoMember(14)]
         public float ZiplinePulleyMinSpeed;
+
+        [ProtoMember(15)]
+        public float ZiplineGraveForce;
 
 
         public static void Init() 
@@ -62,8 +71,9 @@ namespace BlinkDrive
 		public static Settings GetDefaults()
 		{
 			return new Settings {
-				Version = 6,
+				Version = 10,
 				RopeForce = 8000000d,
+				RopeDamping = 0.5f,
 				ShootRopeLength = 300f,
 				MinRopeLength = 10f,
 				MaxRopeLength = 1000f,
@@ -71,9 +81,11 @@ namespace BlinkDrive
 				TightenSpeed = 3f,
 				LoosenSpeed = 10f,
 				RopeSegments = 15,
-				ZiplineTetherLength = 1f,
-				ZiplineTetherForce = 6000f,
-				ZiplinePulleyMinSpeed = 2f,
+				ZiplineTetherLength = 0.5f,
+				ZiplineTetherForce = 3000f,
+				ZiplineDamping = 175f,
+				ZiplinePulleyMinSpeed = 5f,
+				ZiplineGraveForce = 9.8f
             };
 		}
 

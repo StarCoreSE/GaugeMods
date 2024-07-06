@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Security.Policy;
+using System.Security.Principal;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
@@ -151,7 +152,7 @@ namespace GrappleHook
 
         public override void UpdateOnceBeforeFrame()
         {
-            Tools.Debug("update before frame");
+            //Tools.Debug("update before frame");
             if (Hijack) return;
 
             if (waitframe)
@@ -306,7 +307,7 @@ namespace GrappleHook
                 double currentLength = direction.Length();
                 direction.Normalize();
 
-                double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value);
+                double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value) - settings.Value.RopeDamping * (Turret.CubeGrid.Physics.LinearVelocity + ConnectedEntity.Physics.LinearVelocity).Length();
 
                 if (force > 0 && turretPostion != Vector3D.Zero && entityPostion != Vector3D.Zero)
                 {
@@ -502,17 +503,9 @@ namespace GrappleHook
                 Vector3D ropeForceDirection = zipEntity.pulley - characterPosition;
                 Vector3D ropeForceDirectionNorm = ropeForceDirection.Normalized();
 
-                if (!MyAPIGateway.Utilities.IsDedicated) 
-                {
-                    VRageMath.Vector4 color = VRageMath.Color.DarkGray;
-                    MyStringId texture = MyStringId.GetOrCompute("cable");
-                    MySimpleObjectDraw.DrawLine(characterPosition, zipEntity.pulley, texture, ref color, 0.05f, BlendTypeEnum.Standard);
-                }
-
                 double force = settings.Value.ZiplineTetherForce * Math.Max(0, ropeForceDirection.Length() - settings.Value.ZiplineTetherLength);
 
-                Vector3D forceVector = ropeForceDirectionNorm * force - 50f * character.Physics.LinearVelocity;
-                Tools.Debug($"Force: {force} character mass: {character.Physics.Mass}");
+                Vector3D forceVector = ropeForceDirectionNorm * force - settings.Value.ZiplineDamping * character.Physics.LinearVelocity;
 
                 if (force > 0)
                 {
@@ -525,19 +518,22 @@ namespace GrappleHook
                 Vector3D deltaVector = (zipEntity.pulley - zipEntity.lastPulley);
                 double xDelta = deltaVector.Length();
 
-                double g = 9.80d;
+                double g = settings.Value.ZiplineGraveForce;
                 double a = 0;
-                if (deltaVector != Vector3D.Zero) 
+                if (deltaVector != Vector3D.Zero)
                 {
                     a = Vector3D.Dot(-ropeForceDirectionNorm, deltaVector.Normalized()) * g;
                 }
 
-                double min = settings.Value.ZiplinePulleyMinSpeed;
+                double min = settings.Value.ZiplinePulleyMinSpeed * 0.01666667f;
+
+                double velocityCalc = v0 * v0 + 2d * a * xDelta * xDelta;
 
                 // ADD BACK IN 'a' when you fix it
-                double velocitySquared = Math.Max(v0 * v0 + 2 * a * xDelta, min*min);
-                double velocityToApply = Math.Sqrt(velocitySquared) * 0.01666667f;
-                //Tools.Debug($"velocity to apply: {velocityToApply}, a: {a}, deltaxVector: {deltaVector}, force direction:{ropeForceDirectionNorm}");
+                double velocitySquared = Math.Max(velocityCalc, min*min);
+                double velocityToApply = Math.Sqrt(velocitySquared);
+                Tools.Debug($"V0: {v0}, a:{a}, xd:{xDelta} => Velocity: {velocityCalc}, min: {min*min}");
+                
                 double distanceRemaining = velocityToApply;
 
                 zipEntity.lastPulley = zipEntity.pulley;
@@ -694,6 +690,21 @@ namespace GrappleHook
                         MySimpleObjectDraw.DrawLine(start, end, texture, ref color, 0.15f, BlendTypeEnum.Standard);
                     }
                 }
+
+
+                for (int i = 0; i < ZiplinePlayers.Value.Count; i++)
+                {
+                    ZiplineEntity zipEntity = ZiplinePlayers.Value[i];
+                    ZiplineEntity.Populate(ref zipEntity);
+
+                    if (zipEntity.player == null || !(zipEntity.player.Controller.ControlledEntity is IMyCharacter)) return;
+
+                    IMyCharacter character = zipEntity.player.Character;
+                    if (character == null) return;
+
+                    MySimpleObjectDraw.DrawLine(character.WorldMatrix.Translation + character.WorldMatrix.Up * 1.7f, zipEntity.pulley, texture, ref color, 0.05f, BlendTypeEnum.Standard);
+                }
+
             }
             catch (Exception e)
             {
