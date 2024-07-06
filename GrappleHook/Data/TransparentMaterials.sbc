@@ -13,5 +13,17 @@
 			<SoftParticleDistanceScale>0.1</SoftParticleDistanceScale>
 			<Texture>Textures\cable.dds</Texture>
 		</TransparentMaterial>
+		<TransparentMaterial>
+			<Id>
+				<TypeId>TransparentMaterialDefinition</TypeId>
+				<SubtypeId>cableRed</SubtypeId>
+			</Id>
+			<AlphaMistingEnable>true</AlphaMistingEnable>
+			<AlphaSaturation>0.7</AlphaSaturation>
+			<CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+			<IgnoreDepth>false</IgnoreDepth>
+			<SoftParticleDistanceScale>0.1</SoftParticleDistanceScale>
+			<Texture>Textures\cableRed.dds</Texture>
+		</TransparentMaterial>
 	</TransparentMaterials>
 </Definitions>

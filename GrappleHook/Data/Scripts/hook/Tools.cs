@@ -85,7 +85,26 @@ namespace GrappleHook
 			return theta * 180 / Math.PI;
 		}
 
-		private const int Seed = 5366354;
+        public static double GetSinAngle(Vector3D a, Vector3D b)
+        {
+            // Calculate the cross product of the two vectors
+            Vector3D crossProduct = Vector3D.Cross(a, b);
+
+            // Calculate the magnitudes of the vectors
+            double magnitudeA = a.Length();
+            double magnitudeB = b.Length();
+
+            // Calculate the magnitude of the cross product vector
+            double magnitudeCrossProduct = crossProduct.Length();
+
+            // Calculate the sine of the angle using the given formula
+            double sinTheta = magnitudeCrossProduct / (magnitudeA * magnitudeB);
+
+            return sinTheta;
+        }
+
+
+        private const int Seed = 5366354;
 		private static float[] RandomSet;
 		private static float[] RandomSetFromAngle;
 		public static Vector3 ApplyDeviation(Vector3 direction, float maxAngle, ref sbyte index)

@@ -41,8 +41,17 @@ namespace BlinkDrive
 		[ProtoMember(9)]
 		public int RopeSegments;
 
+		[ProtoMember(10)]
+		public float ZiplineTetherLength;
 
-		public static void Init() 
+        [ProtoMember(11)]
+        public float ZiplineTetherForce;
+
+        [ProtoMember(10)]
+        public float ZiplinePulleyMinSpeed;
+
+
+        public static void Init() 
 		{
 			if (Instance == null) 
 			{
@@ -58,10 +67,13 @@ namespace BlinkDrive
 				ShootRopeLength = 300f,
 				MinRopeLength = 10f,
 				MaxRopeLength = 1000f,
-                GrappleProjectileSpeed = 1.5f,
+				GrappleProjectileSpeed = 1.5f,
 				TightenSpeed = 3f,
 				LoosenSpeed = 10f,
 				RopeSegments = 15,
+				ZiplineTetherLength = 1f,
+				ZiplineTetherForce = 10000f,
+				ZiplinePulleyMinSpeed = 2f,
             };
 		}
 

@@ -2,6 +2,7 @@ using BlinkDrive;
 using ProjectilesImproved;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Weapons;
 using Sandbox.Gui;
 using Sandbox.ModAPI;
@@ -14,9 +15,11 @@ using System.Linq.Expressions;
 using System.Net.Mail;
 using System.Reflection.Emit;
 using System.Text;
+using VRage;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
+using VRage.Input;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
@@ -36,7 +39,7 @@ namespace GrappleHook
         private IMyGunObject<MyGunBase> gun;
 
         public enum States { idle, reloading, projectile, attached }
-        
+
         private NetSync<States> State;
         private NetSync<long> ConnectedEntityId;
         private IMyEntity ConnectedEntity = null;
@@ -52,10 +55,14 @@ namespace GrappleHook
 
         private NetSync<float> ReloadTime;
 
+        private NetSync<ZiplineEntity> RequestZiplineActivation;
+        private NetSync<List<ZiplineEntity>> ZiplinePlayers;
+
         private Vector3D GrapplePosition = Vector3D.Zero;
         private Vector3 GrappleDirection = Vector3.Zero;
 
         private bool terminalShootOn = false;
+        private bool interactable = false;
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -88,6 +95,12 @@ namespace GrappleHook
             Winch = new NetSync<float>(this, TransferType.Both, 0);
 
             ReloadTime = new NetSync<float>(this, TransferType.ServerToClient, 0);
+
+
+            ZiplinePlayers = new NetSync<List<ZiplineEntity>>(this, TransferType.ServerToClient, new List<ZiplineEntity>());
+
+            RequestZiplineActivation = new NetSync<ZiplineEntity>(this, TransferType.ClientToServer, new ZiplineEntity(), false);
+            RequestZiplineActivation.ValueChanged += ZiplineActivation;
 
             gun = Entity as IMyGunObject<MyGunBase>;
             Turret = Entity as IMyLargeTurretBase;
@@ -124,7 +137,7 @@ namespace GrappleHook
             Tools.Debug($"Reset - State Change: {State}");
         }
 
-        private void AttemptConnect(long o, long n, ulong steamId) 
+        private void AttemptConnect(long o, long n, ulong steamId)
         {
             AttemptConnect();
         }
@@ -134,7 +147,7 @@ namespace GrappleHook
             if (ConnectedEntityId.Value != 0 && ConnectedEntity == null)
             {
                 ConnectedEntity = MyAPIGateway.Entities.GetEntityById(ConnectedEntityId.Value);
-                if (ConnectedEntity != null) 
+                if (ConnectedEntity != null)
                 {
                     ConnectedEntity.OnMarkForClose += attachedEntityClosed;
                 }
@@ -176,7 +189,8 @@ namespace GrappleHook
                     AttemptConnect();
                     UpdateLength();
                     ApplyForce();
-                    UpdateZipLine();
+                    UpdateZiplineInteract();
+                    UpdateZiplineForces();
                     break;
             }
 
@@ -221,7 +235,7 @@ namespace GrappleHook
         private void Reload()
         {
             if (ReloadTime.Value > 0)
-                ReloadTime.SetValue( ReloadTime.Value-16.666667f);
+                ReloadTime.SetValue(ReloadTime.Value - 16.666667f);
             else
                 State.Value = States.idle;
         }
@@ -257,7 +271,7 @@ namespace GrappleHook
                 State.Value = States.attached;
                 Tools.Debug($"Attached {hit.HitEntity.DisplayName} - State Change: {State.Value}");
             }
-            else 
+            else
             {
                 GrapplePosition += delta;
 
@@ -305,7 +319,7 @@ namespace GrappleHook
                     ConnectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null, null, true);
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Tools.Debug(e.ToString());
             }
@@ -324,14 +338,175 @@ namespace GrappleHook
             Reset();
         }
 
-        private void UpdateZipLine()
+        private void UpdateZiplineInteract()
         {
-            //    Vector3D[] points = GetLinePoints();
+            interactable = false;
 
-            //    for (int i = 0; i < points.Length; i++) 
-            //    {
+            if (MyAPIGateway.Session.Player == null || !(MyAPIGateway.Session.Player.Controller.ControlledEntity is IMyCharacter) || ZiplineContainsPlayer(MyAPIGateway.Session.Player)) return;
 
-            //    }
+            IMyCamera cam = MyAPIGateway.Session.Camera;
+            if (cam == null) return;
+
+            RayD camRay = new RayD(cam.WorldMatrix.Translation, cam.WorldMatrix.Forward);
+            Vector3D[] points = GetLinePoints();
+
+            for (int i = 0; i < points.Length - 1; i++)
+            {
+                Vector3D a = points[i];
+                Vector3D b = points[i + 1];
+
+                MatrixD worldMatrix = Turret.WorldMatrix;
+                BoundingBoxD bounds = new BoundingBoxD(Vector3D.Min(a, b), Vector3D.Max(a, b));
+
+                VRageMath.Color color = VRageMath.Color.Green;
+                MySimpleObjectDraw.DrawTransparentBox(ref worldMatrix, ref bounds, ref color, MySimpleObjectRasterizer.Wireframe, 1, 0.01f);
+
+                double? result;
+                bounds.Intersects(ref camRay, out result);
+                if (result.HasValue && result.Value < 5f)
+                {
+                    interactable = true;
+                    break;
+                }
+            }
+
+            if (interactable)
+            {
+                if (MyAPIGateway.Input.IsNewKeyPressed(MyKeys.F))
+                {
+                    Vector3D ziplineDirection = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix) - Turret.WorldMatrix.Translation;
+
+                    bool direction = Vector3D.Dot(ziplineDirection, cam.WorldMatrix.Forward) >= 0;
+
+                    RequestZiplineActivation.Value = new ZiplineEntity(MyAPIGateway.Session.Player.IdentityId, direction, 0);
+                }
+            }
+        }
+
+        private void AttachToZipline(ZiplineEntity ziplineData)
+        {
+
+            IMyCharacter character = ziplineData.player.Character;
+
+            Vector3D[] points = GetLinePoints();
+
+            double nearIndex = 0;
+            double nearValue = double.MaxValue;
+            Vector3D anchorSegment = Vector3D.Zero;
+            Vector3D nextSegment = Vector3D.Zero;
+            Vector3D previousSegment = Vector3D.Zero;
+            for (int j = 0; j < points.Length; j++)
+            {
+                int index = j;
+                if (!ziplineData.direction)
+                    index = points.Length - 1 - j;
+
+                Vector3D point = points[index];
+
+                double distance = (character.WorldMatrix.Translation - point).LengthSquared();
+                if (distance < nearValue)
+                {
+                    nearIndex = index;
+                    nearValue = distance;
+
+                    anchorSegment = point;
+
+                    int j2 = j + 1;
+                    if (!ziplineData.direction)
+                        j2 = points.Length - 1 - (j + 1);
+
+                    if (j2 >= 0 && j2 < points.Length)
+                    {
+                        nextSegment = points[j2];
+                    }
+
+                    int j3 = j - 1;
+                    if (!ziplineData.direction)
+                        j3 = points.Length - 1 - (j - 1);
+
+                    if (j3 >= 0 && j3 < points.Length)
+                    {
+                        previousSegment = points[j3];
+                    }
+                }
+            }
+
+            //Tools.Debug($"find the distance and direction of attachment force");
+            Vector3D characterPosition = character.WorldMatrix.Translation + character.WorldMatrix.Up;
+
+            Vector3D anchorToNext = nextSegment - anchorSegment;
+            double anchorToNextMag = anchorToNext.Length();
+
+            Vector3D previousToAnchor = anchorSegment - previousSegment;
+            double previousToAnchorMag = previousToAnchor.Length();
+
+            Vector3D playerToAnchor = anchorSegment - characterPosition;
+            double playerToAnchorMag = playerToAnchor.Length();
+
+            // check if we are moving towards or away from the current point.
+            double directionDot = Vector3D.Dot(playerToAnchor, anchorToNext);
+            Vector3D pulley;
+            if (directionDot < 0)
+            {
+                double sinTheta = GetSinAngle(anchorToNext, -playerToAnchor);
+                double playerPulleyMag = sinTheta * playerToAnchorMag;
+                double pulleyToAnchorMag = Math.Sqrt(playerToAnchorMag * playerToAnchorMag - playerPulleyMag * playerPulleyMag);
+                Vector3D anchorToNextNorm = Vector3D.Normalize(anchorToNext);
+
+                pulley = anchorSegment + anchorToNextNorm * pulleyToAnchorMag;
+
+            }
+            else
+            {
+                double sinTheta = GetSinAngle(previousToAnchor, playerToAnchor);
+                double playerPulleyMag = sinTheta * playerToAnchorMag;
+                double pulleyToAnchorMag = Math.Sqrt(playerToAnchorMag * playerToAnchorMag - playerPulleyMag * playerPulleyMag);
+                Vector3D previousToAnchorNorm = -Vector3D.Normalize(previousToAnchor);
+
+                pulley = anchorSegment + previousToAnchorNorm * pulleyToAnchorMag;
+
+            }
+
+            ziplineData.pulley = pulley;
+        }
+
+        private void UpdateZiplineForces()
+        {
+            for (int i = 0; i < ZiplinePlayers.Value.Count; i++)
+            {
+                ZiplineEntity ent = ZiplinePlayers.Value[i];
+                ZiplineEntity.Populate(ent);
+
+                if (ent.player == null || !(ent.player.Controller.ControlledEntity is IMyCharacter)) 
+                {
+                    IMyCharacter character = ent.player.Controller.ControlledEntity as IMyCharacter;
+                }
+
+            }
+        }
+
+        private bool ZiplineContainsPlayer(IMyPlayer player)
+        {
+            for (int i = 0; i < ZiplinePlayers.Value.Count; i++)
+            {
+                ZiplineEntity ent = ZiplinePlayers.Value[i];
+
+                if (ent.playerId == player.IdentityId) return true;
+            }
+            return false;
+        }
+
+
+
+        private void ZiplineActivation(ZiplineEntity o, ZiplineEntity n)
+        {
+            if (!ZiplinePlayers.Value.Contains(n))
+            {
+                Tools.Debug($"Player {n.playerId} activated the zipline");
+                AttachToZipline(n);
+                ZiplinePlayers.Value.Add(n);
+                ZiplinePlayers.Push(SyncType.Broadcast);
+            }
         }
 
         private void Draw()
@@ -340,11 +515,22 @@ namespace GrappleHook
             {
                 if (MyAPIGateway.Utilities.IsDedicated) return;
 
-                Vector4 color = VRageMath.Color.DarkGray;
-                MyStringId texture = MyStringId.GetOrCompute("cable");
+                VRageMath.Vector4 color = VRageMath.Color.DarkGray;
+                MyStringId texture;
+                if (interactable)
+                {
+                    color = VRageMath.Color.Red;
+                    texture = MyStringId.GetOrCompute("cableRed");
+
+                }
+                else
+                {
+                    color = VRageMath.Color.DarkGray;
+                    texture = MyStringId.GetOrCompute("cable");
+                }
 
                 Vector3D sagDirection = GetSagDirection();
-                Vector3D gunPosition = Turret.PositionComp.WorldMatrixRef.Translation; //gun.GetMuzzlePosition();
+                Vector3D gunPosition = Turret.PositionComp.WorldMatrixRef.Translation;
 
                 Vector3D position;
                 if (State.Value == States.projectile)
@@ -374,7 +560,7 @@ namespace GrappleHook
                     }
                 }
             }
-            catch(Exception e) 
+            catch (Exception e)
             {
                 Tools.Debug(e.ToString());
             }
@@ -401,7 +587,7 @@ namespace GrappleHook
             Vector3D gunPosition = Turret.PositionComp.WorldMatrixRef.Translation; //gun.GetMuzzlePosition();
             Vector3D position = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix);
             Vector3D sagDirection = GetSagDirection();
-            return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value,settings.Value.RopeSegments);
+            return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value, settings.Value.RopeSegments);
         }
 
         public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 10)
@@ -436,7 +622,6 @@ namespace GrappleHook
         {
             return -4 * x * x + 4 * x;
         }
-
 
         private static void DisableAction(IMyTerminalAction a)
         {
@@ -746,7 +931,7 @@ namespace GrappleHook
             }
         }
 
-        private void CreateControls() 
+        private void CreateControls()
         {
             Func<IMyTerminalBlock, bool> isThisMod = (block) => { return block.GameLogic.GetAs<WeaponControlLayer>() != null; };
 
