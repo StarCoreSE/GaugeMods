@@ -661,9 +661,10 @@ namespace GrappleHook
 
         private void ZiplineDisconnect(ZiplineEntity o, ZiplineEntity n)
         {
-            if (ZiplineContainsPlayer(n.playerId))
+            ZiplineEntity e = GetZiplineEntity(n.playerId);
+            if (e != null)
             {
-                ZiplinePlayers.Value.Remove(n);
+                ZiplinePlayers.Value.Remove(e);
                 ZiplinePlayers.Push();
                 Tools.Debug($"Player {n.playerId} was removed from the zipline. Active zipliners {ZiplinePlayers.Value.Count}");
             }
