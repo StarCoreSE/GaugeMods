@@ -761,13 +761,19 @@ namespace GrappleHook
 
         public Vector3D[] GetLinePoints()
         {
-            if (State.Value != States.attached) return new Vector3D[0];
+            try
+            {
+                if (State.Value != States.attached || ConnectedEntity == null) return new Vector3D[0];
 
-
-            Vector3D gunPosition = Turret.PositionComp.WorldMatrixRef.Translation; //gun.GetMuzzlePosition();
-            Vector3D position = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix);
-            Vector3D sagDirection = GetSagDirection();
-            return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value, settings.Value.RopeSegments);
+                Vector3D gunPosition = Turret.WorldMatrix.Translation;
+                Vector3D position = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix);
+                Vector3D sagDirection = GetSagDirection();
+                return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value, settings.Value.RopeSegments);
+            }
+            catch 
+            {
+                return new Vector3D[0]; 
+            }
         }
 
         public Vector3D[] ComputeCurvePoints(Vector3D start, Vector3D end, Vector3D sagDirection, double referenceLength, int n = 10)
