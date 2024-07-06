@@ -502,10 +502,12 @@ namespace GrappleHook
                 Vector3D ropeForceDirection = zipEntity.pulley - characterPosition;
                 Vector3D ropeForceDirectionNorm = ropeForceDirection.Normalized();
 
-
-                VRageMath.Vector4 color = VRageMath.Color.DarkGray;
-                MyStringId texture = MyStringId.GetOrCompute("cable");
-                MySimpleObjectDraw.DrawLine(characterPosition, zipEntity.pulley, texture, ref color, 0.05f, BlendTypeEnum.Standard);
+                if (!MyAPIGateway.Utilities.IsDedicated) 
+                {
+                    VRageMath.Vector4 color = VRageMath.Color.DarkGray;
+                    MyStringId texture = MyStringId.GetOrCompute("cable");
+                    MySimpleObjectDraw.DrawLine(characterPosition, zipEntity.pulley, texture, ref color, 0.05f, BlendTypeEnum.Standard);
+                }
 
                 double force = settings.Value.ZiplineTetherForce * Math.Max(0, ropeForceDirection.Length() - settings.Value.ZiplineTetherLength);
 
