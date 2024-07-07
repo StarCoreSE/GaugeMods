@@ -47,16 +47,6 @@ namespace Thermodynamics
             Vector3I min = block.Min;
             Vector3I max = block.Max + 1;
 
-            if (isNew)
-            {
-                if (Vector3I.Min(Grid.Min - 1, this.min) != this.min ||
-                    Vector3I.Max(Grid.Max + 1, this.max) != this.max)
-                    ResetMapper();
-            }
-
-            HashSet<IMySlimBlock> processedNeighbours = new HashSet<IMySlimBlock>();
-            processedNeighbours.Add(removed);
-
             MyCubeBlockDefinition def = block.BlockDefinition as MyCubeBlockDefinition;
             Matrix blockMatrix;
             block.Orientation.GetMatrix(out blockMatrix);
@@ -65,84 +55,95 @@ namespace Thermodynamics
             bool isAirTight = def?.IsAirTight == true;
             if (isAirTight)
             {
-                state = 63;
+                state = 63; // All sides airtight
             }
 
+            // Iterate over the block's volume
             for (int x = min.X; x < max.X; x++)
             {
                 for (int y = min.Y; y < max.Y; y++)
                 {
                     for (int z = min.Z; z < max.Z; z++)
                     {
-
                         Vector3I node = new Vector3I(x, y, z);
 
-                        for (int i = 0; i < neighbors.Length; i++)
+                        // Update state based on neighbors
+                        UpdateNodeState(ref state, node, block, def, blockMatrix);
+
+                        // Safely add or update nodes in the dictionary
+                        if (BlockNodes.ContainsKey(node))
                         {
-                            Vector3I n = node + neighbors[i];
-                            Vector3 direction1 = node - n;
-                            Vector3 direction2 = n - node;
-
-                            // neighbour is the same block
-                            if (n.X >= min.X && n.Y >= min.Y && n.Z >= min.Z &&
-                                n.X < max.X && n.Y < max.Y && n.Z < max.Z)
-                            {
-
-                                if (IsAirtight(ref block, ref def, ref node, ref direction2, ref blockMatrix))
-                                {
-                                    state |= 1 << i;
-                                }
-
-                                if (IsAirtight(ref block, ref def, ref n, ref direction1, ref blockMatrix))
-                                {
-                                    state |= 1 << i + 6;
-                                }
-                            }
-                            else
-                            {
-                                IMySlimBlock nblock = Grid.GetCubeBlock(n);
-                                if (nblock == null)
-                                {
-                                    continue;
-                                }
-
-                                // update all neighbor blocks if this block was just added to the grid
-                                if (isNew && !processedNeighbours.Contains(nblock))
-                                {
-                                    MapBlocks(nblock);
-                                    processedNeighbours.Add(nblock);
-                                }
-
-                                MyCubeBlockDefinition ndef = nblock.BlockDefinition as MyCubeBlockDefinition;
-                                Matrix nMatrix;
-                                nblock.Orientation.GetMatrix(out nMatrix);
-                                nMatrix.TransposeRotationInPlace();
-
-                                if (IsAirtight(ref block, ref def, ref node, ref direction2, ref blockMatrix))
-                                {
-                                    state |= 1 << i;
-                                }
-
-                                if (ndef?.IsAirTight == true ||
-                                    IsAirtight(ref nblock, ref ndef, ref n, ref direction1, ref nMatrix))
-                                {
-                                    state |= 1 << i + 6;
-                                }
-                            }
+                            BlockNodes[node] = state; // Update the existing node
                         }
-
-                        if (isNew)
+                        else
                         {
-                            BlockNodes.Add(node, state);
+                            BlockNodes.Add(node, state); // Add new node
                         }
-                        else 
-                        {
-                            BlockNodes[node] = state;
-                        }
-
                     }
                 }
             }
+        }
+
+        private void UpdateNodeState(ref int state, Vector3I node, IMySlimBlock block, MyCubeBlockDefinition def, Matrix blockMatrix)
+        {
+            for (int i = 0; i < neighbors.Length; i++)
+            {
+                Vector3I neighborPosition = node + neighbors[i];
+                IMySlimBlock neighborBlock = Grid.GetCubeBlock(neighborPosition);
+
+                // Convert Vector3I to Vector3 for the direction
+                Vector3 direction = new Vector3(neighbors[i]);
+
+                if (neighborPosition.X >= block.Min.X && neighborPosition.Y >= block.Min.Y && neighborPosition.Z >= block.Min.Z &&
+                    neighborPosition.X < block.Max.X && neighborPosition.Y < block.Max.Y && neighborPosition.Z < block.Max.Z)
+                {
+                    // Need to pass a reference to a Vector3, not Vector3I
+                    if (IsAirtight(ref block, ref def, ref neighborPosition, ref direction, ref blockMatrix))
+                    {
+                        state |= 1 << i;
+                    }
+                }
+                else
+                {
+                    // Process external or neighboring blocks
+                    if (neighborBlock != null)
+                    {
+                        MyCubeBlockDefinition neighborDef = neighborBlock.BlockDefinition as MyCubeBlockDefinition;
+                        // Also convert Vector3I to Vector3 here before passing
+                        if (IsAirtight(ref neighborBlock, ref neighborDef, ref neighborPosition, ref direction, ref blockMatrix))
+                        {
+                            state |= 1 << i;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ProcessNeighborBlock(Vector3I neighborPosition, bool isNew, ref int state, ref HashSet<IMySlimBlock> processedNeighbors, int directionIndex, ref Matrix blockMatrix)
+        {
+            IMySlimBlock nblock = Grid.GetCubeBlock(neighborPosition);
+            if (nblock == null) return;
+
+            if (isNew && !processedNeighbors.Contains(nblock))
+            {
+                MapBlocks(nblock);
+                processedNeighbors.Add(nblock);
+            }
+
+            MyCubeBlockDefinition ndef = nblock.BlockDefinition as MyCubeBlockDefinition;
+            var nMatrix = new Matrix();
+            nblock.Orientation.GetMatrix(out nMatrix);
+            nMatrix.TransposeRotationInPlace();
+
+            // Convert Vector3I to Vector3 for method calls
+            Vector3 directionVec = new Vector3(neighbors[directionIndex]);
+            Vector3 oppositeDirectionVec = new Vector3(neighbors[(directionIndex + 6) % 12]);
+
+            if (IsAirtight(ref nblock, ref ndef, ref neighborPosition, ref directionVec, ref nMatrix))
+                state |= 1 << directionIndex;
+
+            if (ndef?.IsAirTight == true || IsAirtight(ref nblock, ref ndef, ref neighborPosition, ref oppositeDirectionVec, ref nMatrix))
+                state |= 1 << (directionIndex + 6);
         }
 
         private void MapBlockRemove(IMySlimBlock block) 
