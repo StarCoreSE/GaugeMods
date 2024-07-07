@@ -18,7 +18,6 @@ using System.IO.Compression;
 using VRage.Game.Components.Interfaces;
 using System.Drawing;
 using System.Security.AccessControl;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Thermodynamics
 {
@@ -354,77 +353,53 @@ namespace Thermodynamics
         /// </summary>
         internal void Update()
         {
-            // cells are only looked at once per frame. cells must keep track of their unultered temperature (LastTemperature)
-            // so that all blocks are working with the same simulation frame data.
             Frame = Grid.SimulationFrame;
             LastTemprature = Temperature;
 
-            // calculate delta between all neighboring blocks
-            float deltaTemperature = 0;
-            for (int i = 0; i < Neighbors.Count; i++)
-            {
-                ThermalCell ncell = Neighbors[i];
-                // area = meter^2
-                float area = Area <= ncell.Area ? Area : ncell.Area;
-
-                // conductivity, k = watt / (meter * Temp)
-                // kA = watt * meter / Temp
-                float kA = Definition.Conductivity * area * TouchingSerfacesByNeighbor[i];
-
-                // if the neighboring blocks have not been updated use temperature
-                // otherwise use LastTemperature
-                if (ncell.Frame != Frame)
-                {
-                    // deltaTemperature = watt * meter
-                    deltaTemperature += kA * (ncell.Temperature - Temperature);
-                }
-                else
-                {
-                    deltaTemperature += kA * (ncell.LastTemprature - Temperature);
-                }
-
-                //if (Block.BlockDefinition.Id.ToString().Contains("LargeRotor")) 
-                //{
-                //    MyLog.Default.Info($"[{Settings.Name}] {Id}->{ncell.Id} ns: {TouchingSerfacesByNeighbor[i]} T: {Temperature} nT: {ncell.Temperature} dT: {deltaTemperature}");
-                //}
-            }
-
-            // use Stefan-Boltzmann Law to calculate the energy lossed/gained from the environment
-            // we make it nagiative to indicate removal of energy
-            Radiation = boltzmann * Definition.Emissivity * (Temperature * Temperature * Temperature * Temperature - Grid.FrameAmbientTempratureP4);
+            float deltaTemperature = 0f;
+            float totalRadiation = (float)(boltzmann * Definition.Emissivity * Math.Pow(Temperature, 4) - Grid.FrameAmbientTempratureP4);
 
             if (Settings.Instance.EnableSolarHeat && !Grid.FrameSolarOccluded)
             {
                 float intensity = DirectionalRadiationIntensity(ref Grid.FrameSolarDirection, ref Grid.SolarRadiationNode);
-                Radiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
+                totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
             }
 
-            //float viscosity = 
+            // Pre-calculate values that are used in the loop to reduce calculations
+            float[] kA = new float[Neighbors.Count];
+            for (int i = 0; i < Neighbors.Count; i++)
+            {
+                float area = Math.Min(Area, Neighbors[i].Area);
+                kA[i] = Definition.Conductivity * area * TouchingSerfacesByNeighbor[i];
+            }
 
-            //float windIntensity = DirectionalRadiationIntensity(ref Grid.FrameWindDirection, ref Grid.WindNode);
+            // Simplified loop to reduce branch mispredictions
+            for (int i = 0; i < Neighbors.Count; i++)
+            {
+                ThermalCell ncell = Neighbors[i];
+                float neighborTemp = ncell.Frame != Frame ? ncell.Temperature : ncell.LastTemprature;
+                deltaTemperature += kA[i] * (neighborTemp - Temperature);
+            }
 
-            //float v = Grid.FrameWindDirection.Length();
-            //float hc = 10.45f - v + 10f * (float)Math.Sqrt(v);
-
-
-
-            // C = Temp / Watt * meter and deltaTemperature = Watt * Meter.
-            // these cancel leaving only temperature behind
-            DeltaTemperature = ((C * deltaTemperature) + (Radiation * ThermalMassInv)) * Settings.Instance.TimeScaleRatio;
+            DeltaTemperature = ((C * deltaTemperature) + (totalRadiation * ThermalMassInv)) * Settings.Instance.TimeScaleRatio;
             Temperature = Math.Max(0, Temperature + DeltaTemperature);
 
-            // generate heat based on power usage
+            // Minimize function calls by inlining UpdateHeat logic here if it's small enough
+            float produced = EnergyProduction * Definition.ProducerWasteEnergy;
+            float consumed = (EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy;
+            HeatGeneration = Settings.Instance.TimeScaleRatio * (produced + consumed) * ThermalMassInv;
+
             Temperature += HeatGeneration;
 
-            if (Settings.Instance.EnableDamage = Temperature > Definition.CriticalTemperature) 
+            if (Settings.Instance.EnableDamage && Temperature > Definition.CriticalTemperature)
             {
-                Block.DoDamage((Temperature - Definition.CriticalTemperature) * Definition.CriticalTemperatureScaler, MyStringHash.GetOrCompute("thermal"), false);
+                float damage = (Temperature - Definition.CriticalTemperature) * Definition.CriticalTemperatureScaler;
+                Block.DoDamage(damage, MyStringHash.GetOrCompute("thermal"), false);
             }
 
             if (Settings.Debug && MyAPIGateway.Session.IsServer)
             {
                 Vector3 color = Tools.GetTemperatureColor(Temperature);
-                //Vector3 c = Tools.GetTemperatureColor(solarIntensity, 10, 0.5f, 4);
                 if (Block.ColorMaskHSV != color)
                 {
                     Block.CubeGrid.ColorBlocks(Block.Min, Block.Max, color);

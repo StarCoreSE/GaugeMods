@@ -15,7 +15,7 @@ namespace Thermodynamics
 	{
 		public const string Filename = "ThermodynamicsConfig.cfg";
 		public const string Name = "Thermodynamics";
-		public const bool Debug = true;
+		public const bool Debug = false;
 
 		public static Settings Instance;
 
