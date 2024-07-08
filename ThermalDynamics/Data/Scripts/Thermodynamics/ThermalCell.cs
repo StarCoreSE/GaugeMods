@@ -353,50 +353,50 @@ namespace Thermodynamics
         /// </summary>
         internal void Update()
         {
+            // Update the frame count and store the last temperature for differential calculations
             Frame = Grid.SimulationFrame;
             LastTemprature = Temperature;
 
-            float deltaTemperature = 0f;
-            float totalRadiation = (float)(boltzmann * Definition.Emissivity * Math.Pow(Temperature, 4) - Grid.FrameAmbientTempratureP4);
+            // Calculate radiation using the full precision formula without any approximation
+            float temperatureSquared = Temperature * Temperature;
+            float totalRadiation = boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
 
+            // Conditional calculation for solar influence if it's enabled and not occluded
             if (Settings.Instance.EnableSolarHeat && !Grid.FrameSolarOccluded)
             {
                 float intensity = DirectionalRadiationIntensity(ref Grid.FrameSolarDirection, ref Grid.SolarRadiationNode);
                 totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
             }
 
-            // Pre-calculate values that are used in the loop to reduce calculations
-            float[] kA = new float[Neighbors.Count];
-            for (int i = 0; i < Neighbors.Count; i++)
+            // Optimize neighbor interaction computations
+            float deltaTemperature = 0f;
+            foreach (var ncell in Neighbors)
             {
-                float area = Math.Min(Area, Neighbors[i].Area);
-                kA[i] = Definition.Conductivity * area * TouchingSerfacesByNeighbor[i];
-            }
-
-            // Simplified loop to reduce branch mispredictions
-            for (int i = 0; i < Neighbors.Count; i++)
-            {
-                ThermalCell ncell = Neighbors[i];
+                // Pre-calculate heat transfer coefficient only once for each neighbor
+                float area = Math.Min(Area, ncell.Area);
+                float kA = Definition.Conductivity * area * TouchingSerfacesByNeighbor[Neighbors.IndexOf(ncell)];
                 float neighborTemp = ncell.Frame != Frame ? ncell.Temperature : ncell.LastTemprature;
-                deltaTemperature += kA[i] * (neighborTemp - Temperature);
+                deltaTemperature += kA * (neighborTemp - Temperature);
             }
 
-            DeltaTemperature = ((C * deltaTemperature) + (totalRadiation * ThermalMassInv)) * Settings.Instance.TimeScaleRatio;
+            // Calculate the net temperature change and update the current temperature
+            DeltaTemperature = (C * deltaTemperature + totalRadiation * ThermalMassInv) * Settings.Instance.TimeScaleRatio;
             Temperature = Math.Max(0, Temperature + DeltaTemperature);
 
-            // Minimize function calls by inlining UpdateHeat logic here if it's small enough
+            // Inline heat generation calculation to reduce method calls
             float produced = EnergyProduction * Definition.ProducerWasteEnergy;
             float consumed = (EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy;
             HeatGeneration = Settings.Instance.TimeScaleRatio * (produced + consumed) * ThermalMassInv;
-
             Temperature += HeatGeneration;
 
+            // Conditionally apply damage to the block if temperature exceeds critical levels
             if (Settings.Instance.EnableDamage && Temperature > Definition.CriticalTemperature)
             {
                 float damage = (Temperature - Definition.CriticalTemperature) * Definition.CriticalTemperatureScaler;
                 Block.DoDamage(damage, MyStringHash.GetOrCompute("thermal"), false);
             }
 
+            // Debugging feature to visualize temperature changes by color if enabled
             if (Settings.Debug && MyAPIGateway.Session.IsServer)
             {
                 Vector3 color = Tools.GetTemperatureColor(Temperature);
