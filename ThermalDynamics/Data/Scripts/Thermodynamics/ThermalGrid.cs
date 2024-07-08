@@ -308,7 +308,7 @@ namespace Thermodynamics
 
         public override void UpdateBeforeSimulation()
         {
-            
+
             FrameCount++;
             //MyAPIGateway.Utilities.ShowNotification($"[Loop] f: {MyAPIGateway.Session.GameplayFrameCounter} fc: {FrameCount} sf: {SimulationFrame} sq: {SimulationQuota}", 1, "White");
 
@@ -365,7 +365,7 @@ namespace Thermodynamics
 
 
                 //MyLog.Default.Info($"[{Settings.Name}] Frame: {FrameCount} SimFrame: {SimulationFrame}: Index: {SimulationIndex} Quota: {SimulationQuota} FrameQuota:{FrameQuota}");
-                
+
                 ThermalCell cell = Thermals.list[SimulationIndex];
                 if (cell != null)
                 {
@@ -406,7 +406,7 @@ namespace Thermodynamics
                 isUnderground = local.LengthSquared() < surfacePointLocal.LengthSquared();
                 float airDensity = p.Entity.GetAirDensity(position);
                 float windSpeed = p.Entity.GetWindSpeed(position);
-                 
+
 
                 float ambient = def.UndergroundTemperature;
                 if (!isUnderground)
@@ -489,7 +489,13 @@ namespace Thermodynamics
                     g.PositionComp.WorldAABB.Intersect(ref line, out subLine);
 
                     var blue = Color.Blue.ToVector4();
-                    MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref blue, 0.2f);
+
+                    if (Settings.Debug == true)
+                    {
+
+                        MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref blue,
+                            0.2f);
+                    }
 
                     Vector3I? hit = (e as MyCubeGrid).RayCastBlocks(subLine.From, subLine.To);
 
@@ -501,7 +507,7 @@ namespace Thermodynamics
                 }
             }
 
-            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated) 
+            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
             {
                 var color = (FrameSolarOccluded) ? Color.Red.ToVector4() : Color.White.ToVector4();
                 var color2 = Color.LightGoldenrodYellow.ToVector4();
