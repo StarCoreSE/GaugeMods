@@ -26,9 +26,6 @@ namespace Shrapnel
 
             if (info.Type != MyDamageType.Bullet)
             {
-                //// missle and collision damage does not need shrapnel
-                //if (!(target is IMySlimBlock)) return;
-
                 if (slim.Integrity >= info.Amount) return;
 
                 float overkill = info.Amount - slim.Integrity;
@@ -47,7 +44,7 @@ namespace Shrapnel
                     OverKill = info.Amount,
                     Neighbours = new List<IMySlimBlock>() { slim },
                 });
-                info.Amount *= 0;
+                info.Amount = 0;
 
             }
 
@@ -63,6 +60,7 @@ namespace Shrapnel
                 int count = data.Neighbours.Count;
                 foreach (IMySlimBlock neighbour in data.Neighbours)
                 {
+                    if (neighbour == null) continue;
                     // get block resistance
                     float generalMult = 1;
                     if (neighbour.BlockDefinition is MyCubeBlockDefinition)
