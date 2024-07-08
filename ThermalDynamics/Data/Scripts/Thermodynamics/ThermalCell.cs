@@ -41,7 +41,7 @@ namespace Thermodynamics
         public float ExposedSurfaceArea; // m^2 of all exposed faces on this block
         public float Radiation;
         public float ThermalMassInv; // 1 / SpecificHeat * Mass
-        public float boltzmann;
+        public float Boltzmann;
         public float[] kA;
 
 
@@ -72,7 +72,7 @@ namespace Thermodynamics
             Area = Block.CubeGrid.GridSize * Block.CubeGrid.GridSize;
             C = 1 / (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize);
             ThermalMassInv = 1f / (Definition.SpecificHeat * Mass);
-            boltzmann = -1 * Definition.Emissivity * Tools.BoltzmannConstant;
+            Boltzmann = -1 * Definition.Emissivity * Tools.BoltzmannConstant;
 
             UpdateHeat();
         }
@@ -349,7 +349,7 @@ namespace Thermodynamics
             }
         }
 
-        protected static void RemoveNeighbors(ThermalCell n1, ThermalCell n2)
+        protected void RemoveNeighbors(ThermalCell n1, ThermalCell n2)
         {
             int i = n1.Neighbors.IndexOf(n2);
             if (i != -1)
@@ -364,6 +364,8 @@ namespace Thermodynamics
                 n2.Neighbors.RemoveAt(j);
                 n2.TouchingSerfacesByNeighbor.RemoveAt(j);
             }
+
+            CalculatekA();
         }
 
 
@@ -381,7 +383,7 @@ namespace Thermodynamics
             LastTemprature = Temperature;
 
             float temperatureSquared = Temperature * Temperature;
-            float totalRadiation = boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
+            float totalRadiation = Boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
 
             if (Settings.Instance.EnableSolarHeat && !Grid.FrameSolarOccluded)
             {
@@ -389,9 +391,15 @@ namespace Thermodynamics
                 totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
             }
 
-            // Pre-compute neighbor interactions
+
+            // TODO: wind/liquid convective cooling
+            //float viscosity = 
+            //float windIntensity = DirectionalRadiationIntensity(ref Grid.FrameWindDirection, ref Grid.WindNode);
+            //float v = Grid.FrameWindDirection.Length();
+            //float hc = 10.45f - v + 10f * (float)Math.Sqrt(v);
+
             float deltaTemperature = 0f;
-            float currentTemperature = Temperature;  // Use a local variable to avoid repeated memory accesses
+            float currentTemperature = Temperature;
             for (int i = 0; i < Neighbors.Count; i++)
             {
                 float neighborTemp = Neighbors[i].Frame == Frame ? Neighbors[i].LastTemprature : Neighbors[i].Temperature;
@@ -401,7 +409,7 @@ namespace Thermodynamics
             DeltaTemperature = (C * deltaTemperature + totalRadiation * ThermalMassInv) * Settings.Instance.TimeScaleRatio;
             Temperature = Math.Max(0, currentTemperature + DeltaTemperature);
 
-            // Inline heat generation to minimize additional method calls
+
             HeatGeneration = Settings.Instance.TimeScaleRatio * ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
             Temperature += HeatGeneration;
 
@@ -473,7 +481,7 @@ namespace Thermodynamics
             }
 
             ExposedSurfaceArea = ExposedSurfaces * Area;
-            boltzmann = -1 * Definition.Emissivity * Tools.BoltzmannConstant * ExposedSurfaceArea;
+            Boltzmann = -1 * Definition.Emissivity * Tools.BoltzmannConstant * ExposedSurfaceArea;
         }
 
 
