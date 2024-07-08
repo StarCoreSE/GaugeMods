@@ -18,7 +18,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const projectOwner = 'StarCoreSEe'; // Replace with your organization name
+            const projectOwner = 'StarCoreSE'; // Replace with your organization name
             const projectNumber = 17; // Replace with your project number
 
             // Get the project ID
