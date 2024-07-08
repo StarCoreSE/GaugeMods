@@ -73,7 +73,7 @@ namespace Thermodynamics
 			Settings s = new Settings {
 				Version = 1,
 				EnableSolarHeat = true,
-				EnableDamage = false,
+				EnableDamage = true,
 				Frequency = 60,
 				SimulationSpeed = 1,
                 SolarEnergy = 1000f, 
