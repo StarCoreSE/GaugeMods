@@ -42,6 +42,8 @@ namespace Thermodynamics
         public float Radiation;
         public float ThermalMassInv; // 1 / SpecificHeat * Mass
         public float boltzmann;
+        public float[] kA;
+
 
         public ThermalGrid Grid;
         public IMySlimBlock Block;
@@ -52,6 +54,8 @@ namespace Thermodynamics
         
         public int ExposedSurfaces = 0;
         private List<Vector3I> ExposedSurfaceDirections = new List<Vector3I>();
+
+
 
         public ThermalCell(ThermalGrid g, IMySlimBlock b)
         {
@@ -160,11 +164,14 @@ namespace Thermodynamics
                                 //MyLog.Default.Info($"[{Settings.Name}] testing {temp} {ncell != null}");
                                 if (ncell != null)
                                 {
-                                    AddNeighbors(c, ncell);
+                                    AddNeighbors(c, ncell, true);
                                 }
                             }
                         }
                     }
+
+                    CalculatekA();
+
                 };
             }
         }
@@ -301,12 +308,14 @@ namespace Thermodynamics
 
                 if (!Neighbors.Contains(ncell))
                 {
-                    AddNeighbors(this, ncell);
+                    AddNeighbors(this, ncell, true);
                 }
             }
+
+            CalculatekA();
         }
 
-        protected static void AddNeighbors(ThermalCell n1, ThermalCell n2)
+        protected void AddNeighbors(ThermalCell n1, ThermalCell n2, bool groupUpdate=false)
         {
             n1.Neighbors.Add(n2);
             n2.Neighbors.Add(n1);
@@ -323,6 +332,21 @@ namespace Thermodynamics
 
             n1.TouchingSerfacesByNeighbor.Add(area);
             n2.TouchingSerfacesByNeighbor.Add(area);
+
+            if (!groupUpdate) 
+            {
+                CalculatekA();
+            }
+        }
+
+        protected void CalculatekA()
+        {
+            kA = new float[Neighbors.Count];
+            for (int i = 0; i < Neighbors.Count; i++)
+            {
+                float area = Math.Min(Area, Neighbors[i].Area);
+                kA[i] = Definition.Conductivity * area * TouchingSerfacesByNeighbor[i];
+            }
         }
 
         protected static void RemoveNeighbors(ThermalCell n1, ThermalCell n2)
@@ -367,13 +391,6 @@ namespace Thermodynamics
 
             // Pre-compute neighbor interactions
             float deltaTemperature = 0f;
-            float[] kA = new float[Neighbors.Count];
-            for (int i = 0; i < Neighbors.Count; i++)
-            {
-                float area = Math.Min(Area, Neighbors[i].Area);
-                kA[i] = Definition.Conductivity * area * TouchingSerfacesByNeighbor[i];
-            }
-
             float currentTemperature = Temperature;  // Use a local variable to avoid repeated memory accesses
             for (int i = 0; i < Neighbors.Count; i++)
             {
