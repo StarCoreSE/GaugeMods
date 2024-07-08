@@ -353,50 +353,46 @@ namespace Thermodynamics
         /// </summary>
         internal void Update()
         {
-            // Update the frame count and store the last temperature for differential calculations
             Frame = Grid.SimulationFrame;
             LastTemprature = Temperature;
 
-            // Calculate radiation using the full precision formula without any approximation
             float temperatureSquared = Temperature * Temperature;
             float totalRadiation = boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
 
-            // Conditional calculation for solar influence if it's enabled and not occluded
             if (Settings.Instance.EnableSolarHeat && !Grid.FrameSolarOccluded)
             {
                 float intensity = DirectionalRadiationIntensity(ref Grid.FrameSolarDirection, ref Grid.SolarRadiationNode);
                 totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
             }
 
-            // Optimize neighbor interaction computations
+            // Pre-compute neighbor interactions
             float deltaTemperature = 0f;
-            foreach (var ncell in Neighbors)
+            float[] kA = new float[Neighbors.Count];
+            for (int i = 0; i < Neighbors.Count; i++)
             {
-                // Pre-calculate heat transfer coefficient only once for each neighbor
-                float area = Math.Min(Area, ncell.Area);
-                float kA = Definition.Conductivity * area * TouchingSerfacesByNeighbor[Neighbors.IndexOf(ncell)];
-                float neighborTemp = ncell.Frame != Frame ? ncell.Temperature : ncell.LastTemprature;
-                deltaTemperature += kA * (neighborTemp - Temperature);
+                float area = Math.Min(Area, Neighbors[i].Area);
+                kA[i] = Definition.Conductivity * area * TouchingSerfacesByNeighbor[i];
             }
 
-            // Calculate the net temperature change and update the current temperature
-            DeltaTemperature = (C * deltaTemperature + totalRadiation * ThermalMassInv) * Settings.Instance.TimeScaleRatio;
-            Temperature = Math.Max(0, Temperature + DeltaTemperature);
+            float currentTemperature = Temperature;  // Use a local variable to avoid repeated memory accesses
+            for (int i = 0; i < Neighbors.Count; i++)
+            {
+                float neighborTemp = Neighbors[i].Frame == Frame ? Neighbors[i].LastTemprature : Neighbors[i].Temperature;
+                deltaTemperature += kA[i] * (neighborTemp - currentTemperature);
+            }
 
-            // Inline heat generation calculation to reduce method calls
-            float produced = EnergyProduction * Definition.ProducerWasteEnergy;
-            float consumed = (EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy;
-            HeatGeneration = Settings.Instance.TimeScaleRatio * (produced + consumed) * ThermalMassInv;
+            DeltaTemperature = (C * deltaTemperature + totalRadiation * ThermalMassInv) * Settings.Instance.TimeScaleRatio;
+            Temperature = Math.Max(0, currentTemperature + DeltaTemperature);
+
+            // Inline heat generation to minimize additional method calls
+            HeatGeneration = Settings.Instance.TimeScaleRatio * ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
             Temperature += HeatGeneration;
 
-            // Conditionally apply damage to the block if temperature exceeds critical levels
             if (Settings.Instance.EnableDamage && Temperature > Definition.CriticalTemperature)
             {
-                float damage = (Temperature - Definition.CriticalTemperature) * Definition.CriticalTemperatureScaler;
-                Block.DoDamage(damage, MyStringHash.GetOrCompute("thermal"), false);
+                Block.DoDamage((Temperature - Definition.CriticalTemperature) * Definition.CriticalTemperatureScaler, MyStringHash.GetOrCompute("thermal"), false);
             }
 
-            // Debugging feature to visualize temperature changes by color if enabled
             if (Settings.Debug && MyAPIGateway.Session.IsServer)
             {
                 Vector3 color = Tools.GetTemperatureColor(Temperature);
