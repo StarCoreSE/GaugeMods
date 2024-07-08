@@ -195,17 +195,23 @@ namespace Thermodynamics
 
             Vector3I transformedNormal = Vector3I.Round(Vector3.Transform(normal, matrix));
             Vector3 value = Vector3.Transform(position, matrix) + def.Center;
-            switch (def.IsCubePressurized[Vector3I.Round(value)][transformedNormal])
+            Vector3I roundedValue = Vector3I.Round(value);
+
+            if (def.IsCubePressurized.ContainsKey(roundedValue) && def.IsCubePressurized[roundedValue].ContainsKey(transformedNormal))
             {
-                case MyCubeBlockDefinition.MyCubePressurizationMark.NotPressurized:
-                    return false;
-                case MyCubeBlockDefinition.MyCubePressurizationMark.PressurizedAlways:
-                    return true;
-                case MyCubeBlockDefinition.MyCubePressurizationMark.PressurizedClosed:
-                    return isDoorClosed;
+                switch (def.IsCubePressurized[roundedValue][transformedNormal])
+                {
+                    case MyCubeBlockDefinition.MyCubePressurizationMark.NotPressurized:
+                        return false;
+                    case MyCubeBlockDefinition.MyCubePressurizationMark.PressurizedAlways:
+                        return true;
+                    case MyCubeBlockDefinition.MyCubePressurizationMark.PressurizedClosed:
+                        return isDoorClosed;
+                }
             }
 
-            return isDoorClosed && IsDoorAirtight(ref door, ref transformedNormal, ref def);
+            // Default to not airtight if the key is not found or if no specific condition matches
+            return isDoorClosed && door != null && IsDoorAirtight(ref door, ref transformedNormal, ref def);
         }
 
         private bool IsDoorAirtight(ref IMyDoor door, ref Vector3I normal, ref MyCubeBlockDefinition def)
