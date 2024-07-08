@@ -1,0 +1,54 @@
+name: Auto Add to Project
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Add issue or PR to project
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const projectOwner = 'StarCoreSEe'; // Replace with your organization name
+            const projectNumber = 17; // Replace with your project number
+
+            // Get the project ID
+            const projects = await github.projects.listForOrg({
+              org: projectOwner,
+            });
+            const project = projects.data.find(p => p.number === projectNumber);
+
+            if (!project) {
+              core.setFailed(`Project ${projectNumber} not found`);
+              return;
+            }
+
+            // Get the column ID (for example, the "To Do" column)
+            const columns = await github.projects.listColumns({
+              project_id: project.id,
+            });
+            const column = columns.data.find(col => col.name === 'Backlog'); // Replace with your column name
+
+            if (!column) {
+              core.setFailed(`Column not found in project ${projectNumber}`);
+              return;
+            }
+
+            // Add the issue or PR to the project
+            const contentType = github.context.eventName === 'issues' ? 'Issue' : 'PullRequest';
+            const contentId = github.context.payload[contentType.toLowerCase()].id;
+
+            await github.projects.createCard({
+              column_id: column.id,
+              content_id: contentId,
+              content_type: contentType,
+            });
