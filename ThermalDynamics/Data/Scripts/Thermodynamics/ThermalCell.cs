@@ -288,11 +288,13 @@ namespace Thermodynamics
                 {
                     ncell.Neighbors.RemoveAt(j);
                     ncell.TouchingSerfacesByNeighbor.RemoveAt(j);
+                    ncell.CalculatekA();
                 }
             }
 
             Neighbors.Clear();
             TouchingSerfacesByNeighbor.Clear();
+            CalculatekA();
         }
 
         public void AddAllNeighbors()
