@@ -333,12 +333,9 @@ namespace Thermodynamics
             }
 
             n1.TouchingSerfacesByNeighbor.Add(area);
+            n1.CalculatekA();
             n2.TouchingSerfacesByNeighbor.Add(area);
-
-            if (!groupUpdate) 
-            {
-                CalculatekA();
-            }
+            n2.CalculatekA();
         }
 
         protected void CalculatekA()
