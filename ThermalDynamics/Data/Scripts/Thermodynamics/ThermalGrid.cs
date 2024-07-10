@@ -401,7 +401,7 @@ namespace Thermodynamics
             if (p != null)
             {
                 PlanetDefinition def = p.Definition();
-                Vector3 local = (position - p.Position);
+                Vector3 local = position - p.Position;
                 Vector3D surfacePointLocal = p.Entity.GetClosestSurfacePointLocal(ref local);
                 isUnderground = local.LengthSquared() < surfacePointLocal.LengthSquared();
                 float airDensity = p.Entity.GetAirDensity(position);
@@ -411,7 +411,7 @@ namespace Thermodynamics
                 float ambient = def.UndergroundTemperature;
                 if (!isUnderground)
                 {
-                    float dot = (float)Vector3D.Dot(local.Normalized(), FrameSolarDirection);
+                    float dot = (float)Vector3D.Dot(Vector3D.Normalize(local), FrameSolarDirection);
                     ambient = def.NightTemperature + ((dot + 1f) * 0.5f * (def.DayTemperature - def.NightTemperature));
                 }
                 else
@@ -420,7 +420,8 @@ namespace Thermodynamics
                 }
 
                 FrameAmbientTemprature = Math.Max(2.7f, ambient * airDensity);
-                FrameAmbientTempratureP4 = FrameAmbientTemprature * FrameAmbientTemprature * FrameAmbientTemprature * FrameAmbientTemprature;
+                float frameAmbiSquared = FrameAmbientTemprature * FrameAmbientTemprature;
+                FrameAmbientTempratureP4 = frameAmbiSquared * frameAmbiSquared;
                 FrameSolarDecay = 1 - def.SolarDecay * airDensity;
 
                 FrameWindDirection = Vector3.Cross(p.GravityComponent.GetWorldGravityNormalized(position), p.Entity.WorldMatrix.Forward).Normalized() * windSpeed;
@@ -444,9 +445,11 @@ namespace Thermodynamics
                 {
                     MyPlanet myPlanet = e as MyPlanet;
                     Vector3D planetLocal = position - myPlanet.PositionComp.WorldMatrixRef.Translation;
-                    Vector3D planetDirection = Vector3D.Normalize(planetLocal);
+                    double distance = planetLocal.Length();
+                    Vector3D planetDirection = planetLocal / distance;
+
                     double dot = Vector3D.Dot(planetDirection, FrameSolarDirection);
-                    double occlusionDot = PlanetManager.GetLargestOcclusionDotProduct(PlanetManager.GetVisualSize(planetLocal.Length(), myPlanet.AverageRadius));
+                    double occlusionDot = PlanetManager.GetLargestOcclusionDotProduct(PlanetManager.GetVisualSize(distance, myPlanet.AverageRadius));
 
                     if (dot < occlusionDot)
                     {
@@ -463,7 +466,11 @@ namespace Thermodynamics
                     voxel.PositionComp.WorldAABB.Intersect(ref line, out subLine);
                     //Vector3D start = Vector3D.Transform((Vector3D)(Vector3)ExposedSurface[i] * gridSize, matrix);
                     var green = Color.Green.ToVector4();
-                    MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref green, 0.2f);
+
+                    if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+                    {
+                        MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref green, 0.2f);
+                    }
 
                     IHitInfo hit;
                     MyAPIGateway.Physics.CastRay(subLine.From, subLine.To, out hit, 28); // 28
@@ -490,11 +497,10 @@ namespace Thermodynamics
 
                     var blue = Color.Blue.ToVector4();
 
-                    if (Settings.Debug == true)
+                    if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
                     {
 
-                        MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref blue,
-                            0.2f);
+                        MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref blue, 0.2f);
                     }
 
                     Vector3I? hit = (e as MyCubeGrid).RayCastBlocks(subLine.From, subLine.To);

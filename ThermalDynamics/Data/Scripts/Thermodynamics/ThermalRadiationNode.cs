@@ -8,27 +8,9 @@ namespace Thermodynamics
 {
     public class ThermalRadiationNode
     {
-        public bool IsSolarNode => Source == null;
-
-        public ThermalCell Source;
-
-        public float[] Sides;
-        public float[] SideAverages;
-        public int[] SideSurfaces;
-
-        public ThermalRadiationNode() 
-        {
-            Sides = new float[6];
-            SideAverages = new float[6];
-            SideSurfaces = new int[6];
-        }
-        public ThermalRadiationNode(ThermalCell cell)
-        {
-            Source = cell;
-            Sides = new float[6];
-            SideAverages = new float[6];
-            SideSurfaces = new int[6];
-        }
+        public float[] Sides = new float[6];
+        public float[] SideAverages = new float[6];
+        public int[] SideSurfaces = new int[6];
 
         /// <summary>
         /// Run at the end of the heat tick to setup for the next
@@ -40,8 +22,8 @@ namespace Thermodynamics
                 SideAverages[i] = (SideSurfaces[i] > 0) ? Sides[i] / (float)SideSurfaces[i] : 0;
             }
 
-            Sides = new float[6];
-            SideSurfaces = new int[6];
+            Array.Clear(Sides, 0, Sides.Length);
+            Array.Clear(SideSurfaces, 0, SideSurfaces.Length);
         }
     }
 }

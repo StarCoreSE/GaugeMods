@@ -22,7 +22,12 @@ namespace Thermodynamics
         /// <returns></returns>
         public static int DirectionToIndex(Vector3I vector)
         {
-            return (vector.X > 0) ? 0 : (vector.X < 0) ? 1 : (vector.Y > 0) ? 2 : (vector.Y < 0) ? 3 : (vector.Z > 0) ? 4 : 5;
+            if (vector.X > 0) return 0;
+            if (vector.X < 0) return 1;
+            if (vector.Y > 0) return 2;
+            if (vector.Y < 0) return 3;
+            if (vector.Z > 0) return 4;
+            return 5;
         }
 
         /// <summary>
@@ -89,32 +94,18 @@ namespace Thermodynamics
         /// Calculates the surface area of the touching sides
         /// If you are using IMySlimBlock. add +1 to the max value
         /// </summary>
-        public static int FindTouchingSurfaceArea(Vector3I minA, Vector3I maxA, Vector3I minB, Vector3I maxB) 
+        public static int FindTouchingSurfaceArea(Vector3I minA, Vector3I maxA, Vector3I minB, Vector3I maxB)
         {
-            bool touched = false;
-            int val = 1;
-            if (!(minA.X == maxB.X || maxA.X == minB.X))
-            {
-                val *= Math.Min(maxA.X, maxB.X) - Math.Max(minA.X, minB.X);
-                touched = true;
-            }
+            int deltaX = Math.Min(maxA.X, maxB.X) - Math.Max(minA.X, minB.X);
+            int deltaY = Math.Min(maxA.Y, maxB.Y) - Math.Max(minA.Y, minB.Y);
+            int deltaZ = Math.Min(maxA.Z, maxB.Z) - Math.Max(minA.Z, minB.Z);
 
-            if (!(minA.Y == maxB.Y || maxA.Y == minB.Y))
+            if (deltaX <= 0 || deltaY <= 0 || deltaZ <= 0)
             {
-                val *= Math.Min(maxA.Y, maxB.Y) - Math.Max(minA.Y, minB.Y);
-                touched = true;
-            }
-
-            if (!(minA.Y == maxB.Y || maxA.Y == minB.Y))
-            {
-                val *= Math.Min(maxA.Y, maxB.Y) - Math.Max(minA.Y, minB.Y);
-                touched = true;
-            }
-
-            if (!touched)
                 return 0;
+            }
 
-            return val;
+            return deltaX * deltaY * deltaZ;
         }
     }
 }

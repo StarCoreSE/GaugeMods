@@ -501,7 +501,6 @@ namespace Thermodynamics
                 // calculate the surface direction
                 Vector3I direction = ExposedSurfaceDirections[i];
                 int directionIndex = Tools.DirectionToIndex(direction);
-
                 Vector3D startDirection = Vector3D.Rotate(direction, matrix);
                 float dot = Vector3.Dot(startDirection, targetDirection);
 
@@ -531,7 +530,7 @@ namespace Thermodynamics
                 }
                 else
                 {
-                    intensity += (dot < node.SideAverages[directionIndex]) ? dot : node.SideAverages[directionIndex];
+                    intensity += Math.Min(dot, node.SideAverages[directionIndex]);
                 }
             }
 

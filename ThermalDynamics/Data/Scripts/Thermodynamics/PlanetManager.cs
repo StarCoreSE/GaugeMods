@@ -60,27 +60,19 @@ namespace Thermodynamics
             {
                 MyPlanet entity = ent as MyPlanet;
 
-                MyLog.Default.Info($"[{Settings.Name}] Added Planet: {entity.DisplayName} - {entity.DefinitionId.HasValue}");
-
-                Planet p = new Planet()
+                //MyLog.Default.Info($"[{Settings.Name}] Added Planet: {entity.DisplayName} - {entity.DefinitionId.HasValue}");
+                Planets.Add(new Planet()
                 {
                     Entity = entity,
                     Position = entity.PositionComp.WorldMatrixRef.Translation,
                     GravityComponent = entity.Components.Get<MyGravityProviderComponent>(),
-                };
-
-                Planets.Add(p);
+                });
             }
         }
 
         private void RemovePlanet(IMyEntity ent)
         {
-            Planet p = Planets.Find(x => x.Entity.EntityId == ent.EntityId);
-
-            if (p != null)
-            {
-                Planets.Remove(p);
-            }
+            Planets.RemoveAll(p => p.Entity.EntityId == ent.EntityId);
         }
 
 
@@ -141,8 +133,11 @@ namespace Thermodynamics
         public static bool IsSolarOccluded(Vector3D observer, Vector3 solarDirection, MyPlanet planet)
         {
             Vector3D local = observer - planet.PositionComp.WorldMatrixRef.Translation;
-            double dot = Vector3.Dot(Vector3D.Normalize(local), solarDirection);
-            return dot < GetLargestOcclusionDotProduct(GetVisualSize(local, planet.AverageRadius));
+            double distance = local.Length();
+            Vector3D localNorm = local / distance;
+
+            double dot = Vector3.Dot(localNorm, solarDirection);
+            return dot < GetLargestOcclusionDotProduct(GetVisualSize(distance, planet.AverageRadius));
         }
 
 
@@ -151,10 +146,10 @@ namespace Thermodynamics
         /// </summary>
         /// <param name="observer">the local vector between the observer and the target</param>
         /// <param name="radius">the size of the target</param>
-        public static double GetVisualSize(Vector3D observer, double radius)
-        {
-            return 2 * Math.Atan(radius / (2 * observer.Length()));
-        }
+        //public static double GetVisualSize(Vector3D observer, double radius)
+        //{
+        //    return 2 * Math.Atan(radius / (2 * observer.Length()));
+        //}
 
         /// <summary>
         /// a number between 0 and 1 representing the side object based on distance

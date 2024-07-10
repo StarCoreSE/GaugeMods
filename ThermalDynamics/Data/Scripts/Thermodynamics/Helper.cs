@@ -30,13 +30,11 @@ namespace Thermodynamics
         public static Vector3I Unflatten(this Vector3I vector, long flatVector)
         {
             vector.Z = (int)(flatVector / sizeSquared);
-            flatVector -= vector.Z * sizeSquared;
-            
+            flatVector %= sizeSquared;
             vector.Y = (int)(flatVector / size);
-            vector.Z = (int)(flatVector % size);
+            vector.X = (int)(flatVector % size);
 
             return vector;
         }
-
     }
 }
