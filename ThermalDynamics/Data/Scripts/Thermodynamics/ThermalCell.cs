@@ -417,7 +417,7 @@ namespace Thermodynamics
                 Block.DoDamage((Temperature - Definition.CriticalTemperature) * Definition.CriticalTemperatureScaler, MyStringHash.GetOrCompute("thermal"), false);
             }
 
-            if (Settings.Debug && MyAPIGateway.Session.IsServer)
+            if (Settings.DebugBlockColors && MyAPIGateway.Session.IsServer)
             {
                 Vector3 color = Tools.GetTemperatureColor(Temperature);
                 if (Block.ColorMaskHSV != color)

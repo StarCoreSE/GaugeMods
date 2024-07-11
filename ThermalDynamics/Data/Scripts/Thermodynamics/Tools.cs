@@ -96,16 +96,40 @@ namespace Thermodynamics
         /// </summary>
         public static int FindTouchingSurfaceArea(Vector3I minA, Vector3I maxA, Vector3I minB, Vector3I maxB)
         {
-            int deltaX = Math.Min(maxA.X, maxB.X) - Math.Max(minA.X, minB.X);
-            int deltaY = Math.Min(maxA.Y, maxB.Y) - Math.Max(minA.Y, minB.Y);
-            int deltaZ = Math.Min(maxA.Z, maxB.Z) - Math.Max(minA.Z, minB.Z);
-
-            if (deltaX <= 0 || deltaY <= 0 || deltaZ <= 0)
+            // Check if they touch on the X face
+            if (minA.X == maxB.X || maxA.X == minB.X)
             {
-                return 0;
+                int overlapY = Math.Min(maxA.Y, maxB.Y) - Math.Max(minA.Y, minB.Y);
+                int overlapZ = Math.Min(maxA.Z, maxB.Z) - Math.Max(minA.Z, minB.Z);
+                if (overlapY > 0 && overlapZ > 0)
+                {
+                    return overlapY * overlapZ;
+                }
             }
 
-            return deltaX * deltaY * deltaZ;
+            // Check if they touch on the Y face
+            if (minA.Y == maxB.Y || maxA.Y == minB.Y)
+            {
+                int overlapX = Math.Min(maxA.X, maxB.X) - Math.Max(minA.X, minB.X);
+                int overlapZ = Math.Min(maxA.Z, maxB.Z) - Math.Max(minA.Z, minB.Z);
+                if (overlapX > 0 && overlapZ > 0)
+                {
+                    return overlapX * overlapZ;
+                }
+            }
+
+            // Check if they touch on the Z face
+            if (minA.Z == maxB.Z || maxA.Z == minB.Z)
+            {
+                int overlapX = Math.Min(maxA.X, maxB.X) - Math.Max(minA.X, minB.X);
+                int overlapY = Math.Min(maxA.Y, maxB.Y) - Math.Max(minA.Y, minB.Y);
+                if (overlapX > 0 && overlapY > 0)
+                {
+                    return overlapX * overlapY;
+                }
+            }
+
+            return 0;
         }
     }
 }
