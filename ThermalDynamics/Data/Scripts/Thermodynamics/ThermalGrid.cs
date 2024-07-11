@@ -10,6 +10,7 @@ using SpaceEngineers.Game.ModAPI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Transactions;
@@ -371,6 +372,7 @@ namespace Thermodynamics
                 {
                     if (!ThermalCellUpdateComplete)
                     {
+                        MyLog.Default.Info($"[Thermals] updating serfaces {ExteriorNodes.Count}");
                         cell.UpdateSurfaces(ref ExteriorNodes, ref neighbors);
                     }
 
@@ -449,7 +451,7 @@ namespace Thermodynamics
                     Vector3D planetDirection = planetLocal / distance;
 
                     double dot = Vector3D.Dot(planetDirection, FrameSolarDirection);
-                    double occlusionDot = PlanetManager.GetLargestOcclusionDotProduct(PlanetManager.GetVisualSize(distance, myPlanet.AverageRadius));
+                    double occlusionDot = Tools.GetLargestOcclusionDotProduct(Tools.GetVisualSize(distance, myPlanet.AverageRadius));
 
                     if (dot < occlusionDot)
                     {

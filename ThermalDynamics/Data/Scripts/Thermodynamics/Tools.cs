@@ -1,6 +1,9 @@
-﻿using System;
+﻿using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+using System;
 using System.Collections.Generic;
 using System.Text;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace Thermodynamics
@@ -130,6 +133,38 @@ namespace Thermodynamics
             }
 
             return 0;
+        }
+
+        public static bool IsSolarOccluded(Vector3D observer, Vector3 solarDirection, MyPlanet planet)
+        {
+            Vector3D local = observer - planet.PositionComp.WorldMatrixRef.Translation;
+            double distance = local.Length();
+            Vector3D localNorm = local / distance;
+
+            double dot = Vector3.Dot(localNorm, solarDirection);
+            return dot < GetLargestOcclusionDotProduct(GetVisualSize(distance, planet.AverageRadius));
+        }
+
+        /// <summary>
+        /// a number between 0 and 1 representing the side object based on distance
+        /// </summary>
+        /// <param name="distance">the distance between the observer and the target</param>
+        /// <param name="radius">the size of the target</param>
+        public static double GetVisualSize(double distance, double radius)
+        {
+            return 2 * Math.Atan(radius / (2 * distance));
+        }
+
+        /// <summary>
+        /// an equation made by plotting the edge most angle of the occluded sun
+        /// takes in the current visual size of the planet and produces a number between 0 and -1
+        /// if the dot product of the planet and sun directions is less than this number it is occluded
+        /// </summary>
+        /// <param name="visualSize"></param>
+        /// <returns></returns>
+        public static double GetLargestOcclusionDotProduct(double visualSize)
+        {
+            return -1 + (0.85 * visualSize * visualSize * visualSize);
         }
     }
 }
