@@ -4,14 +4,20 @@ using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
 using VRage.Game;
+using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRageMath;
+using VRage.GameServices;
 using VRage.Utils;
 using SpaceEngineers.Game.ModAPI;
 using VRage.ModAPI;
 using Sandbox.Game.Entities;
+using Sandbox.Game;
+using VRage.ObjectBuilders;
+using System.IO.Compression;
 using VRage.Game.Components.Interfaces;
-
+using System.Drawing;
+using System.Security.AccessControl;
 
 namespace Thermodynamics
 {
@@ -366,21 +372,40 @@ namespace Thermodynamics
         {
             return Temperature;
         }
+        private void UpdateHeat()
+        {
+            // power produced and consumed are in Watts or Joules per second.
+            // it gets multiplied by the waste energy percent and timescale ratio.
+            // we then have the heat in joules that needs to be converted into temprature.
+            // we do that by dividing it by the ThermalMass (SpecificHeat * Mass)
 
+
+            float produced = EnergyProduction * Definition.ProducerWasteEnergy;
+            float consumed = (EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy;
+            HeatGeneration = Settings.Instance.TimeScaleRatio * (produced + consumed) * ThermalMassInv;
+        }
+        /// <summary>
+        /// Update the temperature of each cell in the grid
+        /// </summary>
         internal void Update()
         {
-            Frame = Grid.SimulationFrame;
-            LastTemprature = Temperature;
-
-            UpdateRadiation();
-            UpdateConduction();
+            UpdateFrameAndLastTemperature();
+            float totalRadiation = CalculateTotalRadiation();
+            float deltaTemperature = CalculateDeltaTemperature();
+            ApplyTemperatureChanges(totalRadiation, deltaTemperature);
             UpdateHeatGeneration();
-            ApplyTemperatureChange();
+            ApplyHeatGeneration();
             HandleCriticalTemperature();
             UpdateDebugVisuals();
         }
 
-        private void UpdateRadiation()
+        private void UpdateFrameAndLastTemperature()
+        {
+            Frame = Grid.SimulationFrame;
+            LastTemprature = Temperature;
+        }
+
+        private float CalculateTotalRadiation()
         {
             float temperatureSquared = Temperature * Temperature;
             float totalRadiation = Boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
@@ -391,10 +416,10 @@ namespace Thermodynamics
                 totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
             }
 
-            DeltaTemperature = totalRadiation * ThermalMassInv * Settings.Instance.TimeScaleRatio;
+            return totalRadiation;
         }
 
-        private void UpdateConduction()
+        private float CalculateDeltaTemperature()
         {
             float deltaTemperature = 0f;
             float currentTemperature = Temperature;
@@ -403,8 +428,13 @@ namespace Thermodynamics
                 float neighborTemp = Neighbors[i].Frame == Frame ? Neighbors[i].LastTemprature : Neighbors[i].Temperature;
                 deltaTemperature += kA[i] * (neighborTemp - currentTemperature);
             }
+            return deltaTemperature;
+        }
 
-            DeltaTemperature += C * deltaTemperature * Settings.Instance.TimeScaleRatio;
+        private void ApplyTemperatureChanges(float totalRadiation, float deltaTemperature)
+        {
+            DeltaTemperature = (C * deltaTemperature + totalRadiation * ThermalMassInv) * Settings.Instance.TimeScaleRatio;
+            Temperature = Math.Max(0, Temperature + DeltaTemperature);
         }
 
         private void UpdateHeatGeneration()
@@ -412,9 +442,9 @@ namespace Thermodynamics
             HeatGeneration = Settings.Instance.TimeScaleRatio * ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
         }
 
-        private void ApplyTemperatureChange()
+        private void ApplyHeatGeneration()
         {
-            Temperature = Math.Max(0, Temperature + DeltaTemperature + HeatGeneration);
+            Temperature += HeatGeneration;
         }
 
         private void HandleCriticalTemperature()
@@ -436,24 +466,22 @@ namespace Thermodynamics
                 }
             }
         }
-        private void UpdateHeat()
-        {
-            // power produced and consumed are in Watts or Joules per second.
-            // it gets multiplied by the waste energy percent and timescale ratio.
-            // we then have the heat in joules that needs to be converted into temprature.
-            // we do that by dividing it by the ThermalMass (SpecificHeat * Mass)
-
-
-            float produced = EnergyProduction * Definition.ProducerWasteEnergy;
-            float consumed = (EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy;
-            HeatGeneration = Settings.Instance.TimeScaleRatio * (produced + consumed) * ThermalMassInv;
-        }
 
         public void UpdateSurfaces(ref HashSet<Vector3I> exterior, ref Vector3I[] neighbors)
         {
+            ResetExposedSurfaces();
+            CalculateExposedSurfaces(ref exterior, ref neighbors);
+            UpdateExposedSurfaceArea();
+        }
+
+        private void ResetExposedSurfaces()
+        {
             ExposedSurfaces = 0;
             ExposedSurfaceDirections.Clear();
+        }
 
+        private void CalculateExposedSurfaces(ref HashSet<Vector3I> exterior, ref Vector3I[] neighbors)
+        {
             Vector3I min = Block.Min;
             Vector3I max = Block.Max + 1;
 
@@ -463,42 +491,46 @@ namespace Thermodynamics
                 {
                     for (int z = min.Z; z < max.Z; z++)
                     {
-                        Vector3I node = new Vector3I(x, y, z);
-                        int flag = Grid.BlockNodes[node];
-
-                        for (int i = 0; i < 6; i++) 
-                        {
-                            // if this node is solid but the neighboring block is not, add an exposed serface
-                            int d = (1 << i);
-                            int nd = (1 << i + 6);
-                            if ((flag&nd) == 0) 
-                            {
-                                Vector3I neighbor = neighbors[i];
-                                Vector3I n = node + neighbor;
-
-                                if (exterior.Contains(n))
-                                {
-                                    ExposedSurfaces++;
-                                    if (!ExposedSurfaceDirections.Contains(neighbor))
-                                        ExposedSurfaceDirections.Add(neighbor);
-                                }
-                            }
-                        }
+                        ProcessNode(new Vector3I(x, y, z), ref exterior, ref neighbors);
                     }
                 }
             }
+        }
 
+        private void ProcessNode(Vector3I node, ref HashSet<Vector3I> exterior, ref Vector3I[] neighbors)
+        {
+            int flag = Grid.BlockNodes[node];
+
+            for (int i = 0; i < 6; i++)
+            {
+                ProcessNodeDirection(node, flag, i, ref exterior, ref neighbors);
+            }
+        }
+
+        private void ProcessNodeDirection(Vector3I node, int flag, int i, ref HashSet<Vector3I> exterior, ref Vector3I[] neighbors)
+        {
+            int d = (1 << i);
+            int nd = (1 << i + 6);
+            if ((flag & nd) == 0)
+            {
+                Vector3I neighbor = neighbors[i];
+                Vector3I n = node + neighbor;
+
+                if (exterior.Contains(n))
+                {
+                    ExposedSurfaces++;
+                    if (!ExposedSurfaceDirections.Contains(neighbor))
+                        ExposedSurfaceDirections.Add(neighbor);
+                }
+            }
+        }
+
+        private void UpdateExposedSurfaceArea()
+        {
             ExposedSurfaceArea = ExposedSurfaces * Area;
             Boltzmann = -1 * Definition.Emissivity * Tools.BoltzmannConstant * ExposedSurfaceArea;
         }
 
-
-        /// <summary>
-        /// Calculates the intensity of directional heating objects (likely only solar)
-        /// </summary>
-        /// <param name="targetDirection"></param>
-        /// <param name="node"></param>
-        /// <returns></returns>
         internal float DirectionalRadiationIntensity(ref Vector3 targetDirection, ref ThermalRadiationNode node)
         {
             float intensity = 0;
@@ -507,43 +539,32 @@ namespace Thermodynamics
 
             for (int i = 0; i < ExposedSurfaceDirections.Count; i++)
             {
-                // calculate the surface direction
-                Vector3I direction = ExposedSurfaceDirections[i];
-                int directionIndex = Tools.DirectionToIndex(direction);
-                Vector3D startDirection = Vector3D.Rotate(direction, matrix);
-                float dot = Vector3.Dot(startDirection, targetDirection);
-
-
-                if (dot < 0)
-                {
-                    dot = 0;
-                    //debug
-                    //Vector3D start = Vector3D.Transform((Vector3D)(Vector3)ExposedSurface[i] * gridSize, matrix);
-                    //var white = Color.Red.ToVector4();
-                    //MySimpleObjectDraw.DrawLine(start, start + (startDirection * 0.5f), MyStringId.GetOrCompute("Square"), ref white, 0.012f * gridSize);
-                }
-                else
-                {
-                    //debug
-                    //Vector3D start = Vector3D.Transform((Vector3D)(Vector3)ExposedSurface[i] * gridSize, matrix);
-                    //var white = Color.White.ToVector4();
-                    //MySimpleObjectDraw.DrawLine(start, start + (startDirection), MyStringId.GetOrCompute("Square"), ref white, 0.0012f * gridSize);
-                }
-
-                if (isCube)
-                {
-                    // records the surface averages for all 1x1x1 blocks
-                    node.Sides[directionIndex] += intensity;
-                    node.SideSurfaces[directionIndex]++;
-                    intensity += dot;
-                }
-                else
-                {
-                    intensity += Math.Min(dot, node.SideAverages[directionIndex]);
-                }
+                intensity += CalculateDirectionIntensity(i, ref targetDirection, ref node, matrix, isCube);
             }
 
             return intensity;
         }
+
+        private float CalculateDirectionIntensity(int i, ref Vector3 targetDirection, ref ThermalRadiationNode node, MatrixD matrix, bool isCube)
+        {
+            Vector3I direction = ExposedSurfaceDirections[i];
+            int directionIndex = Tools.DirectionToIndex(direction);
+            Vector3D startDirection = Vector3D.Rotate(direction, matrix);
+            float dot = Vector3.Dot(startDirection, targetDirection);
+
+            dot = Math.Max(0, dot);
+
+            if (isCube)
+            {
+                node.Sides[directionIndex] += dot;
+                node.SideSurfaces[directionIndex]++;
+                return dot;
+            }
+            else
+            {
+                return Math.Min(dot, node.SideAverages[directionIndex]);
+            }
+        }
+
     }
 }
