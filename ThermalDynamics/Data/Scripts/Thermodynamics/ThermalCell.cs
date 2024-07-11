@@ -4,20 +4,14 @@ using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
 using VRage.Game;
-using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRageMath;
-using VRage.GameServices;
 using VRage.Utils;
 using SpaceEngineers.Game.ModAPI;
 using VRage.ModAPI;
 using Sandbox.Game.Entities;
-using Sandbox.Game;
-using VRage.ObjectBuilders;
-using System.IO.Compression;
 using VRage.Game.Components.Interfaces;
-using System.Drawing;
-using System.Security.AccessControl;
+
 
 namespace Thermodynamics
 {
@@ -373,14 +367,28 @@ namespace Thermodynamics
             return Temperature;
         }
 
-        /// <summary>
-        /// Update the temperature of each cell in the grid
-        /// </summary>
         internal void Update()
         {
             Frame = Grid.SimulationFrame;
             LastTemprature = Temperature;
 
+            UpdateTemperature();
+            UpdateHeatGeneration();
+            ApplyDamage();
+            UpdateDebugVisualization();
+        }
+
+        private void UpdateTemperature()
+        {
+            float totalRadiation = CalculateTotalRadiation();
+            float deltaTemperature = CalculateDeltaTemperature();
+
+            DeltaTemperature = (C * deltaTemperature + totalRadiation * ThermalMassInv) * Settings.Instance.TimeScaleRatio;
+            Temperature = Math.Max(0, Temperature + DeltaTemperature);
+        }
+
+        private float CalculateTotalRadiation()
+        {
             float temperatureSquared = Temperature * Temperature;
             float totalRadiation = Boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
 
@@ -390,13 +398,11 @@ namespace Thermodynamics
                 totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
             }
 
+            return totalRadiation;
+        }
 
-            // TODO: wind/liquid convective cooling
-            //float viscosity = 
-            //float windIntensity = DirectionalRadiationIntensity(ref Grid.FrameWindDirection, ref Grid.WindNode);
-            //float v = Grid.FrameWindDirection.Length();
-            //float hc = 10.45f - v + 10f * (float)Math.Sqrt(v);
-
+        private float CalculateDeltaTemperature()
+        {
             float deltaTemperature = 0f;
             float currentTemperature = Temperature;
             for (int i = 0; i < Neighbors.Count; i++)
@@ -404,19 +410,25 @@ namespace Thermodynamics
                 float neighborTemp = Neighbors[i].Frame == Frame ? Neighbors[i].LastTemprature : Neighbors[i].Temperature;
                 deltaTemperature += kA[i] * (neighborTemp - currentTemperature);
             }
+            return deltaTemperature;
+        }
 
-            DeltaTemperature = (C * deltaTemperature + totalRadiation * ThermalMassInv) * Settings.Instance.TimeScaleRatio;
-            Temperature = Math.Max(0, currentTemperature + DeltaTemperature);
-
-
+        private void UpdateHeatGeneration()
+        {
             HeatGeneration = Settings.Instance.TimeScaleRatio * ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
             Temperature += HeatGeneration;
+        }
 
+        private void ApplyDamage()
+        {
             if (Settings.Instance.EnableDamage && Temperature > Definition.CriticalTemperature)
             {
                 Block.DoDamage((Temperature - Definition.CriticalTemperature) * Definition.CriticalTemperatureScaler, MyStringHash.GetOrCompute("thermal"), false);
             }
+        }
 
+        private void UpdateDebugVisualization()
+        {
             if (Settings.Debug && MyAPIGateway.Session.IsServer)
             {
                 Vector3 color = Tools.GetTemperatureColor(Temperature);
@@ -426,7 +438,6 @@ namespace Thermodynamics
                 }
             }
         }
-
         private void UpdateHeat()
         {
             // power produced and consumed are in Watts or Joules per second.
