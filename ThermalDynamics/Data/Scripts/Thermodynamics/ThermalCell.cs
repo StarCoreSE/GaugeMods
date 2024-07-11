@@ -372,22 +372,15 @@ namespace Thermodynamics
             Frame = Grid.SimulationFrame;
             LastTemprature = Temperature;
 
-            UpdateTemperature();
+            UpdateRadiation();
+            UpdateConduction();
             UpdateHeatGeneration();
-            ApplyDamage();
-            UpdateDebugVisualization();
+            ApplyTemperatureChange();
+            HandleCriticalTemperature();
+            UpdateDebugVisuals();
         }
 
-        private void UpdateTemperature()
-        {
-            float totalRadiation = CalculateTotalRadiation();
-            float deltaTemperature = CalculateDeltaTemperature();
-
-            DeltaTemperature = (C * deltaTemperature + totalRadiation * ThermalMassInv) * Settings.Instance.TimeScaleRatio;
-            Temperature = Math.Max(0, Temperature + DeltaTemperature);
-        }
-
-        private float CalculateTotalRadiation()
+        private void UpdateRadiation()
         {
             float temperatureSquared = Temperature * Temperature;
             float totalRadiation = Boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
@@ -398,10 +391,10 @@ namespace Thermodynamics
                 totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
             }
 
-            return totalRadiation;
+            DeltaTemperature = totalRadiation * ThermalMassInv * Settings.Instance.TimeScaleRatio;
         }
 
-        private float CalculateDeltaTemperature()
+        private void UpdateConduction()
         {
             float deltaTemperature = 0f;
             float currentTemperature = Temperature;
@@ -410,16 +403,21 @@ namespace Thermodynamics
                 float neighborTemp = Neighbors[i].Frame == Frame ? Neighbors[i].LastTemprature : Neighbors[i].Temperature;
                 deltaTemperature += kA[i] * (neighborTemp - currentTemperature);
             }
-            return deltaTemperature;
+
+            DeltaTemperature += C * deltaTemperature * Settings.Instance.TimeScaleRatio;
         }
 
         private void UpdateHeatGeneration()
         {
             HeatGeneration = Settings.Instance.TimeScaleRatio * ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
-            Temperature += HeatGeneration;
         }
 
-        private void ApplyDamage()
+        private void ApplyTemperatureChange()
+        {
+            Temperature = Math.Max(0, Temperature + DeltaTemperature + HeatGeneration);
+        }
+
+        private void HandleCriticalTemperature()
         {
             if (Settings.Instance.EnableDamage && Temperature > Definition.CriticalTemperature)
             {
@@ -427,7 +425,7 @@ namespace Thermodynamics
             }
         }
 
-        private void UpdateDebugVisualization()
+        private void UpdateDebugVisuals()
         {
             if (Settings.Debug && MyAPIGateway.Session.IsServer)
             {
