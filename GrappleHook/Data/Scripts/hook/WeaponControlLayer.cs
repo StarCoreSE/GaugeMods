@@ -8,6 +8,7 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 using SENetworkAPI;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Reflection;
 using System.Text;
 using VRage.Game;
@@ -494,7 +495,6 @@ namespace GrappleHook
             for (int i = 0; i < ZiplinePlayers.Value.Count; i++)
             {
                 ZiplineEntity zipEntity = ZiplinePlayers.Value[i];
-
                 ZiplineEntity.Populate(ref zipEntity);
 
                 if (zipEntity.player == null || !(zipEntity.player.Controller.ControlledEntity is IMyCharacter)) return;
@@ -510,13 +510,12 @@ namespace GrappleHook
                 }
 
                 Vector3D characterPosition = character.WorldMatrix.Translation + character.WorldMatrix.Up * 1.7f;
-                Vector3D ropeForceDirection = zipEntity.pulley - characterPosition;
-                Vector3D ropeForceDirectionNorm = ropeForceDirection.Normalized();
+                Vector3D tetherVector = zipEntity.pulley - characterPosition;
+                double tetherLength = tetherVector.Length();
+                Vector3D tetherDirectionNorm = tetherVector / tetherLength;
 
-                double force = settings.Value.ZiplineTetherForce * Math.Max(0, ropeForceDirection.Length() - settings.Value.ZiplineTetherLength);
-
-                Vector3D forceVector = ropeForceDirectionNorm * force - settings.Value.ZiplineDamping * character.Physics.LinearVelocity;
-
+                double force = settings.Value.ZiplineTetherForce * (tetherLength - settings.Value.ZiplineTetherLength);
+                Vector3D forceVector = tetherDirectionNorm * force - settings.Value.ZiplineDamping * character.Physics.LinearVelocity;
                 if (force > 0)
                 {
                     character.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceVector, characterPosition, null, null, true);
@@ -532,25 +531,23 @@ namespace GrappleHook
                 double a = 0;
                 if (deltaVector != Vector3D.Zero)
                 {
-                    a = Vector3D.Dot(-ropeForceDirectionNorm, deltaVector.Normalized()) * g;
+                    a = Vector3D.Dot(-tetherDirectionNorm, deltaVector.Normalized()) * g;
                 }
 
                 double min = settings.Value.ZiplinePulleyMinSpeed * 0.01666667f;
 
                 double velocityCalc = v0 * v0 + 2d * a * xDelta * xDelta;
 
-                // ADD BACK IN 'a' when you fix it
                 double velocitySquared = Math.Max(velocityCalc, min * min);
                 double velocityToApply = Math.Sqrt(velocitySquared);
-                //Tools.Debug($"V0: {v0}, a:{a}, xd:{xDelta} => Velocity: {velocityCalc}, min: {min*min}");
 
-                double distanceRemaining = velocityToApply;
 
                 zipEntity.lastPulley = zipEntity.pulley;
                 zipEntity.lastPulleyVelocity = zipEntity.pulleyVelocity;
-
                 zipEntity.pulleyVelocity = velocityToApply;
 
+
+                double distanceRemaining = velocityToApply;
                 for (int j = 0; j < points.Length - 1; j++)
                 {
                     if (distanceRemaining == 0) break;
@@ -578,8 +575,6 @@ namespace GrappleHook
 
                     Vector3D endDirection = end - zipEntity.pulley;
                     Vector3D endNorm = endDirection.Normalized();
-
-
 
 
                     if ((Vector3D.Dot(startNorm, segmentNorm) <= 0 || Math.Abs((zipEntity.pulley - startDirection).Length()) < 0.01f) && Vector3D.Dot(endNorm, segmentNorm) >= 0)
@@ -691,7 +686,7 @@ namespace GrappleHook
                     texture = MyStringId.GetOrCompute("cable");
                 }
 
-                Vector3D sagDirection = GetSagDirection();
+                Vector3D sagDirection = GetSegmentDirection();
                 Vector3D gunPosition = Turret.PositionComp.WorldMatrixRef.Translation;
 
                 Vector3D position;
@@ -743,7 +738,7 @@ namespace GrappleHook
             }
         }
 
-        private Vector3D GetSagDirection()
+        private Vector3D GetSegmentDirection()
         {
             ExternalForceData planetForces = WorldPlanets.GetExternalForces(Turret.PositionComp.WorldMatrixRef.Translation);
             Vector3D sagDirection = planetForces.Gravity;
@@ -764,7 +759,7 @@ namespace GrappleHook
 
                 Vector3D gunPosition = Turret.WorldMatrix.Translation;
                 Vector3D position = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix);
-                Vector3D sagDirection = GetSagDirection();
+                Vector3D sagDirection = GetSegmentDirection();
                 return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value, settings.Value.RopeSegments);
             }
             catch
@@ -793,7 +788,7 @@ namespace GrappleHook
                 Vector3D newPt = start * v + end * u;
                 if (sagAmount > 0)
                 {
-                    newPt += sagDirection * ComputeRopeSag(u) * sagAmount;
+                    newPt += sagDirection * ComputeRopeSegment(u) * sagAmount;
                 }
                 result[i] = newPt;
             }
@@ -801,7 +796,7 @@ namespace GrappleHook
             return result;
         }
 
-        public double ComputeRopeSag(double x)
+        public double ComputeRopeSegment(double x)
         {
             return -4 * x * x + 4 * x;
         }
