@@ -148,17 +148,17 @@ namespace Thermodynamics
                 MyCubeGrid grid = hit?.HitEntity as MyCubeGrid;
                 if (grid == null) return;
 
-                Vector3I position = grid.WorldToGridInteger(hit.Position + (matrix.Forward * 0.01f));
+                Vector3I position = grid.WorldToGridInteger(hit.Position + (matrix.Forward * 0.005f));
 
                 ThermalGrid g = grid.GameLogic.GetAs<ThermalGrid>();
 
                 IMySlimBlock block = grid.GetCubeBlock(position);
 
+                if (block == null) return;
+
                 ThermalCell c = g.Get(block.Position);
 
                 if (c == null) return;
-
-                MyAPIGateway.Utilities.ShowNotification($"Made it to draw", 1);
 
                 DrawBillboard(c, matrix);
                 for (int i = 0; i < c.Neighbors.Count; i++)

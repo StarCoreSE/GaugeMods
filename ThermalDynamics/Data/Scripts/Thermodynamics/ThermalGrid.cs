@@ -372,7 +372,7 @@ namespace Thermodynamics
                 {
                     if (!ThermalCellUpdateComplete)
                     {
-                        MyLog.Default.Info($"[Thermals] updating serfaces {ExteriorNodes.Count}");
+                        //MyLog.Default.Info($"[Thermals] updating serfaces {ExteriorNodes.Count}");
                         cell.UpdateSurfaces(ref ExteriorNodes, ref neighbors);
                     }
 
