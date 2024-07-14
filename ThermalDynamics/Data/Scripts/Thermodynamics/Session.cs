@@ -7,6 +7,7 @@ using Sandbox.Game.SessionComponents;
 using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
@@ -56,34 +57,10 @@ namespace Thermodynamics
             return new Color(red, 0, blue, 255);
         }
 
-        public void DrawBillboard(ThermalCell c, MatrixD cameraMatrix) 
+
+
+        public override void Simulate()
         {
-            Vector3D blockPosition;
-
-            c.Block.ComputeWorldCenter(out blockPosition);
-
-            Color color = ColorExtensions.HSVtoColor(Tools.GetTemperatureColor(c.Temperature));
-
-            Vector3D drawPosition = MyAPIGateway.Session.Camera.WorldToScreen(ref blockPosition);
-            float distance = 0.00001f;
-
-            double blockDistance = (cameraMatrix.Translation - blockPosition).Length();
-            float scaler = (float)Tools.GetVisualSize(blockDistance, c.Grid.Grid.GridSizeHalf);
-
-
-            MyTransparentGeometry.AddBillboardOriented(
-                MyStringId.GetOrCompute("Square"), // Texture or material name for the billboard
-                color, // Color of the billboard
-                cameraMatrix.Translation + (cameraMatrix.Forward * distance) + (cameraMatrix.Up * drawPosition.Y*distance) + (cameraMatrix.Left * drawPosition.X*distance), // Position of the billboard
-                cameraMatrix.Left, // Left direction of the billboard
-                cameraMatrix.Up, // Up direction of the billboard
-                1f * scaler*distance, // Width of the billboard
-                1f * scaler*distance // Height of the billboard
-            );
-        }
-
-        public override void Draw()
-		{
             if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
             {
                 //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
@@ -108,15 +85,6 @@ namespace Thermodynamics
 
                 if (c == null)
                     return;
-
-
-                DrawBillboard(c, matrix);
-                for (int i = 0; i < c.Neighbors.Count; i++) 
-                {
-                    ThermalCell n = c.Neighbors[i];
-                    DrawBillboard(n, matrix);
-                }
-
 
                 MyAPIGateway.Utilities.ShowNotification($"[Env] " +
                     $"sim: {Settings.Instance.SimulationSpeed.ToString("n2")} " +
@@ -164,5 +132,65 @@ namespace Thermodynamics
                 //MyAPIGateway.Utilities.ShowNotification($"[External] {tGrid.Mapper.Blocks.Count} EComplete: {tGrid.Mapper.ExternalRoomUpdateComplete} BComplete: {tGrid.ThermalCellUpdateComplete}", 1, "White");
             }
         }
-	}
+
+        public override void Draw()
+		{
+            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+            {
+                //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
+                MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;
+
+                Vector3D start = matrix.Translation;
+                Vector3D end = start + (matrix.Forward * 15);
+
+                IHitInfo hit;
+                MyAPIGateway.Physics.CastRay(start, end, out hit);
+                MyCubeGrid grid = hit?.HitEntity as MyCubeGrid;
+                if (grid == null) return;
+
+                Vector3I position = grid.WorldToGridInteger(hit.Position + (matrix.Forward * 0.01f));
+
+                ThermalGrid g = grid.GameLogic.GetAs<ThermalGrid>();
+
+                IMySlimBlock block = grid.GetCubeBlock(position);
+
+                ThermalCell c = g.Get(block.Position);
+
+                if (c == null) return;
+
+                MyAPIGateway.Utilities.ShowNotification($"Made it to draw", 1);
+
+                DrawBillboard(c, matrix);
+                for (int i = 0; i < c.Neighbors.Count; i++)
+                {
+                    ThermalCell n = c.Neighbors[i];
+                    DrawBillboard(n, matrix);
+                }
+            }
+        }
+
+        public void DrawBillboard(ThermalCell c, MatrixD cameraMatrix)
+        {
+            Vector3D position;
+            c.Block.ComputeWorldCenter(out position);
+
+            float averageBlockLength = Vector3I.DistanceManhattan(c.Block.Max + 1, c.Block.Min) * 0.33f;
+
+            Color color = ColorExtensions.HSVtoColor(Tools.GetTemperatureColor(c.Temperature));
+
+            float distance = 0.01f;
+            position = cameraMatrix.Translation + (position - cameraMatrix.Translation) * distance;
+            float scaler = 1.2f * c.Grid.Grid.GridSizeHalf * averageBlockLength * distance;
+
+            MyTransparentGeometry.AddBillboardOriented(
+                MyStringId.GetOrCompute("GaugeThermalTexture"), // Texture or material name for the billboard
+                color, // Color of the billboard
+                position,
+                cameraMatrix.Left, // Left direction of the billboard
+                cameraMatrix.Up, // Up direction of the billboard
+                scaler, // Width of the billboard
+                scaler // Height of the billboard
+            );
+        }
+    }
 }

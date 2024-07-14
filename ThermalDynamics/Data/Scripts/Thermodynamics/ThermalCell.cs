@@ -55,8 +55,6 @@ namespace Thermodynamics
         public int ExposedSurfaces = 0;
         public List<Vector3I> ExposedSurfaceDirections = new List<Vector3I>();
 
-
-
         public ThermalCell(ThermalGrid g, IMySlimBlock b)
         {
             Grid = g;
