@@ -10,8 +10,6 @@ namespace Shrapnel
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class Core : MySessionComponentBase
     {
-        public const float ReductionMult = 1.0f;
-
         private Queue<ShrapnelData> queue = new Queue<ShrapnelData>();
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
@@ -24,16 +22,19 @@ namespace Shrapnel
             IMySlimBlock slim = target as IMySlimBlock;
             if (slim == null) return;
 
-            if (info.Type != MyDamageType.Bullet)
+            if (info.Type == MyDamageType.Bullet)
             {
                 if (slim.Integrity >= info.Amount) return;
 
                 float overkill = info.Amount - slim.Integrity;
                 info.Amount = slim.Integrity;
 
+                List<IMySlimBlock> n = new List<IMySlimBlock>();
+                slim.GetNeighbours(n);
+
                 queue.Enqueue(new ShrapnelData()
                 {
-                    Neighbours = slim.Neighbours,
+                    Neighbours = n,
                     OverKill = overkill
                 });
             }
@@ -57,7 +58,7 @@ namespace Shrapnel
             {
                 tasks++;
                 ShrapnelData data = queue.Dequeue();
-                int count = data.Neighbours.Count;
+                float count = 1f / data.Neighbours.Count;
                 foreach (IMySlimBlock neighbour in data.Neighbours)
                 {
                     if (neighbour == null) continue;
@@ -68,11 +69,7 @@ namespace Shrapnel
                         generalMult = ((MyCubeBlockDefinition)neighbour.BlockDefinition).GeneralDamageMultiplier;
                     }
 
-                    // total over kill damage devided by the number of neighbours
-                    // that times the reduction multiplier 0 to 1
-                    // that times the blocks general reduction multiplier 0 - 1
-                    float damage = ((data.OverKill / (float)count) * ReductionMult * generalMult);
-                    neighbour.DoDamage(damage, MyDamageType.Bullet, true);
+                    neighbour.DoDamage(data.OverKill * count * generalMult, MyDamageType.Bullet, true);
                 }
             }
         }
