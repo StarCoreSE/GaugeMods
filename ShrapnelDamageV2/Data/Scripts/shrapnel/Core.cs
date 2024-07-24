@@ -22,7 +22,7 @@ namespace Shrapnel
             IMySlimBlock slim = target as IMySlimBlock;
             if (slim == null) return;
 
-            if (info.Type == MyDamageType.Bullet)
+            if (info.Type == MyDamageType.Weapon || info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Rocket)
             {
                 if (slim.Integrity >= info.Amount) return;
 
