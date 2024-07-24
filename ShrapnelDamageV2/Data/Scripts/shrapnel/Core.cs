@@ -58,12 +58,12 @@ namespace Shrapnel
             {
                 tasks++;
                 ShrapnelData data = queue.Dequeue();
-                float count = 1f / data.Neighbours.Count;
+                float count = 1f / (float)data.Neighbours.Count;
                 foreach (IMySlimBlock neighbour in data.Neighbours)
                 {
                     if (neighbour == null) continue;
                     // get block resistance
-                    float generalMult = 1;
+                    float generalMult = 1f;
                     if (neighbour.BlockDefinition is MyCubeBlockDefinition)
                     {
                         generalMult = ((MyCubeBlockDefinition)neighbour.BlockDefinition).GeneralDamageMultiplier;
