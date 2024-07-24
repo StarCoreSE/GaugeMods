@@ -25,8 +25,6 @@ namespace BalancedHacking
 
         private void Handler(object target, ref MyDamageInformation info)
         {
-            MyLog.Default.Info(target.ToString());
-
             IMyEntity ent = MyAPIGateway.Entities.GetEntityById(info.AttackerId);
             if (ent == null) return; // End: Must be a player character
 
