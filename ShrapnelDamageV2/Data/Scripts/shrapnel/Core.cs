@@ -1,6 +1,7 @@
 ﻿using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using System.Collections.Generic;
+using System.IO;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
@@ -15,7 +16,7 @@ namespace Shrapnel
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
-            MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(9, ProcessDamage);
+            MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(7, ProcessDamage);
         }
 
         public void ProcessDamage(object target, ref MyDamageInformation info)
@@ -25,9 +26,10 @@ namespace Shrapnel
 
             if (info.Type == MyDamageType.Weapon || info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Rocket)
             {
-                //if (slim.Integrity >= info.Amount) return;
+                if (slim.Integrity >= info.Amount) return;
 
                 float overkill = info.Amount - slim.Integrity;
+                MyLog.Default.Info($"Ammount: {info.Amount}, integrity: {slim.Integrity}, overkill: {overkill}");
                 info.Amount = slim.Integrity;
 
                 List<IMySlimBlock> n = new List<IMySlimBlock>();
