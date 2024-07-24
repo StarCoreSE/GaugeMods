@@ -25,7 +25,7 @@ namespace Shrapnel
 
             if (info.Type == MyDamageType.Weapon || info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Rocket)
             {
-                if (slim.Integrity <= info.Amount) return;
+                //if (slim.Integrity >= info.Amount) return;
 
                 float overkill = info.Amount - slim.Integrity;
                 info.Amount = slim.Integrity;
@@ -61,7 +61,7 @@ namespace Shrapnel
                 ShrapnelData data = queue.Dequeue();
                 float count = 1f / (float)data.Neighbours.Count;
 
-                //MyLog.Default.Info($"queue: {queue.Count} - overkill: {data.OverKill}, spread: {data.OverKill * count}");
+                MyLog.Default.Info($"queue: {queue.Count} - overkill: {data.OverKill}, spread: {data.OverKill * count}");
                 foreach (IMySlimBlock neighbour in data.Neighbours)
                 {
                     if (neighbour == null) continue;
