@@ -24,13 +24,19 @@ namespace Shrapnel
             IMySlimBlock slim = target as IMySlimBlock;
             if (slim == null) return;
 
+            float generalMult = 1f;
+            if (slim.BlockDefinition is MyCubeBlockDefinition)
+            {
+                generalMult = ((MyCubeBlockDefinition)slim.BlockDefinition).GeneralDamageMultiplier;
+            }
+
+            float amount = generalMult * info.Amount;
+
             if (info.Type == MyDamageType.Weapon || info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Rocket)
             {
-                MyLog.Default.Info($"Ammount: {info.Amount}, integrity: {slim.Integrity}");
-                if (slim.Integrity >= info.Amount) return;
+                if (slim.Integrity >= amount) return;
 
-                float overkill = info.Amount - slim.Integrity;
-                //MyLog.Default.Info($"Ammount: {info.Amount}, integrity: {slim.Integrity}, overkill: {overkill}");
+                float overkill = amount - slim.Integrity;
                 info.Amount = slim.Integrity;
 
                 List<IMySlimBlock> n = new List<IMySlimBlock>();
@@ -46,7 +52,7 @@ namespace Shrapnel
             {
                 queue.Enqueue(new ShrapnelData()
                 {
-                    OverKill = info.Amount,
+                    OverKill = amount,
                     Neighbours = new List<IMySlimBlock>() { slim },
                 });
                 info.Amount = 0;
@@ -68,14 +74,14 @@ namespace Shrapnel
                 foreach (IMySlimBlock neighbour in data.Neighbours)
                 {
                     if (neighbour == null) continue;
-                    // get block resistance
-                    float generalMult = 1f;
-                    if (neighbour.BlockDefinition is MyCubeBlockDefinition)
-                    {
-                        generalMult = ((MyCubeBlockDefinition)neighbour.BlockDefinition).GeneralDamageMultiplier;
-                    }
+                    //// get block resistance
+                    //float generalMult = 1f;
+                    //if (neighbour.BlockDefinition is MyCubeBlockDefinition)
+                    //{
+                    //    generalMult = ((MyCubeBlockDefinition)neighbour.BlockDefinition).GeneralDamageMultiplier;
+                    //}
 
-                    neighbour.DoDamage(data.OverKill * count * generalMult, MyDamageType.Bullet, true);
+                    neighbour.DoDamage(data.OverKill * count, MyDamageType.Bullet, true);
                 }
             }
         }
