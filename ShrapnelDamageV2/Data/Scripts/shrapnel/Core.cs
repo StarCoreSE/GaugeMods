@@ -16,7 +16,7 @@ namespace Shrapnel
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
-            MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(500, ProcessDamage);
+            MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, ProcessDamage);
         }
 
         public void ProcessDamage(object target, ref MyDamageInformation info)
