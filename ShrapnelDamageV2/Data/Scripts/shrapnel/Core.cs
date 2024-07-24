@@ -26,10 +26,11 @@ namespace Shrapnel
 
             if (info.Type == MyDamageType.Weapon || info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Rocket)
             {
+                MyLog.Default.Info($"Ammount: {info.Amount}, integrity: {slim.Integrity}");
                 if (slim.Integrity >= info.Amount) return;
 
                 float overkill = info.Amount - slim.Integrity;
-                MyLog.Default.Info($"Ammount: {info.Amount}, integrity: {slim.Integrity}, overkill: {overkill}");
+                //MyLog.Default.Info($"Ammount: {info.Amount}, integrity: {slim.Integrity}, overkill: {overkill}");
                 info.Amount = slim.Integrity;
 
                 List<IMySlimBlock> n = new List<IMySlimBlock>();
