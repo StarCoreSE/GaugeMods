@@ -30,6 +30,8 @@ namespace Shrapnel
                 generalMult = ((MyCubeBlockDefinition)slim.BlockDefinition).GeneralDamageMultiplier;
             }
 
+            MyLog.Default.Info($"generalMult:{generalMult}, amount1: {info.Amount}");
+
             float amount = generalMult * info.Amount;
 
             MyLog.Default.Info($"generalMult:{generalMult}, amount1: {info.Amount}, amount2: {amount}, integrity: {slim.Integrity}, overkill: {amount - slim.Integrity}");
