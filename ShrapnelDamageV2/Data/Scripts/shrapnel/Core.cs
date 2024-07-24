@@ -32,6 +32,8 @@ namespace Shrapnel
 
             float amount = generalMult * info.Amount;
 
+            MyLog.Default.Info($"amount: {amount}, integrity: {slim.Integrity}, overkill: {amount - slim.Integrity}");
+
             if (info.Type == MyDamageType.Weapon || info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Rocket)
             {
                 if (slim.Integrity >= amount) return;
