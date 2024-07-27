@@ -49,13 +49,11 @@ namespace Thermodynamics
         public IMySlimBlock Block;
         public ThermalCellDefinition Definition;
 
-        private List<ThermalCell> Neighbors = new List<ThermalCell>();
+        public List<ThermalCell> Neighbors = new List<ThermalCell>();
         private List<int> TouchingSerfacesByNeighbor = new List<int>();
         
         public int ExposedSurfaces = 0;
-        private List<Vector3I> ExposedSurfaceDirections = new List<Vector3I>();
-
-
+        public List<Vector3I> ExposedSurfaceDirections = new List<Vector3I>();
 
         public ThermalCell(ThermalGrid g, IMySlimBlock b)
         {

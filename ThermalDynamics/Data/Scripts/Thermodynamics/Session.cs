@@ -7,6 +7,7 @@ using Sandbox.Game.SessionComponents;
 using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
@@ -56,12 +57,15 @@ namespace Thermodynamics
             return new Color(red, 0, blue, 255);
         }
 
+
+
         public override void Simulate()
-		{
+        {
             if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
             {
                 //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
                 MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;
+
                 Vector3D start = matrix.Translation;
                 Vector3D end = start + (matrix.Forward * 15);
 
@@ -81,32 +85,6 @@ namespace Thermodynamics
 
                 if (c == null)
                     return;
-
-                Vector3D blockPosition;
-                Matrix blockRotation;
-
-                block.ComputeWorldCenter(out blockPosition);
-                block.Orientation.GetMatrix(out blockRotation);
-
-                MatrixD gridRotationMatrix = block.CubeGrid.WorldMatrix;
-                gridRotationMatrix.Translation = Vector3D.Zero;
-                blockRotation *= gridRotationMatrix;
-                MatrixD blockWorldMatrix = MatrixD.CreateWorld(blockPosition, blockRotation.Forward, blockRotation.Up);
-
-                float unit = block.CubeGrid.GridSize * 0.5f;
-                Vector3 halfExtents = new Vector3((float)unit, (float)unit, (float)unit);
-                BoundingBoxD box = new BoundingBoxD(-halfExtents, halfExtents);
-
-                //GetTemperatureColor(c.Temperature);
-
-                Color color = ColorExtensions.HSVtoColor(Tools.GetTemperatureColor(c.Temperature));
-
-
-                MySimpleObjectDraw.DrawTransparentBox(ref blockWorldMatrix, ref box, ref color, MySimpleObjectRasterizer.Solid, 1, 0.01f, null, null, true, -1, BlendTypeEnum.AdditiveTop, 1000f);
-
-
-                //MyAPIGateway.Utilities.ShowNotification($"[Grid] {tGrid.Entity.EntityId} Count: {tGrid.Thermals.Count}", 1, "White");
-
 
                 MyAPIGateway.Utilities.ShowNotification($"[Env] " +
                     $"sim: {Settings.Instance.SimulationSpeed.ToString("n2")} " +
@@ -154,5 +132,65 @@ namespace Thermodynamics
                 //MyAPIGateway.Utilities.ShowNotification($"[External] {tGrid.Mapper.Blocks.Count} EComplete: {tGrid.Mapper.ExternalRoomUpdateComplete} BComplete: {tGrid.ThermalCellUpdateComplete}", 1, "White");
             }
         }
-	}
+
+        public override void Draw()
+		{
+            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+            {
+                //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
+                MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;
+
+                Vector3D start = matrix.Translation;
+                Vector3D end = start + (matrix.Forward * 15);
+
+                IHitInfo hit;
+                MyAPIGateway.Physics.CastRay(start, end, out hit);
+                MyCubeGrid grid = hit?.HitEntity as MyCubeGrid;
+                if (grid == null) return;
+
+                Vector3I position = grid.WorldToGridInteger(hit.Position + (matrix.Forward * 0.005f));
+
+                ThermalGrid g = grid.GameLogic.GetAs<ThermalGrid>();
+
+                IMySlimBlock block = grid.GetCubeBlock(position);
+
+                if (block == null) return;
+
+                ThermalCell c = g.Get(block.Position);
+
+                if (c == null) return;
+
+                DrawBillboard(c, matrix);
+                for (int i = 0; i < c.Neighbors.Count; i++)
+                {
+                    ThermalCell n = c.Neighbors[i];
+                    DrawBillboard(n, matrix);
+                }
+            }
+        }
+
+        public void DrawBillboard(ThermalCell c, MatrixD cameraMatrix)
+        {
+            Vector3D position;
+            c.Block.ComputeWorldCenter(out position);
+
+            float averageBlockLength = Vector3I.DistanceManhattan(c.Block.Max + 1, c.Block.Min) * 0.33f;
+
+            Color color = ColorExtensions.HSVtoColor(Tools.GetTemperatureColor(c.Temperature));
+
+            float distance = 0.01f;
+            position = cameraMatrix.Translation + (position - cameraMatrix.Translation) * distance;
+            float scaler = 1.2f * c.Grid.Grid.GridSizeHalf * averageBlockLength * distance;
+
+            MyTransparentGeometry.AddBillboardOriented(
+                MyStringId.GetOrCompute("GaugeThermalTexture"), // Texture or material name for the billboard
+                color, // Color of the billboard
+                position,
+                cameraMatrix.Left, // Left direction of the billboard
+                cameraMatrix.Up, // Up direction of the billboard
+                scaler, // Width of the billboard
+                scaler // Height of the billboard
+            );
+        }
+    }
 }

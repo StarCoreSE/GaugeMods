@@ -8,9 +8,8 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 using SENetworkAPI;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Security.Policy;
-using System.Security.Principal;
+using System.Data.SqlTypes;
+using System.Reflection;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
@@ -66,6 +65,7 @@ namespace GrappleHook
             if (MyAPIGateway.Session.IsServer)
             {
                 Settings.Init();
+
                 settings = new NetSync<Settings>(this, TransferType.ServerToClient, Settings.Instance, true, false);
             }
             else
@@ -299,30 +299,24 @@ namespace GrappleHook
 
         public void ApplyForce()
         {
-            try
+            if (Turret.CubeGrid.Physics == null || ConnectedEntity == null || ConnectedEntity.Physics == null || Entity.MarkedForClose || ConnectedEntity.MarkedForClose)
             {
-                if (Turret.CubeGrid.Physics == null || ConnectedEntity == null || ConnectedEntity.Physics == null || Entity.MarkedForClose || ConnectedEntity.MarkedForClose)
-                {
-                    return;
-                }
-
-                Vector3D turretPostion = Turret.PositionComp.WorldMatrixRef.Translation;
-                Vector3D entityPostion = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix);
-                Vector3D direction = turretPostion - entityPostion;
-                double currentLength = direction.Length();
-                direction.Normalize();
-
-                double force = settings.Value.RopeForce * Math.Max(0, currentLength - GrappleLength.Value) - settings.Value.RopeDamping * (Turret.CubeGrid.Physics.LinearVelocity + ConnectedEntity.Physics.LinearVelocity).Length();
-
-                if (force > 0 && turretPostion != Vector3D.Zero && entityPostion != Vector3D.Zero)
-                {
-                    Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * direction * force, turretPostion, null, null, true);
-                    ConnectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, direction * force, entityPostion, null, null, true);
-                }
+                return;
             }
-            catch (Exception e)
+
+            Vector3D turretPostion = Turret.PositionComp.WorldMatrixRef.Translation;
+            Vector3D entityPostion = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix);
+            Vector3D direction = turretPostion - entityPostion;
+            double currentLength = direction.Length();
+            direction = direction / currentLength;
+
+            double force = settings.Value.RopeForce * (currentLength - GrappleLength.Value) - (settings.Value.RopeDamping * (Turret.CubeGrid.Physics.LinearVelocity + ConnectedEntity.Physics.LinearVelocity).Length());
+            Vector3D forceVector = direction * force;
+
+            if (force > 0)
             {
-                Tools.Debug(e.ToString());
+                Turret.CubeGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -1 * forceVector, turretPostion, null, null, true);
+                ConnectedEntity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceVector, entityPostion, null, null, true);
             }
         }
 
@@ -348,7 +342,7 @@ namespace GrappleHook
             if (MyAPIGateway.Session.Player == null || !(MyAPIGateway.Session.Player.Controller.ControlledEntity is IMyCharacter)) return;
 
             ZiplineEntity e;
-            if ((e = GetZiplineEntity(MyAPIGateway.Session.Player.IdentityId)) != null) 
+            if ((e = GetZiplineEntity(MyAPIGateway.Session.Player.IdentityId)) != null)
             {
                 if (interactKeyPressed)
                 {
@@ -356,7 +350,6 @@ namespace GrappleHook
                 }
                 return;
             }
-
 
             IMyCamera cam = MyAPIGateway.Session.Camera;
             if (cam == null) return;
@@ -371,9 +364,6 @@ namespace GrappleHook
 
                 MatrixD worldMatrix = Turret.WorldMatrix;
                 BoundingBoxD bounds = new BoundingBoxD(Vector3D.Min(a, b), Vector3D.Max(a, b));
-
-                VRageMath.Color color = VRageMath.Color.Green;
-                MySimpleObjectDraw.DrawTransparentBox(ref worldMatrix, ref bounds, ref color, MySimpleObjectRasterizer.Wireframe, 1, 0.01f);
 
                 double? result;
                 bounds.Intersects(ref camRay, out result);
@@ -408,16 +398,16 @@ namespace GrappleHook
             IMyCharacter character = ziplineData.player.Character;
             Vector3D[] points = GetLinePoints();
 
-            double nearIndex = 0;
-            double nearValue = double.MaxValue;
-            Vector3D anchorSegment = Vector3D.Zero;
+            Vector3D centerSegment = Vector3D.Zero;
             Vector3D nextSegment = Vector3D.Zero;
             Vector3D previousSegment = Vector3D.Zero;
-            for (int j = 0; j < points.Length; j++)
+
+            int nearIndex = 0;
+            double nearValue = double.MaxValue;
+            for (int i = 0; i < points.Length; i++)
             {
-                int index = j;
-                if (!ziplineData.direction)
-                    index = points.Length - 1 - j;
+                // iterates from end to start if the character is facing twards the turret
+                int index = (ziplineData.direction) ? i : points.Length - 1 - i;
 
                 Vector3D point = points[index];
 
@@ -426,64 +416,69 @@ namespace GrappleHook
                 {
                     nearIndex = index;
                     nearValue = distance;
-
-                    anchorSegment = point;
-
-                    int j2 = j + 1;
-                    if (!ziplineData.direction)
-                        j2 = points.Length - 1 - (j + 1);
-
-                    if (j2 >= 0 && j2 < points.Length)
-                    {
-                        nextSegment = points[j2];
-                    }
-
-                    int j3 = j - 1;
-                    if (!ziplineData.direction)
-                        j3 = points.Length - 1 - (j - 1);
-
-                    if (j3 >= 0 && j3 < points.Length)
-                    {
-                        previousSegment = points[j3];
-                    }
+                    centerSegment = point;
                 }
             }
 
-            //Tools.Debug($"find the distance and direction of attachment force");
-            Vector3D characterPosition = character.WorldMatrix.Translation + character.WorldMatrix.Up;
-
-            Vector3D anchorToNext = nextSegment - anchorSegment;
-            double anchorToNextMag = anchorToNext.Length();
-
-            Vector3D previousToAnchor = anchorSegment - previousSegment;
-            double previousToAnchorMag = previousToAnchor.Length();
-
-            Vector3D playerToAnchor = anchorSegment - characterPosition;
-            double playerToAnchorMag = playerToAnchor.Length();
-
-            // check if we are moving towards or away from the current point.
-            double directionDot = Vector3D.Dot(playerToAnchor, anchorToNext);
-            Vector3D pulley;
-            if (directionDot < 0)
+            // Correctly assign next and previous segments based on nearIndex
+            if (nearIndex + 1 < points.Length)
             {
-                double sinTheta = Tools.GetSinAngle(anchorToNext, -playerToAnchor);
-                double playerPulleyMag = sinTheta * playerToAnchorMag;
-                double pulleyToAnchorMag = Math.Sqrt(playerToAnchorMag * playerToAnchorMag - playerPulleyMag * playerPulleyMag);
-                Vector3D anchorToNextNorm = Vector3D.Normalize(anchorToNext);
-
-                pulley = anchorSegment + anchorToNextNorm * pulleyToAnchorMag;
-
+                nextSegment = points[nearIndex + 1];
             }
             else
             {
-                double sinTheta = Tools.GetSinAngle(previousToAnchor, playerToAnchor);
-                double playerPulleyMag = sinTheta * playerToAnchorMag;
-                double pulleyToAnchorMag = Math.Sqrt(playerToAnchorMag * playerToAnchorMag - playerPulleyMag * playerPulleyMag);
-                Vector3D previousToAnchorNorm = -Vector3D.Normalize(previousToAnchor);
+                nextSegment = centerSegment;
+            }
 
-                pulley = anchorSegment + previousToAnchorNorm * pulleyToAnchorMag;
+            if (nearIndex - 1 >= 0)
+            {
+                previousSegment = points[nearIndex - 1];
+            }
+            else
+            {
+                previousSegment = centerSegment;
+            }
+
+            // If direction is false, swap next and previous segments
+            if (!ziplineData.direction)
+            {
+                Vector3D temp = nextSegment;
+                nextSegment = previousSegment;
+                previousSegment = temp;
+            }
+
+            Vector3D pulley;
+            Vector3D anchor;
+            Vector3D anchorNorm;
+            double sinTheta;
+
+            Vector3D characterPosition = character.WorldMatrix.Translation + character.WorldMatrix.Up;
+            Vector3D centerToNext = nextSegment - centerSegment;
+            Vector3D playerToCenter = centerSegment - characterPosition;
+            double playerToCenterMag = playerToCenter.Length();
+
+            // check if we are infront or behind the center point.
+            double directionDot = Vector3D.Dot(playerToCenter, centerToNext);
+
+            if (directionDot < 0)
+            {
+                // infront uses the next segment point as the anchor
+                anchor = centerToNext;
+                anchorNorm = Vector3D.Normalize(anchor);
+                sinTheta = Tools.GetSinAngle(anchor, -playerToCenter);
+            }
+            else 
+            {
+                // behind uses the center segment point as the anchor
+                anchor = centerSegment - previousSegment;
+                anchorNorm = -Vector3D.Normalize(anchor);
+                sinTheta = Tools.GetSinAngle(anchor, playerToCenter);
 
             }
+
+            double playerPulleyMag = sinTheta * playerToCenterMag;
+            double pulleyToAnchorMag = Math.Sqrt(playerToCenterMag * playerToCenterMag - playerPulleyMag * playerPulleyMag);
+            pulley = centerSegment + anchorNorm * pulleyToAnchorMag;
 
             Tools.Debug($"Got pulley location {pulley}");
 
@@ -491,13 +486,15 @@ namespace GrappleHook
             ziplineData.lastPulley = pulley;
         }
 
+
+
+
         private void UpdateZiplineForces()
         {
             Vector3D[] points = GetLinePoints();
             for (int i = 0; i < ZiplinePlayers.Value.Count; i++)
             {
                 ZiplineEntity zipEntity = ZiplinePlayers.Value[i];
-
                 ZiplineEntity.Populate(ref zipEntity);
 
                 if (zipEntity.player == null || !(zipEntity.player.Controller.ControlledEntity is IMyCharacter)) return;
@@ -513,13 +510,12 @@ namespace GrappleHook
                 }
 
                 Vector3D characterPosition = character.WorldMatrix.Translation + character.WorldMatrix.Up * 1.7f;
-                Vector3D ropeForceDirection = zipEntity.pulley - characterPosition;
-                Vector3D ropeForceDirectionNorm = ropeForceDirection.Normalized();
+                Vector3D tetherVector = zipEntity.pulley - characterPosition;
+                double tetherLength = tetherVector.Length();
+                Vector3D tetherDirectionNorm = tetherVector / tetherLength;
 
-                double force = settings.Value.ZiplineTetherForce * Math.Max(0, ropeForceDirection.Length() - settings.Value.ZiplineTetherLength);
-
-                Vector3D forceVector = ropeForceDirectionNorm * force - settings.Value.ZiplineDamping * character.Physics.LinearVelocity;
-
+                double force = settings.Value.ZiplineTetherForce * (tetherLength - settings.Value.ZiplineTetherLength);
+                Vector3D forceVector = tetherDirectionNorm * force - settings.Value.ZiplineDamping * character.Physics.LinearVelocity;
                 if (force > 0)
                 {
                     character.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceVector, characterPosition, null, null, true);
@@ -535,25 +531,23 @@ namespace GrappleHook
                 double a = 0;
                 if (deltaVector != Vector3D.Zero)
                 {
-                    a = Vector3D.Dot(-ropeForceDirectionNorm, deltaVector.Normalized()) * g;
+                    a = Vector3D.Dot(-tetherDirectionNorm, deltaVector.Normalized()) * g;
                 }
 
                 double min = settings.Value.ZiplinePulleyMinSpeed * 0.01666667f;
 
                 double velocityCalc = v0 * v0 + 2d * a * xDelta * xDelta;
 
-                // ADD BACK IN 'a' when you fix it
                 double velocitySquared = Math.Max(velocityCalc, min * min);
                 double velocityToApply = Math.Sqrt(velocitySquared);
-                //Tools.Debug($"V0: {v0}, a:{a}, xd:{xDelta} => Velocity: {velocityCalc}, min: {min*min}");
 
-                double distanceRemaining = velocityToApply;
 
                 zipEntity.lastPulley = zipEntity.pulley;
                 zipEntity.lastPulleyVelocity = zipEntity.pulleyVelocity;
-
                 zipEntity.pulleyVelocity = velocityToApply;
 
+
+                double distanceRemaining = velocityToApply;
                 for (int j = 0; j < points.Length - 1; j++)
                 {
                     if (distanceRemaining == 0) break;
@@ -581,8 +575,6 @@ namespace GrappleHook
 
                     Vector3D endDirection = end - zipEntity.pulley;
                     Vector3D endNorm = endDirection.Normalized();
-
-
 
 
                     if ((Vector3D.Dot(startNorm, segmentNorm) <= 0 || Math.Abs((zipEntity.pulley - startDirection).Length()) < 0.01f) && Vector3D.Dot(endNorm, segmentNorm) >= 0)
@@ -694,7 +686,7 @@ namespace GrappleHook
                     texture = MyStringId.GetOrCompute("cable");
                 }
 
-                Vector3D sagDirection = GetSagDirection();
+                Vector3D sagDirection = GetSegmentDirection();
                 Vector3D gunPosition = Turret.PositionComp.WorldMatrixRef.Translation;
 
                 Vector3D position;
@@ -746,7 +738,7 @@ namespace GrappleHook
             }
         }
 
-        private Vector3D GetSagDirection()
+        private Vector3D GetSegmentDirection()
         {
             ExternalForceData planetForces = WorldPlanets.GetExternalForces(Turret.PositionComp.WorldMatrixRef.Translation);
             Vector3D sagDirection = planetForces.Gravity;
@@ -767,12 +759,12 @@ namespace GrappleHook
 
                 Vector3D gunPosition = Turret.WorldMatrix.Translation;
                 Vector3D position = Vector3D.Transform(LocalGrapplePosition.Value, ConnectedEntity.WorldMatrix);
-                Vector3D sagDirection = GetSagDirection();
+                Vector3D sagDirection = GetSegmentDirection();
                 return ComputeCurvePoints(gunPosition, position, sagDirection, GrappleLength.Value, settings.Value.RopeSegments);
             }
-            catch 
+            catch
             {
-                return new Vector3D[0]; 
+                return new Vector3D[0];
             }
         }
 
@@ -796,7 +788,7 @@ namespace GrappleHook
                 Vector3D newPt = start * v + end * u;
                 if (sagAmount > 0)
                 {
-                    newPt += sagDirection * ComputeRopeSag(u) * sagAmount;
+                    newPt += sagDirection * ComputeRopeSegment(u) * sagAmount;
                 }
                 result[i] = newPt;
             }
@@ -804,7 +796,7 @@ namespace GrappleHook
             return result;
         }
 
-        public double ComputeRopeSag(double x)
+        public double ComputeRopeSegment(double x)
         {
             return -4 * x * x + 4 * x;
         }
