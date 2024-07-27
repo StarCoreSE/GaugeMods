@@ -390,48 +390,58 @@ namespace Thermodynamics
 
         private void PrepareNextSimulationStep()
         {
+
+            Vector3D position = Grid.PositionComp.WorldAABB.Center;
+            PrepareEnvironmentTemprature(ref position);
+            PrepareSolarEnvironment(ref position);
+        }
+
+        private void PrepareEnvironmentTemprature(ref Vector3D position)
+        {
+            PlanetManager.Planet planet = PlanetManager.GetClosestPlanet(position);
+            if (planet == null) return;
+
+
+            bool isUnderground = false;
+            PlanetDefinition def = planet.Definition();
+            Vector3 local = position - planet.Position;
+            Vector3D surfacePointLocal = planet.Entity.GetClosestSurfacePointLocal(ref local);
+            isUnderground = local.LengthSquared() < surfacePointLocal.LengthSquared();
+            float airDensity = planet.Entity.GetAirDensity(position);
+            float windSpeed = planet.Entity.GetWindSpeed(position);
+
+
+            float ambient = def.UndergroundTemperature;
+            if (!isUnderground)
+            {
+                float dot = (float)Vector3D.Dot(Vector3D.Normalize(local), FrameSolarDirection);
+                ambient = def.NightTemperature + ((dot + 1f) * 0.5f * (def.DayTemperature - def.NightTemperature));
+            }
+            else
+            {
+                FrameSolarOccluded = true;
+            }
+
+            FrameAmbientTemprature = Math.Max(2.7f, ambient * airDensity);
+            float frameAmbiSquared = FrameAmbientTemprature * FrameAmbientTemprature;
+            FrameAmbientTempratureP4 = frameAmbiSquared * frameAmbiSquared;
+            FrameSolarDecay = 1 - def.SolarDecay * airDensity;
+
+            //FrameWindDirection = Vector3.Cross(planet.GravityComponent.GetWorldGravityNormalized(position), planet.Entity.WorldMatrix.Forward).Normalized() * windSpeed;
+            //MySimpleObjectDraw.DrawLine(position, position + FrameWindDirection, MyStringId.GetOrCompute("Square"), ref color2, 0.1f);
+
+            //TODO: implement underground core temparatures
+        }
+
+        private void PrepareSolarEnvironment(ref Vector3D position)
+        {
+            if (!Settings.Instance.EnableSolarHeat) return;
+
             SolarRadiationNode.Update();
 
             FrameSolarOccluded = false;
             FrameSolarDirection = MyVisualScriptLogicProvider.GetSunDirection();
             FrameMatrix = Grid.WorldMatrix;
-
-            Vector3D position = Grid.PositionComp.WorldAABB.Center;
-            PlanetManager.Planet p = PlanetManager.GetClosestPlanet(position);
-
-            bool isUnderground = false;
-            if (p != null)
-            {
-                PlanetDefinition def = p.Definition();
-                Vector3 local = position - p.Position;
-                Vector3D surfacePointLocal = p.Entity.GetClosestSurfacePointLocal(ref local);
-                isUnderground = local.LengthSquared() < surfacePointLocal.LengthSquared();
-                float airDensity = p.Entity.GetAirDensity(position);
-                float windSpeed = p.Entity.GetWindSpeed(position);
-
-
-                float ambient = def.UndergroundTemperature;
-                if (!isUnderground)
-                {
-                    float dot = (float)Vector3D.Dot(Vector3D.Normalize(local), FrameSolarDirection);
-                    ambient = def.NightTemperature + ((dot + 1f) * 0.5f * (def.DayTemperature - def.NightTemperature));
-                }
-                else
-                {
-                    FrameSolarOccluded = true;
-                }
-
-                FrameAmbientTemprature = Math.Max(2.7f, ambient * airDensity);
-                float frameAmbiSquared = FrameAmbientTemprature * FrameAmbientTemprature;
-                FrameAmbientTempratureP4 = frameAmbiSquared * frameAmbiSquared;
-                FrameSolarDecay = 1 - def.SolarDecay * airDensity;
-
-                FrameWindDirection = Vector3.Cross(p.GravityComponent.GetWorldGravityNormalized(position), p.Entity.WorldMatrix.Forward).Normalized() * windSpeed;
-
-
-                //TODO: implement underground core temparatures
-            }
-            if (FrameSolarOccluded) return;
 
             LineD line = new LineD(position, position + (FrameSolarDirection * 15000000));
             List<MyLineSegmentOverlapResult<MyEntity>> results = new List<MyLineSegmentOverlapResult<MyEntity>>();
@@ -520,7 +530,6 @@ namespace Thermodynamics
                 var color = (FrameSolarOccluded) ? Color.Red.ToVector4() : Color.White.ToVector4();
                 var color2 = Color.LightGoldenrodYellow.ToVector4();
                 MySimpleObjectDraw.DrawLine(position, position + (FrameSolarDirection * 15000000), MyStringId.GetOrCompute("Square"), ref color, 0.1f);
-                MySimpleObjectDraw.DrawLine(position, position + FrameWindDirection, MyStringId.GetOrCompute("Square"), ref color2, 0.1f);
             }
         }
 

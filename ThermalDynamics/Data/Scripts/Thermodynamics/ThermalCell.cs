@@ -395,6 +395,12 @@ namespace Thermodynamics
         /// </summary>
         internal void Update()
         {
+            // TODO: wind/liquid convective cooling
+            //float viscosity = 
+            //float windIntensity = DirectionalRadiationIntensity(ref Grid.FrameWindDirection, ref Grid.WindNode);
+            //float v = Grid.FrameWindDirection.Length();
+            //float hc = 10.45f - v + 10f * (float)Math.Sqrt(v);
+
             UpdateFrameAndLastTemperature();
             float totalRadiation = CalculateTotalRadiation();
             float deltaTemperature = CalculateDeltaTemperature();
@@ -463,7 +469,7 @@ namespace Thermodynamics
 
         private void UpdateDebugVisuals()
         {
-            if (Settings.Debug && MyAPIGateway.Session.IsServer)
+            if (Settings.DebugBlockColors && MyAPIGateway.Session.IsServer)
             {
                 Vector3 color = Tools.GetTemperatureColor(Temperature);
                 if (Block.ColorMaskHSV != color)
