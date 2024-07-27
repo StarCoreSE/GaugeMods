@@ -164,7 +164,7 @@ namespace Thermodynamics
                                 //MyLog.Default.Info($"[{Settings.Name}] testing {temp} {ncell != null}");
                                 if (ncell != null)
                                 {
-                                    AddNeighbors(c, ncell, true);
+                                    AddNeighbors(c, ncell);
                                 }
                             }
                         }
@@ -310,31 +310,39 @@ namespace Thermodynamics
 
                 if (!Neighbors.Contains(ncell))
                 {
-                    AddNeighbors(this, ncell, true);
+                    Neighbors.Add(ncell);
+                    ncell.Neighbors.Add(this);
+
+                    int area = 1;
+                    if (Grid.Entity.EntityId == ncell.Grid.Entity.EntityId)
+                    {
+                        area = Tools.FindTouchingSurfaceArea(Block.Min, Block.Max + 1, ncell.Block.Min, ncell.Block.Max + 1);
+                    }
+
+                    TouchingSerfacesByNeighbor.Add(area);
+                    ncell.TouchingSerfacesByNeighbor.Add(area);
+                    ncell.CalculatekA();
+                    AddNeighbors(this, ncell);
                 }
             }
 
             CalculatekA();
         }
 
-        protected void AddNeighbors(ThermalCell n1, ThermalCell n2, bool groupUpdate=false)
+        protected void AddNeighbors(ThermalCell n1, ThermalCell n2)
         {
             n1.Neighbors.Add(n2);
             n2.Neighbors.Add(n1);
 
-            int area = 0;
-            if (n1.Grid.Entity.EntityId != n2.Grid.Entity.EntityId)
-            {
-                area = 1;
-            }
-            else 
+            int area = 1;
+            if (n1.Grid.Entity.EntityId == n2.Grid.Entity.EntityId)
             {
                 area = Tools.FindTouchingSurfaceArea(n1.Block.Min, n1.Block.Max + 1, n2.Block.Min, n2.Block.Max + 1);
             }
 
             n1.TouchingSerfacesByNeighbor.Add(area);
-            n1.CalculatekA();
             n2.TouchingSerfacesByNeighbor.Add(area);
+            n1.CalculatekA();
             n2.CalculatekA();
         }
 
@@ -355,6 +363,7 @@ namespace Thermodynamics
             {
                 n1.Neighbors.RemoveAt(i);
                 n1.TouchingSerfacesByNeighbor.RemoveAt(i);
+                n1.CalculatekA();
             }
 
             int j = n2.Neighbors.IndexOf(n1);
@@ -362,9 +371,8 @@ namespace Thermodynamics
             {
                 n2.Neighbors.RemoveAt(j);
                 n2.TouchingSerfacesByNeighbor.RemoveAt(j);
+                n2.CalculatekA();
             }
-
-            CalculatekA();
         }
 
 
