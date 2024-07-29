@@ -1,5 +1,3 @@
-using BlinkDrive;
-using ProjectilesImproved;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Weapons;
@@ -160,6 +158,11 @@ namespace GrappleHook
                     ConnectedEntity.OnMarkForClose += attachedEntityClosed;
                 }
             }
+        }
+
+        public override void MarkForClose()
+        {
+            Projectile.Close();
         }
 
         public override void UpdateOnceBeforeFrame()
