@@ -5,7 +5,7 @@ using ProtoBuf;
 using Sandbox.ModAPI;
 using VRage.Utils;
 
-namespace BlinkDrive
+namespace GrappleHook
 {
 	[ProtoContract]
 	public class Settings

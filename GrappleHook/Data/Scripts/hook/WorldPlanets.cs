@@ -6,7 +6,7 @@ using VRage.Game.Components;
 using VRage.ModAPI;
 using VRageMath;
 
-namespace ProjectilesImproved
+namespace GrappleHook
 {
     [MySessionComponentDescriptor(MyUpdateOrder.NoUpdate)]
     public class WorldPlanets : MySessionComponentBase

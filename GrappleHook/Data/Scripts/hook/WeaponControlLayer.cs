@@ -8,8 +8,6 @@ using Sandbox.ModAPI.Interfaces.Terminal;
 using SENetworkAPI;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
-using System.Reflection;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
