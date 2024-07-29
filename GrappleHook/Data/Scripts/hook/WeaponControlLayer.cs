@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Input;
 using VRage.ModAPI;
@@ -32,6 +33,8 @@ namespace GrappleHook
 
         private IMyLargeTurretBase Turret;
         private IMyGunObject<MyGunBase> gun;
+
+        private MyEntity Projectile;
 
         public enum States { idle, reloading, projectile, attached }
 
@@ -54,8 +57,10 @@ namespace GrappleHook
         private NetSync<ZiplineEntity> RequestZiplineDisconnect;
         private NetSync<List<ZiplineEntity>> ZiplinePlayers;
 
-        private Vector3D GrapplePosition = Vector3D.Zero;
-        private Vector3 GrappleDirection = Vector3.Zero;
+        //private Vector3D GrapplePosition = Vector3D.Zero;
+        //private Vector3 GrappleDirection = Vector3.Zero;
+
+        private MatrixD GrappleMatrix = MatrixD.Zero;
 
         private bool terminalShootOn = false;
         private bool interactable = false;
@@ -107,6 +112,11 @@ namespace GrappleHook
             Turret = Entity as IMyLargeTurretBase;
             Turret.Range = 0;
 
+            Projectile = new MyEntity();
+            Projectile.Init(null, ModContext.ModPath + "\\Models\\Ammo\\GrappleHookAmmo.mwm", null, null);
+
+            MyEntities.Add(Projectile, true);
+
             NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
 
             if (!Hijack)
@@ -121,8 +131,7 @@ namespace GrappleHook
         }
         private void Reset()
         {
-            GrapplePosition = Vector3D.Zero;
-            GrappleDirection = Vector3D.Zero;
+            HideProjectile();
 
             if (ConnectedEntity != null)
                 ConnectedEntity.OnMarkForClose -= attachedEntityClosed;
@@ -173,11 +182,15 @@ namespace GrappleHook
             Hijack = true;
         }
 
+
+
         public override void UpdateBeforeSimulation()
         {
             switch (State.Value)
             {
                 case States.idle:
+
+                    MoveProjectileToTurretMuzzle();
                     VerifyAndRequestShoot();
                     break;
                 case States.reloading:
@@ -224,8 +237,7 @@ namespace GrappleHook
         {
             if (State.Value != States.attached && n.direction != Vector3.Zero)
             {
-                GrapplePosition = Turret.PositionComp.WorldMatrixRef.Translation;
-                GrappleDirection = n.direction;
+                GrappleMatrix = gun.GunBase.GetMuzzleWorldMatrix();
                 State.Value = States.projectile;
                 ReloadTime.Value = (float)gun.GunBase.ReloadTime;
                 Shooting.SetValue(new ShootData());
@@ -233,6 +245,19 @@ namespace GrappleHook
             }
         }
 
+        private void MoveProjectileToTurretMuzzle()
+        {
+            GrappleMatrix = gun.GunBase.GetMuzzleWorldMatrix();
+            GrappleMatrix.Translation += GrappleMatrix.Forward * 1.1f;
+            Projectile.WorldMatrix = GrappleMatrix;
+        }
+
+        private void HideProjectile()
+        {
+            GrappleMatrix = gun.GunBase.GetMuzzleWorldMatrix();
+            GrappleMatrix.Translation = Vector3D.MaxValue;
+            Projectile.WorldMatrix = GrappleMatrix;
+        }
         private void Reload()
         {
             if (ReloadTime.Value > 0)
@@ -244,10 +269,10 @@ namespace GrappleHook
         private void UpdateProjectile()
         {
             //Tools.Debug($"Projectile In Flight {(Turret.PositionComp.WorldMatrixRef.Translation - GrapplePosition).Length()}");
-            Vector3 delta = GrappleDirection * settings.Value.GrappleProjectileSpeed;
+            Vector3 delta = GrappleMatrix.Forward * settings.Value.GrappleProjectileSpeed;
 
             IHitInfo hit = null;
-            MyAPIGateway.Physics.CastRay(GrapplePosition, GrapplePosition + delta, out hit);
+            MyAPIGateway.Physics.CastRay(GrappleMatrix.Translation, GrappleMatrix.Translation + delta, out hit);
             if (hit != null && !hit.HitEntity.MarkedForClose)
             {
                 ConnectedEntityId.Value = hit.HitEntity.EntityId;
@@ -259,7 +284,7 @@ namespace GrappleHook
                     MyCubeGrid grid = (ConnectedEntity as MyCubeGrid);
                     grid.OnBlockRemoved += Grid_OnBlockRemoved;
 
-                    Vector3I pos = grid.WorldToGridInteger(hit.Position + GrappleDirection * 0.1f);
+                    Vector3I pos = grid.WorldToGridInteger(hit.Position + GrappleMatrix.Forward * 0.1f);
                     IMySlimBlock block = grid.GetCubeBlock(pos);
                     if (block != null)
                     {
@@ -267,21 +292,25 @@ namespace GrappleHook
                     }
                 }
 
-                LocalGrapplePosition.Value = Vector3D.Transform(hit.Position + GrappleDirection * 0.1f, MatrixD.Invert(ConnectedEntity.WorldMatrix));
+                GrappleMatrix.Translation = hit.Position + GrappleMatrix.Forward * 0.1f;
+                LocalGrapplePosition.Value = Vector3D.Transform(hit.Position + GrappleMatrix.Forward * 0.1f, MatrixD.Invert(ConnectedEntity.WorldMatrix));
                 GrappleLength.Value = (hit.Position - Turret.PositionComp.WorldMatrixRef.Translation).Length() + 1.25f;
                 State.Value = States.attached;
                 Tools.Debug($"Attached {hit.HitEntity.DisplayName} - State Change: {State.Value}");
             }
             else
             {
-                GrapplePosition += delta;
+                GrappleMatrix.Translation += delta;
+
 
                 // if grapple length goes beyond max length
-                if ((Turret.PositionComp.WorldMatrixRef.Translation - GrapplePosition).LengthSquared() > settings.Value.ShootRopeLength * settings.Value.ShootRopeLength)
+                if ((Turret.PositionComp.WorldMatrixRef.Translation - GrappleMatrix.Translation).LengthSquared() > settings.Value.ShootRopeLength * settings.Value.ShootRopeLength)
                 {
                     ResetIndicator.Value = !ResetIndicator.Value;
                 }
             }
+
+            Projectile.WorldMatrix = GrappleMatrix;
         }
 
         private void UpdateGrappleLength()
@@ -692,7 +721,7 @@ namespace GrappleHook
                 Vector3D position;
                 if (State.Value == States.projectile)
                 {
-                    position = GrapplePosition;
+                    position = GrappleMatrix.Translation;
                     Vector3D[] points = ComputeCurvePoints(gunPosition, position, sagDirection, Vector3D.Distance(gunPosition, position) * 1.005f, settings.Value.RopeSegments);
 
                     for (int i = 0; i < points.Length - 1; i++)

@@ -7,7 +7,7 @@
 				<SubtypeId>GrappleHookBlueprint</SubtypeId>
 			</Id>
 			<DisplayName>Grapple Hook</DisplayName>
-			<Icon>Textures\GUI\Icons\ammo\LargeCalibreShell.dds</Icon>
+			<Icon>Textures\GUI\Icons\ammo\GrappleHookAmmo.dds</Icon>
 			<Prerequisites>
 				<Item Amount="60" TypeId="Ingot" SubtypeId="Iron" />
 				<Item Amount="8" TypeId="Ingot" SubtypeId="Nickel" />

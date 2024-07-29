@@ -7,7 +7,7 @@
                 <SubtypeId>GrappleHookMagazine</SubtypeId>
             </Id>
             <DisplayName>Grapple Hook</DisplayName>
-            <Icon>Textures\GUI\Icons\ammo\LargeCalibreShell.dds</Icon>
+            <Icon>Textures\GUI\Icons\ammo\GrappleHookAmmo.dds</Icon>
             <Size>
                 <X>1.2</X>
                 <Y>0.3</Y>
@@ -15,7 +15,7 @@
             </Size>
             <Mass>300</Mass>
             <Volume>100</Volume>
-            <Model>Models\Weapons\LargeCalibreShell.mwm</Model>
+            <Model>Models\ammo\GrappleHookAmmo.mwm</Model>
             <PhysicalMaterial>Ammo</PhysicalMaterial>
             <Capacity>1</Capacity>
 			<AmmoDefinitionId Subtype="GrappleHookAmmo" />
