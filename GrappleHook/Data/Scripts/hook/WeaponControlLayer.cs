@@ -516,9 +516,6 @@ namespace GrappleHook
             ziplineData.lastPulley = pulley;
         }
 
-
-
-
         private void UpdateZiplineForces()
         {
             Vector3D[] points = GetLinePoints();
