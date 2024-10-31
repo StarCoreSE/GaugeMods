@@ -1,0 +1,1 @@
+don't change the folder structure of /models/ otherwise the block LODs break.

@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<CubeBlocks>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlock</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Corner</SubtypeId>
+			</Id>
+			<DisplayName>{LOC:DisplayName_Gauge_LG_CoolantPipe_Corner}</DisplayName>
+			<Description>{LOC:Description_Gauge_LG_CoolantPipe_Corner}</Description>
+			<Icon>Textures\GUI\Icons\Gauge\LG_CoolantPipeCorner.dds</Icon>
+			<CubeSize>Large</CubeSize>
+			<BlockTopology>TriangleMesh</BlockTopology>
+			<Size x="1" y="1" z="1"/>
+			<ModelOffset x="0" y="0" z="0"/>
+			<Model>Models\Gauge\LG\Gauge_LG_CoolantPipe_Corner.mwm</Model>
+			<Components>
+				<Component Subtype="SteelPlate" Count="10"/>
+			</Components>
+			<CriticalComponent Subtype="SteelPlate" Index="0"/>
+			<MountPoints>
+				<MountPoint Side="Front" StartX="0.25" StartY="0.25" EndX="0.75" EndY="0.75"/>
+				<MountPoint Side="Left" StartX="0.25" StartY="0.25" EndX="0.75" EndY="0.75"/>
+			</MountPoints>
+			<BuildProgressModels>
+				<Model BuildPercentUpperBound="0.50" File="Models\Gauge\LG\Gauge_LG_CoolantPipe_Corner_BS1.mwm"/>
+				<Model BuildPercentUpperBound="1.00" File="Models\Gauge\LG\Gauge_LG_CoolantPipe_Corner_BS2.mwm"/>
+			</BuildProgressModels>
+			<BlockPairName>Gauge_LG_CoolantPipe_Corner</BlockPairName>
+			<MirroringX>HalfY</MirroringX>
+			<MirroringZ>MinusHalfY</MirroringZ>
+		</Definition>
+	</CubeBlocks>
+</Definitions>
