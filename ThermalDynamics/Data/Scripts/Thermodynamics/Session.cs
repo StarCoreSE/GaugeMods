@@ -14,7 +14,6 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
-using static VRageRender.MyBillboard;
 
 namespace Thermodynamics
 {
@@ -99,7 +98,8 @@ namespace Thermodynamics
                     $"T: {c.Temperature.ToString("n4")} " +
                     $"dT: {c.DeltaTemperature.ToString("n6")} " +
                     $"Gen: {c.HeatGeneration.ToString("n4")} " +
-                    $"ext: {c.ExposedSurfaces.ToString("n4")} ", 1, "White");
+                    $"ext: {c.ExposedSurfaces.ToString("n4")} " +
+                    $"kA: {string.Join(", ", c.kA)}", 1, "White");
 
                 MyAPIGateway.Utilities.ShowNotification(
                     $"[Calc] m: {c.Mass.ToString("n0")} " +
@@ -108,7 +108,6 @@ namespace Thermodynamics
                     $"em {c.Definition.Emissivity} " +
                     $"pwe: {c.Definition.ProducerWasteEnergy} " +
                     $"cwe: {c.Definition.ConsumerWasteEnergy} " +
-                    $"kA: {(c.Definition.Conductivity * c.Area).ToString("n0")} " +
                     $"tm: {(c.Definition.SpecificHeat * c.Mass).ToString("n0")} " +
                     $"c: {c.C.ToString("n4")} " +
                     $"r: {c.Radiation.ToString("n2")} " +
@@ -116,20 +115,21 @@ namespace Thermodynamics
                     $"prod: {c.EnergyProduction} " +
                     $"cons: {(c.EnergyConsumption + c.ThrustEnergyConsumption)} ", 1, "White");
 
-                //MyAPIGateway.Utilities.ShowNotification($"[Solar] {c.SolarIntensity.ToString("n3")} Average: {g.AverageSolarHeat[0].ToString("n3")}, {tGrid.AverageSolarHeat[1].ToString("n3")}, {tGrid.AverageSolarHeat[2].ToString("n3")}, {tGrid.AverageSolarHeat[3].ToString("n3")}, {tGrid.AverageSolarHeat[4].ToString("n3")}, {tGrid.AverageSolarHeat[5].ToString("n3")}", 1, "White");
+                int value = g.NodeSurfaces[position];
+                MyAPIGateway.Utilities.ShowNotification(
+                    $"[Grid] Exterior: {g.ExteriorNodes.Count} " +
+                    $"Nodes: {g.NodeSurfaces.Count} " +
+                    $"RNodes: {g.Rooms.Count} " +
+                    $"sq: {g.SolidQueue.Count} " +
+                    $"rq: {g.RoomQueue.Count} " +
+                    $"CrawlDone: {g.ThermalCellUpdateComplete} " +
+                    $"sbn: {string.Join(", ", c.TouchingSerfacesByNeighbor)}", 1, "White");
 
-                //Grid.AverageSolarHeat[directionIndex])
-
-                //MyAPIGateway.Utilities.ShowNotification($"[Grid] Exposed: {tGrid.ExposedNodes.Count} {tGrid.ExposedSurface.Count} inside: {tGrid.InsideNodes.Count} {tGrid.InsideSurface.Count} Rooms: {tGrid.Rooms.Count}", 1, "White");
-                //MyAPIGateway.Utilities.ShowNotification($"[Cell] Exposed: {cell.Exposed.Count} {cell.ExposedSurface.Count}  Inside: {cell.Inside.Count} {cell.InsideSurface.Count} SurfaceArea: {cell.ExposedSurfaceArea}", 1, "White");
-
-
-                //MyAPIGateway.Utilities.ShowNotification($"[Cell] Input: {cell.PowerInput} heat: {cell.PowerInput * cell.ConsumerGeneration} heatPerWatt: {cell.ConsumerGeneration}", 1, "White");
-                //MyAPIGateway.Utilities.ShowNotification($"[Cell] Output: {cell.PowerOutput} heat: {cell.PowerOutput * cell.ProducerGeneration} heatPerWatt: {cell.ProducerGeneration}", 1, "White");
+                MyAPIGateway.Utilities.ShowNotification(
+                    $"[Cell] Airtight out: {((value & 1 << 0) != 0 ? 1:0)}, {((value & 1 << 1) != 0 ? 1:0)}, {((value & 1 << 2) != 0?1:0)}, {((value & 1 << 3) != 0?1:0)}, {((value & 1 << 4) != 0?1:0)}, {((value & 1 << 5) != 0 ? 1 : 0)}, " +
+                    $"in: {((value & 1 << 6) != 0?1:0)}, {((value & 1 << 7) != 0 ? 1 : 0)}, {((value & 1 << 8) != 0 ? 1 : 0)}, {((value & 1 << 9) != 0 ? 1 : 0)}, {((value & 1 << 10) != 0?1:0)}, {((value & 1 << 11) != 0?1:0)}", 1, "White");
 
 
-                //MyAPIGateway.Utilities.ShowNotification($"[Cell] Exposed: {cell.Exposed.Count}  Inside: {cell.Inside.Count} SurfaceArea: {cell.ExposedSurfaceArea}", 1, "White");
-                //MyAPIGateway.Utilities.ShowNotification($"[External] {tGrid.Mapper.Blocks.Count} EComplete: {tGrid.Mapper.ExternalRoomUpdateComplete} BComplete: {tGrid.ThermalCellUpdateComplete}", 1, "White");
             }
         }
 

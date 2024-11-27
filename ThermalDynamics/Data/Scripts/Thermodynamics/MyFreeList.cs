@@ -6,7 +6,7 @@ namespace Thermodynamics
 {
 	public class MyFreeList<TItem>
 	{
-		public TItem[] list;
+		public TItem[] ItemArray;
 
 		private int m_size;
 
@@ -24,11 +24,11 @@ namespace Thermodynamics
 		/// </summary>
 		public int Count => m_size - m_freePositions.Count;
 
-		public int Capacity => list.Length;
+		public int Capacity => ItemArray.Length;
 
 		public MyFreeList(int capacity = 16, TItem defaultValue = default(TItem))
 		{
-			list = new TItem[16];
+			ItemArray = new TItem[16];
 			m_freePositions = new Queue<int>(capacity / 2);
 			m_default = defaultValue;
 		}
@@ -39,9 +39,9 @@ namespace Thermodynamics
 			{
 				return m_freePositions.Dequeue();
 			}
-			if (m_size == list.Length)
+			if (m_size == ItemArray.Length)
 			{
-				Array.Resize(ref list, list.Length << 1);
+				Array.Resize(ref ItemArray, ItemArray.Length << 1);
 			}
 			return m_size++;
 		}
@@ -49,13 +49,13 @@ namespace Thermodynamics
 		public int Allocate(TItem value)
 		{
 			int num = Allocate();
-			list[num] = value;
+			ItemArray[num] = value;
 			return num;
 		}
 
 		public void Free(int position)
 		{
-			list[position] = m_default;
+			ItemArray[position] = m_default;
 			if (position == m_size)
 			{
 				m_size--;
@@ -68,7 +68,7 @@ namespace Thermodynamics
 
 		public TItem[] GetInternalArray()
 		{
-			return list;
+			return ItemArray;
 		}
 
 		public bool KeyValid(int key)
@@ -80,7 +80,7 @@ namespace Thermodynamics
 		{
 			for (int i = 0; i < m_size; i++)
 			{
-				list[i] = default(TItem);
+				ItemArray[i] = default(TItem);
 			}
 			m_size = 0;
 			m_freePositions.Clear();

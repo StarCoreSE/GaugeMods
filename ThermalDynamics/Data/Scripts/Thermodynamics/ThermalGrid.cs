@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Transactions;
@@ -116,15 +117,15 @@ namespace Thermodynamics
             Save();
             return base.IsSerialized();
         }
-
+        
         private string Pack()
         {
-            byte[] bytes = new byte[Thermals.Count * 8];
+            byte[] bytes = new byte[Thermals.Count * 6];
 
             int bi = 0;
             for (int i = 0; i < Thermals.UsedLength; i++)
             {
-                ThermalCell c = Thermals.list[i];
+                ThermalCell c = Thermals.ItemArray[i];
                 if (c == null) continue;
 
                 int id = c.Id;
@@ -133,13 +134,14 @@ namespace Thermodynamics
                 bytes[bi + 2] = (byte)(id >> 16);
                 bytes[bi + 3] = (byte)(id >> 24);
 
-                int t = (int)(c.Temperature * 1000);
+                short t = (short)(c.Temperature);
                 bytes[bi + 4] = (byte)t;
                 bytes[bi + 5] = (byte)(t >> 8);
-                bytes[bi + 6] = (byte)(t >> 16);
-                bytes[bi + 7] = (byte)(t >> 24);
 
-                bi += 8;
+                bi += 6;
+
+                //TODO keep track of this. it might cause weird behaivor.
+                c.Temperature = t;
             }
 
             return Convert.ToBase64String(bytes);
@@ -147,24 +149,26 @@ namespace Thermodynamics
 
         private void Unpack(string data)
         {
-            byte[] bytes = Convert.FromBase64String(data);
-
-            for (int i = 0; i < bytes.Length; i += 8)
+            try
             {
-                int id = bytes[i];
-                id |= bytes[i + 1] << 8;
-                id |= bytes[i + 2] << 16;
-                id |= bytes[i + 3] << 24;
+                byte[] bytes = Convert.FromBase64String(data);
 
-                int f = bytes[i + 4];
-                f |= bytes[i + 5] << 8;
-                f |= bytes[i + 6] << 16;
-                f |= bytes[i + 7] << 24;
+                for (int i = 0; i < bytes.Length; i += 6)
+                {
+                    int id = bytes[i];
+                    id |= bytes[i + 1] << 8;
+                    id |= bytes[i + 2] << 16;
+                    id |= bytes[i + 3] << 24;
 
-                Thermals.list[PositionToIndex[id]].Temperature = f * 0.001f;
+                    int f = bytes[i + 4];
+                    f |= bytes[i + 5] << 8;
 
-                //MyLog.Default.Info($"[{Settings.Name}] [Unpack] {id} {PositionToIndex[id]} {Thermals.list[PositionToIndex[id]].Block.BlockDefinition.Id} - T: {f * 0.001f}");
+                    Thermals.ItemArray[PositionToIndex[id]].Temperature = f;
+                }
+
+                //MyLog.Default.Info($"[{Settings.Name}] [Unpack] {id} {PositionToIndex[id]} {Thermals.list[PositionToIndex[id]].Block.BlockDefinition.Id} - T: {f}");
             }
+            catch{ }
         }
 
         private void Save()
@@ -209,14 +213,13 @@ namespace Thermodynamics
                 return;
             }
 
+            AddBlockMapping(ref b);
             ThermalCell cell = new ThermalCell(this, b);
             cell.AddAllNeighbors();
 
             int index = Thermals.Allocate();
             PositionToIndex.Add(cell.Id, index);
-            Thermals.list[index] = cell;
-
-            MapBlocks(b, true);
+            Thermals.ItemArray[index] = cell;
         }
 
         private void BlockRemoved(IMySlimBlock b)
@@ -231,9 +234,11 @@ namespace Thermodynamics
 
             //MyLog.Default.Info($"[{Settings.Name}] [{Grid.EntityId}] Removed ({b.Position.Flatten()}) {b.Position}");
 
+            RemoveBlockMapping(ref b);
+
             int flat = b.Position.Flatten();
             int index = PositionToIndex[flat];
-            ThermalCell cell = Thermals.list[index];
+            ThermalCell cell = Thermals.ItemArray[index];
 
             if (RecentlyRemoved.ContainsKey(cell.Id))
             {
@@ -248,7 +253,6 @@ namespace Thermodynamics
             PositionToIndex.Remove(flat);
             Thermals.Free(index);
 
-            ResetMapper();
         }
 
         private void GridSplit(MyCubeGrid g1, MyCubeGrid g2)
@@ -260,7 +264,7 @@ namespace Thermodynamics
 
             for (int i = 0; i < tg2.Thermals.UsedLength; i++)
             {
-                ThermalCell c = tg2.Thermals.list[i];
+                ThermalCell c = tg2.Thermals.ItemArray[i];
                 if (c == null) continue;
 
                 if (tg1.RecentlyRemoved.ContainsKey(c.Id))
@@ -282,13 +286,13 @@ namespace Thermodynamics
 
             for (int i = 0; i < tg2.Thermals.UsedLength; i++)
             {
-                ThermalCell c = tg2.Thermals.list[i];
+                ThermalCell c = tg2.Thermals.ItemArray[i];
                 if (c == null) continue;
 
                 int id = c.Block.Position.Flatten();
                 if (tg1.PositionToIndex.ContainsKey(id))
                 {
-                    tg1.Thermals.list[tg1.PositionToIndex[id]].Temperature = c.Temperature;
+                    tg1.Thermals.ItemArray[tg1.PositionToIndex[id]].Temperature = c.Temperature;
                 }
 
             }
@@ -342,10 +346,13 @@ namespace Thermodynamics
                 // prepare for the next simulation after a full iteration
                 if (SimulationIndex == cellCount || SimulationIndex == -1)
                 {
+                    if (!ThermalCellUpdateComplete)
+                        ThermalCellUpdateComplete = true;
+
                     // start a new simulation frame
                     SimulationFrame++;
 
-                    MapExterior();
+                    MapSurfaces();
                     PrepareNextSimulationStep();
 
                     // reverse the index direction
@@ -353,27 +360,18 @@ namespace Thermodynamics
                     // make sure the end cells in the list go once per frame
                     SimulationIndex += Direction;
 
-                    if (!ThermalCellUpdateComplete)
-                        ThermalCellUpdateComplete = true;
 
-                    if (!NodeUpdateComplete &&
-                        ExteriorQueue.Count == 0)
-                    {
-                        NodeUpdateComplete = true;
-                        ThermalCellUpdateComplete = false;
-                    }
                 }
 
 
                 //MyLog.Default.Info($"[{Settings.Name}] Frame: {FrameCount} SimFrame: {SimulationFrame}: Index: {SimulationIndex} Quota: {SimulationQuota} FrameQuota:{FrameQuota}");
 
-                ThermalCell cell = Thermals.list[SimulationIndex];
+                ThermalCell cell = Thermals.ItemArray[SimulationIndex];
                 if (cell != null)
                 {
                     if (!ThermalCellUpdateComplete)
-                    {
-                        //MyLog.Default.Info($"[Thermals] updating serfaces {ExteriorNodes.Count}");
-                        cell.UpdateSurfaces(ref ExteriorNodes, ref neighbors);
+                    { 
+                        cell.UpdateSurfaces(ref ExteriorNodes, ref NodeSurfaces);
                     }
 
                     cell.Update();
@@ -560,7 +558,7 @@ namespace Thermodynamics
             int flat = position.Flatten();
             if (PositionToIndex.ContainsKey(flat))
             {
-                return Thermals.list[PositionToIndex[flat]];
+                return Thermals.ItemArray[PositionToIndex[flat]];
             }
 
             return null;
