@@ -79,38 +79,37 @@ namespace Draygo.BlockExtensionsAPI
 			if (Init)
 				return;
 			try
-			{
-				if (obj is IReadOnlyDictionary<Type, Delegate>)
-				{
-					_methods = (IReadOnlyDictionary<Type, Delegate>)obj;
-					Assign(typeof(float), ref _floatMethod);
-					Assign(typeof(double), ref _doubleMethod);
-					Assign(typeof(int), ref _intMethod);
-					Assign(typeof(long), ref _longMethod);
-					Assign(typeof(string), ref _textMethod);
-					Assign(typeof(Color), ref _colorMethod);
-					Assign(typeof(bool), ref _booleanMethod);
-					Assign(typeof(Vector2I), ref _vector2IMethod);
-					Assign(typeof(Vector2D), ref _vector2DMethod);
-					Assign(typeof(Vector3I), ref _vector3IMethod);
-					Assign(typeof(Vector3D), ref _vector3DMethod);
-					Assign(typeof(MyGameLogicComponent), ref _setGameLogic);
-					Assign(typeof(Delegate), ref _getDelegate);
-					if (_getDelegate != null)
-					{
-						Assign(AdditionalMethods.RegisterTSS, ref _RegisterTSS);
-						Assign(AdditionalMethods.UnRegisterTSS, ref _UnregisterTSS);
-						Assign(AdditionalMethods.RegisterDataTSS, ref _RegisterTSSDataComponent);
-						Assign(AdditionalMethods.GetDataTSS, ref _GetTSSDataComponent);
-						Assign(AdditionalMethods.DefIDExists, ref _DefIDExists);
-						Assign(AdditionalMethods.GetGroups, ref _GetGroups);
-						Assign(AdditionalMethods.GetProperties, ref _GetProperties);
-						Assign(AdditionalMethods.GetAllIndexedIds, ref _GetAllIndexedIds);
-					}
-					m_init = true;
-					m_callback?.Invoke();
-				}
-			}
+            {
+                IReadOnlyDictionary<Type, Delegate> delegates = obj as IReadOnlyDictionary<Type, Delegate>;
+                if (delegates == null) return;
+                _methods = delegates;
+                Assign(typeof(float), ref _floatMethod);
+                Assign(typeof(double), ref _doubleMethod);
+                Assign(typeof(int), ref _intMethod);
+                Assign(typeof(long), ref _longMethod);
+                Assign(typeof(string), ref _textMethod);
+                Assign(typeof(Color), ref _colorMethod);
+                Assign(typeof(bool), ref _booleanMethod);
+                Assign(typeof(Vector2I), ref _vector2IMethod);
+                Assign(typeof(Vector2D), ref _vector2DMethod);
+                Assign(typeof(Vector3I), ref _vector3IMethod);
+                Assign(typeof(Vector3D), ref _vector3DMethod);
+                Assign(typeof(MyGameLogicComponent), ref _setGameLogic);
+                Assign(typeof(Delegate), ref _getDelegate);
+                if (_getDelegate != null)
+                {
+                    Assign(AdditionalMethods.RegisterTSS, ref _RegisterTSS);
+                    Assign(AdditionalMethods.UnRegisterTSS, ref _UnregisterTSS);
+                    Assign(AdditionalMethods.RegisterDataTSS, ref _RegisterTSSDataComponent);
+                    Assign(AdditionalMethods.GetDataTSS, ref _GetTSSDataComponent);
+                    Assign(AdditionalMethods.DefIDExists, ref _DefIDExists);
+                    Assign(AdditionalMethods.GetGroups, ref _GetGroups);
+                    Assign(AdditionalMethods.GetProperties, ref _GetProperties);
+                    Assign(AdditionalMethods.GetAllIndexedIds, ref _GetAllIndexedIds);
+                }
+                m_init = true;
+                m_callback?.Invoke();
+            }
 			catch (Exception ex)
 			{
 				MyLog.Default.WriteLine(@"Error - Below crash is caused by the API mod being the incorrect version. Delete steamapps\workshop\content\244850\2756894170 to force a redownload");

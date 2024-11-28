@@ -17,8 +17,9 @@ namespace Thermodynamics
 		public const string Name = "Thermodynamics";
 		public const bool Debug = true;
 		public const bool DebugBlockColors = false;
+        internal const float SignificantTempChange = float.Epsilon; //example value, probably wrong?
 
-		public static Settings Instance;
+        public static Settings Instance;
 
         public static readonly MyStringHash DefaultSubtypeId = MyStringHash.GetOrCompute("DefaultThermodynamics");
 

@@ -60,112 +60,106 @@ namespace Thermodynamics
 
         public override void Simulate()
         {
-            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
-            {
-                //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
-                MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;
+            if (!Settings.Debug || MyAPIGateway.Utilities.IsDedicated) return;
+            //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
+            MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;
 
-                Vector3D start = matrix.Translation;
-                Vector3D end = start + (matrix.Forward * 15);
+            Vector3D start = matrix.Translation;
+            Vector3D end = start + (matrix.Forward * 15);
 
-                IHitInfo hit;
-                MyAPIGateway.Physics.CastRay(start, end, out hit);
-                MyCubeGrid grid = hit?.HitEntity as MyCubeGrid;
+            IHitInfo hit;
+            MyAPIGateway.Physics.CastRay(start, end, out hit);
+            MyCubeGrid grid = hit?.HitEntity as MyCubeGrid;
 
-                if (grid == null) return;
+            if (grid == null) return;
 
-                ThermalGrid g = grid.GameLogic.GetAs<ThermalGrid>();
-                Vector3I position = grid.WorldToGridInteger(hit.Position + (matrix.Forward * 0.005f));
-                IMySlimBlock block = grid.GetCubeBlock(position);
+            ThermalGrid g = grid.GameLogic.GetAs<ThermalGrid>();
+            Vector3I position = grid.WorldToGridInteger(hit.Position + (matrix.Forward * 0.005f));
+            IMySlimBlock block = grid.GetCubeBlock(position);
 
-                if (block == null) return;
+            if (block == null) return;
 
-                ThermalCell c = g.Get(block.Position);
+            ThermalCell c = g.Get(block.Position);
 
-                if (c == null)
-                    return;
+            if (c == null)
+                return;
 
-                MyAPIGateway.Utilities.ShowNotification($"[Env] " +
-                    $"sim: {Settings.Instance.SimulationSpeed.ToString("n2")} " +
-                    $"freq: {Settings.Instance.Frequency.ToString("n2")} " +
-                    $"tstep: {Settings.Instance.TimeScaleRatio.ToString("n2")} " +
-                    $"ambT: {(g.FrameAmbientTemprature).ToString("n4")} " +
-                    $"decay: {g.FrameSolarDecay.ToString("n4")} " +
-                    $"wind: {g.FrameWindDirection.Length().ToString("n4")} " +
-                    $"isOcc: {g.FrameSolarOccluded}", 1, "White");
+            MyAPIGateway.Utilities.ShowNotification($"[Env] " +
+                                                    $"sim: {Settings.Instance.SimulationSpeed.ToString("n2")} " +
+                                                    $"freq: {Settings.Instance.Frequency.ToString("n2")} " +
+                                                    $"tstep: {Settings.Instance.TimeScaleRatio.ToString("n2")} " +
+                                                    $"ambT: {(g.FrameAmbientTemprature).ToString("n4")} " +
+                                                    $"decay: {g.FrameSolarDecay.ToString("n4")} " +
+                                                    $"wind: {g.FrameWindDirection.Length().ToString("n4")} " +
+                                                    $"isOcc: {g.FrameSolarOccluded}", 1, "White");
 
-                MyAPIGateway.Utilities.ShowNotification($"[Cell] {c.Block.Position} " +
-                    $"T: {c.Temperature.ToString("n4")} " +
-                    $"dT: {c.DeltaTemperature.ToString("n6")} " +
-                    $"Gen: {c.HeatGeneration.ToString("n4")} " +
-                    $"ext: {c.ExposedSurfaces.ToString("n4")} " +
-                    $"kA: {string.Join(", ", c.kA)}", 1, "White");
+            MyAPIGateway.Utilities.ShowNotification($"[Cell] {c.Block.Position} " +
+                                                    $"T: {c.Temperature.ToString("n4")} " +
+                                                    $"dT: {c.DeltaTemperature.ToString("n6")} " +
+                                                    $"Gen: {c.HeatGeneration.ToString("n4")} " +
+                                                    $"ext: {c.ExposedSurfaces.ToString("n4")} " +
+                                                    $"kA: {string.Join(", ", c.kA)}", 1, "White");
 
-                MyAPIGateway.Utilities.ShowNotification(
-                    $"[Calc] m: {c.Mass.ToString("n0")} " +
-                    $"k: {c.Definition.Conductivity} " +
-                    $"sh {c.Definition.SpecificHeat} " +
-                    $"em {c.Definition.Emissivity} " +
-                    $"pwe: {c.Definition.ProducerWasteEnergy} " +
-                    $"cwe: {c.Definition.ConsumerWasteEnergy} " +
-                    $"tm: {(c.Definition.SpecificHeat * c.Mass).ToString("n0")} " +
-                    $"c: {c.C.ToString("n4")} " +
-                    $"r: {c.Radiation.ToString("n2")} " +
-                    $"rdt: {(c.Radiation * c.ThermalMassInv).ToString("n4")} " +
-                    $"prod: {c.EnergyProduction} " +
-                    $"cons: {(c.EnergyConsumption + c.ThrustEnergyConsumption)} ", 1, "White");
+            MyAPIGateway.Utilities.ShowNotification(
+                $"[Calc] m: {c.Mass.ToString("n0")} " +
+                $"k: {c.Definition.Conductivity} " +
+                $"sh {c.Definition.SpecificHeat} " +
+                $"em {c.Definition.Emissivity} " +
+                $"pwe: {c.Definition.ProducerWasteEnergy} " +
+                $"cwe: {c.Definition.ConsumerWasteEnergy} " +
+                $"tm: {(c.Definition.SpecificHeat * c.Mass).ToString("n0")} " +
+                $"c: {c.C.ToString("n4")} " +
+                $"r: {c.Radiation.ToString("n2")} " +
+                $"rdt: {(c.Radiation * c.ThermalMassInv).ToString("n4")} " +
+                $"prod: {c.EnergyProduction} " +
+                $"cons: {(c.EnergyConsumption + c.ThrustEnergyConsumption)} ", 1, "White");
 
-                int value = g.NodeSurfaces[position];
-                MyAPIGateway.Utilities.ShowNotification(
-                    $"[Grid] Exterior: {g.ExteriorNodes.Count} " +
-                    $"Nodes: {g.NodeSurfaces.Count} " +
-                    $"RNodes: {g.Rooms.Count} " +
-                    $"sq: {g.SolidQueue.Count} " +
-                    $"rq: {g.RoomQueue.Count} " +
-                    $"CrawlDone: {g.ThermalCellUpdateComplete} " +
-                    $"sbn: {string.Join(", ", c.TouchingSerfacesByNeighbor)}", 1, "White");
+            int value = g.NodeSurfaces[position];
+            MyAPIGateway.Utilities.ShowNotification(
+                $"[Grid] Exterior: {g.ExteriorNodes.Count} " +
+                $"Nodes: {g.NodeSurfaces.Count} " +
+                $"RNodes: {g.Rooms.Count} " +
+                $"sq: {g.SolidQueue.Count} " +
+                $"rq: {g.RoomQueue.Count} " +
+                $"CrawlDone: {g.ThermalCellUpdateComplete} " +
+                $"sbn: {string.Join(", ", c.TouchingSerfacesByNeighbor)}", 1, "White");
 
-                MyAPIGateway.Utilities.ShowNotification(
-                    $"[Cell] Airtight out: {((value & 1 << 0) != 0 ? 1:0)}, {((value & 1 << 1) != 0 ? 1:0)}, {((value & 1 << 2) != 0?1:0)}, {((value & 1 << 3) != 0?1:0)}, {((value & 1 << 4) != 0?1:0)}, {((value & 1 << 5) != 0 ? 1 : 0)}, " +
-                    $"in: {((value & 1 << 6) != 0?1:0)}, {((value & 1 << 7) != 0 ? 1 : 0)}, {((value & 1 << 8) != 0 ? 1 : 0)}, {((value & 1 << 9) != 0 ? 1 : 0)}, {((value & 1 << 10) != 0?1:0)}, {((value & 1 << 11) != 0?1:0)}", 1, "White");
-
-
-            }
+            MyAPIGateway.Utilities.ShowNotification(
+                $"[Cell] Airtight out: {((value & 1 << 0) != 0 ? 1:0)}, {((value & 1 << 1) != 0 ? 1:0)}, {((value & 1 << 2) != 0?1:0)}, {((value & 1 << 3) != 0?1:0)}, {((value & 1 << 4) != 0?1:0)}, {((value & 1 << 5) != 0 ? 1 : 0)}, " +
+                $"in: {((value & 1 << 6) != 0?1:0)}, {((value & 1 << 7) != 0 ? 1 : 0)}, {((value & 1 << 8) != 0 ? 1 : 0)}, {((value & 1 << 9) != 0 ? 1 : 0)}, {((value & 1 << 10) != 0?1:0)}, {((value & 1 << 11) != 0?1:0)}", 1, "White");
         }
 
         public override void Draw()
-		{
-            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+        {
+            if (!Settings.Debug || MyAPIGateway.Utilities.IsDedicated) return;
+            //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
+            MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;
+
+            Vector3D start = matrix.Translation;
+            Vector3D end = start + (matrix.Forward * 15);
+
+            IHitInfo hit;
+            MyAPIGateway.Physics.CastRay(start, end, out hit);
+            MyCubeGrid grid = hit?.HitEntity as MyCubeGrid;
+            if (grid == null) return;
+
+            Vector3I position = grid.WorldToGridInteger(hit.Position + (matrix.Forward * 0.005f));
+
+            ThermalGrid g = grid.GameLogic.GetAs<ThermalGrid>();
+
+            IMySlimBlock block = grid.GetCubeBlock(position);
+
+            if (block == null) return;
+
+            ThermalCell c = g.Get(block.Position);
+
+            if (c == null) return;
+
+            DrawBillboard(c, matrix);
+            for (int i = 0; i < c.Neighbors.Count; i++)
             {
-                //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
-                MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;
-
-                Vector3D start = matrix.Translation;
-                Vector3D end = start + (matrix.Forward * 15);
-
-                IHitInfo hit;
-                MyAPIGateway.Physics.CastRay(start, end, out hit);
-                MyCubeGrid grid = hit?.HitEntity as MyCubeGrid;
-                if (grid == null) return;
-
-                Vector3I position = grid.WorldToGridInteger(hit.Position + (matrix.Forward * 0.005f));
-
-                ThermalGrid g = grid.GameLogic.GetAs<ThermalGrid>();
-
-                IMySlimBlock block = grid.GetCubeBlock(position);
-
-                if (block == null) return;
-
-                ThermalCell c = g.Get(block.Position);
-
-                if (c == null) return;
-
-                DrawBillboard(c, matrix);
-                for (int i = 0; i < c.Neighbors.Count; i++)
-                {
-                    ThermalCell n = c.Neighbors[i];
-                    DrawBillboard(n, matrix);
-                }
+                ThermalCell n = c.Neighbors[i];
+                DrawBillboard(n, matrix);
             }
         }
 
@@ -176,9 +170,9 @@ namespace Thermodynamics
 
             float averageBlockLength = Vector3I.DistanceManhattan(c.Block.Max + 1, c.Block.Min) * 0.33f;
 
-            Color color = ColorExtensions.HSVtoColor(Tools.GetTemperatureColor(c.Temperature));
+            Color color = Tools.GetTemperatureColor(c.Temperature).HSVtoColor();
 
-            float distance = 0.01f;
+            const float distance = 0.01f;
             position = cameraMatrix.Translation + (position - cameraMatrix.Translation) * distance;
             float scaler = 1.2f * c.Grid.Grid.GridSizeHalf * averageBlockLength * distance;
 

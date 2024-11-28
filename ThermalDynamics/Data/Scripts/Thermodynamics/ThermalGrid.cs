@@ -27,13 +27,12 @@ using VRage.Utils;
 using VRage.Voxels;
 using VRageMath;
 
-namespace Thermodynamics
-{
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_CubeGrid), true)]
-    public partial class ThermalGrid : MyGameLogicComponent
-    {
 
-        private static readonly Guid StorageGuid = new Guid("f7cd64ae-9cd8-41f3-8e5d-3db992619343");
+namespace Thermodynamics {
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_CubeGrid), true)]
+    public partial class ThermalGrid : MyGameLogicComponent {
+
+        static readonly Guid StorageGuid = new Guid("f7cd64ae-9cd8-41f3-8e5d-3db992619343");
 
         public MyCubeGrid Grid;
         public Dictionary<int, int> PositionToIndex = new Dictionary<int, int>();
@@ -51,12 +50,12 @@ namespace Thermodynamics
         /// update loop index
         /// updates happen across frames
         /// </summary>
-        private int SimulationIndex = 0;
+        int SimulationIndex = 0;
 
         /// <summary>
         /// The number of cells to process in a 1 second interval
         /// </summary>
-        private int SimulationQuota = 0;
+        int SimulationQuota = 0;
 
         /// <summary>
         /// The fractional number of cells to process this frame
@@ -73,7 +72,7 @@ namespace Thermodynamics
         /// updates cycle between updating first to last, last to first
         /// this ensures an even distribution of heat.
         /// </summary>
-        private int Direction = 1;
+        int Direction = 1;
 
 
         public bool ThermalCellUpdateComplete = true;
@@ -97,18 +96,20 @@ namespace Thermodynamics
                 Settings.Instance = Settings.GetDefaults();
             }
 
-            Grid = Entity as MyCubeGrid;
+            Grid = this.Entity as MyCubeGrid;
 
-            if (Entity.Storage == null)
-                Entity.Storage = new MyModStorageComponent();
+            if (this.Entity.Storage == null) this.Entity.Storage = new MyModStorageComponent();
 
-            Grid.OnGridSplit += GridSplit;
-            Grid.OnGridMerge += GridMerge;
+            if (Grid != null)
+            {
+                Grid.OnGridSplit += GridSplit;
+                Grid.OnGridMerge += GridMerge;
 
-            Grid.OnBlockAdded += BlockAdded;
-            Grid.OnBlockRemoved += BlockRemoved;
+                Grid.OnBlockAdded += BlockAdded;
+                Grid.OnBlockRemoved += BlockRemoved;
+            }
 
-            NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            this.NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
         }
 
         public override bool IsSerialized()
@@ -117,8 +118,8 @@ namespace Thermodynamics
             Save();
             return base.IsSerialized();
         }
-        
-        private string Pack()
+
+        string Pack()
         {
             byte[] bytes = new byte[Thermals.Count * 6];
 
@@ -134,20 +135,28 @@ namespace Thermodynamics
                 bytes[bi + 2] = (byte)(id >> 16);
                 bytes[bi + 3] = (byte)(id >> 24);
 
-                short t = (short)(c.Temperature);
+                short t = (short)c.Temperature;
                 bytes[bi + 4] = (byte)t;
                 bytes[bi + 5] = (byte)(t >> 8);
 
                 bi += 6;
 
-                //TODO keep track of this. it might cause weird behaivor.
-                c.Temperature = t;
+                // Track temperature changes by storing previous value
+                c.PreviousTemperature = c.Temperature;// Added tracking
+                c.Temperature = t;// Update current temperature
+
+                // Log significant temperature changes for debugging
+                // Probably use this for error correction or validation but whatever
+                //    if (Math.Abs(c.PreviousTemperature - t) > Settings.SignificantTempChange)
+                //    {
+                //        MyLog.Default.Debug($"[{Settings.Name}] Significant temperature change in cell {c.Id}: {c.PreviousTemperature} -> {t}");
+                //    }
             }
 
             return Convert.ToBase64String(bytes);
         }
 
-        private void Unpack(string data)
+        void Unpack(string data)
         {
             try
             {
@@ -168,10 +177,13 @@ namespace Thermodynamics
 
                 //MyLog.Default.Info($"[{Settings.Name}] [Unpack] {id} {PositionToIndex[id]} {Thermals.list[PositionToIndex[id]].Block.BlockDefinition.Id} - T: {f}");
             }
-            catch{ }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
 
-        private void Save()
+        void Save()
         {
             //Stopwatch sw = Stopwatch.StartNew();
 
@@ -179,33 +191,26 @@ namespace Thermodynamics
 
             //string data = Convert.ToBase64String(MyAPIGateway.Utilities.SerializeToBinary(PackGridInfo()));
 
-            MyModStorageComponentBase storage = Entity.Storage;
-            if (storage.ContainsKey(StorageGuid))
-            {
-                storage[StorageGuid] = data;
-            }
-            else
-            {
-                storage.Add(StorageGuid, data);
-            }
+            MyModStorageComponentBase storage = this.Entity.Storage;
+            storage[StorageGuid] = data;
             //sw.Stop();
             //MyLog.Default.Info($"[{Settings.Name}] [SAVE] {Grid.DisplayName} ({Grid.EntityId}) t-{((float)sw.ElapsedTicks / TimeSpan.TicksPerMillisecond).ToString("n8")}ms, size: {data.Length}");
         }
 
-        private void Load()
+        void Load()
         {
             //Stopwatch sw = Stopwatch.StartNew();
 
-            if (Entity.Storage.ContainsKey(StorageGuid))
+            if (this.Entity.Storage.ContainsKey(StorageGuid))
             {
-                Unpack(Entity.Storage[StorageGuid]);
+                Unpack(this.Entity.Storage[StorageGuid]);
             }
 
             //sw.Stop();
             //MyLog.Default.Info($"[{Settings.Name}] [LOAD] {Grid.DisplayName} ({Grid.EntityId}) t-{((float)sw.ElapsedTicks / TimeSpan.TicksPerMillisecond).ToString("n8")}ms");
         }
 
-        private void BlockAdded(IMySlimBlock b)
+        void BlockAdded(IMySlimBlock b)
         {
             if (Grid.EntityId != b.CubeGrid.EntityId)
             {
@@ -222,7 +227,7 @@ namespace Thermodynamics
             Thermals.ItemArray[index] = cell;
         }
 
-        private void BlockRemoved(IMySlimBlock b)
+        void BlockRemoved(IMySlimBlock b)
         {
             MyLog.Default.Info($"[{Settings.Name}] block removed");
 
@@ -240,14 +245,7 @@ namespace Thermodynamics
             int index = PositionToIndex[flat];
             ThermalCell cell = Thermals.ItemArray[index];
 
-            if (RecentlyRemoved.ContainsKey(cell.Id))
-            {
-                RecentlyRemoved[cell.Id] = cell.Temperature;
-            }
-            else
-            {
-                RecentlyRemoved.Add(cell.Id, cell.Temperature);
-            }
+            RecentlyRemoved[cell.Id] = cell.Temperature;
 
             cell.ClearNeighbors();
             PositionToIndex.Remove(flat);
@@ -255,7 +253,7 @@ namespace Thermodynamics
 
         }
 
-        private void GridSplit(MyCubeGrid g1, MyCubeGrid g2)
+        void GridSplit(MyCubeGrid g1, MyCubeGrid g2)
         {
             MyLog.Default.Info($"[{Settings.Name}] Grid Split - G1: {g1.EntityId} G2: {g2.EntityId}");
 
@@ -267,16 +265,15 @@ namespace Thermodynamics
                 ThermalCell c = tg2.Thermals.ItemArray[i];
                 if (c == null) continue;
 
-                if (tg1.RecentlyRemoved.ContainsKey(c.Id))
-                {
-                    c.Temperature = tg1.RecentlyRemoved[c.Id];
-                    tg1.RecentlyRemoved.Remove(c.Id);
-                }
+                float value;
+                if (!tg1.RecentlyRemoved.TryGetValue(c.Id, out value)) continue;
+                c.Temperature = value;
+                tg1.RecentlyRemoved.Remove(c.Id);
             }
 
         }
 
-        private void GridMerge(MyCubeGrid g1, MyCubeGrid g2)
+        void GridMerge(MyCubeGrid g1, MyCubeGrid g2)
         {
 
             MyLog.Default.Info($"[{Settings.Name}] Grid Merge - G1: {g1.EntityId} G2: {g2.EntityId}");
@@ -290,9 +287,10 @@ namespace Thermodynamics
                 if (c == null) continue;
 
                 int id = c.Block.Position.Flatten();
-                if (tg1.PositionToIndex.ContainsKey(id))
+                int value;
+                if (tg1.PositionToIndex.TryGetValue(id, out value))
                 {
-                    tg1.Thermals.ItemArray[tg1.PositionToIndex[id]].Temperature = c.Temperature;
+                    tg1.Thermals.ItemArray[value].Temperature = c.Temperature;
                 }
 
             }
@@ -302,7 +300,7 @@ namespace Thermodynamics
         {
             if (Grid.Physics == null)
             {
-                NeedsUpdate = MyEntityUpdateEnum.NONE;
+                this.NeedsUpdate = MyEntityUpdateEnum.NONE;
             }
 
             Load();
@@ -313,80 +311,74 @@ namespace Thermodynamics
 
         public override void UpdateBeforeSimulation()
         {
-
-            FrameCount++;
-            //MyAPIGateway.Utilities.ShowNotification($"[Loop] f: {MyAPIGateway.Session.GameplayFrameCounter} fc: {FrameCount} sf: {SimulationFrame} sq: {SimulationQuota}", 1, "White");
-
-            // if you are done processing the required blocks this second
-            // wait for the start of the next second interval
-            if (SimulationQuota == 0)
+            try
             {
-                if (FrameCount >= 60)
+                FrameCount++;
+
+                if (SimulationQuota == 0)
                 {
-                    SimulationQuota = GetSimulationQuota();
-                    FrameCount = 0;
-                    FrameQuota = 0;
-                }
-                else
-                {
-                    return;
-                }
-            }
-
-            FrameQuota += GetFrameQuota();
-            int cellCount = Thermals.UsedLength;
-
-            //MyAPIGateway.Utilities.ShowNotification($"[Loop] c: {count} frameC: {QuotaPerSecond} simC: {60f * QuotaPerSecond}", 1, "White");
-
-            //Stopwatch sw = Stopwatch.StartNew();
-            while (FrameQuota >= 1)
-            {
-                if (SimulationQuota == 0) break;
-
-                // prepare for the next simulation after a full iteration
-                if (SimulationIndex == cellCount || SimulationIndex == -1)
-                {
-                    if (!ThermalCellUpdateComplete)
-                        ThermalCellUpdateComplete = true;
-
-                    // start a new simulation frame
-                    SimulationFrame++;
-
-                    MapSurfaces();
-                    PrepareNextSimulationStep();
-
-                    // reverse the index direction
-                    Direction *= -1;
-                    // make sure the end cells in the list go once per frame
-                    SimulationIndex += Direction;
-
-
+                    if (FrameCount >= 60)
+                    {
+                        SimulationQuota = GetSimulationQuota();
+                        FrameCount = 0;
+                        FrameQuota = 0;
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
 
+                FrameQuota += GetFrameQuota();
+                int cellCount = Thermals.UsedLength;
 
-                //MyLog.Default.Info($"[{Settings.Name}] Frame: {FrameCount} SimFrame: {SimulationFrame}: Index: {SimulationIndex} Quota: {SimulationQuota} FrameQuota:{FrameQuota}");
-
-                ThermalCell cell = Thermals.ItemArray[SimulationIndex];
-                if (cell != null)
+                while(FrameQuota >= 1)
                 {
-                    if (!ThermalCellUpdateComplete)
-                    { 
-                        cell.UpdateSurfaces(ref ExteriorNodes, ref NodeSurfaces);
+                    if (SimulationQuota == 0) break;
+
+                    if (SimulationIndex == cellCount || SimulationIndex == -1)
+                    {
+                        if (!ThermalCellUpdateComplete)
+                            ThermalCellUpdateComplete = true;
+
+                        SimulationFrame++;
+
+                        MapSurfaces();
+                        PrepareNextSimulationStep();
+
+                        Direction *= -1;
+                        SimulationIndex += Direction;
                     }
 
-                    cell.Update();
+                    try
+                    {
+                        ThermalCell cell = Thermals.ItemArray[SimulationIndex];
+                        if (cell != null)
+                        {
+                            if (!ThermalCellUpdateComplete)
+                            {
+                                cell.UpdateSurfaces(ref ExteriorNodes, ref NodeSurfaces);
+                            }
+
+                            cell.Update();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MyLog.Default.Error($"Error updating thermal cell at index {SimulationIndex}: {ex}");
+                    }
+
+                    FrameQuota--;
+                    SimulationQuota--;
+                    SimulationIndex += Direction;
                 }
-
-                FrameQuota--;
-                SimulationQuota--;
-                SimulationIndex += Direction;
             }
-            //sw.Stop();
-            //MyLog.Default.Info($"[{Settings.Name}] [UpdateLoop] {Grid.DisplayName} ({Grid.EntityId}) t-{((float)sw.ElapsedTicks / TimeSpan.TicksPerMillisecond).ToString("n8")}ms");
-
+            catch (Exception ex)
+            {
+                MyLog.Default.Error($"Critical error in thermal grid update: {ex}");
+            }
         }
-
-        private void PrepareNextSimulationStep()
+        void PrepareNextSimulationStep()
         {
 
             Vector3D position = Grid.PositionComp.WorldAABB.Center;
@@ -394,11 +386,10 @@ namespace Thermodynamics
             PrepareSolarEnvironment(ref position);
         }
 
-        private void PrepareEnvironmentTemprature(ref Vector3D position)
+        void PrepareEnvironmentTemprature(ref Vector3D position)
         {
             PlanetManager.Planet planet = PlanetManager.GetClosestPlanet(position);
             if (planet == null) return;
-
 
             bool isUnderground = false;
             PlanetDefinition def = planet.Definition();
@@ -408,15 +399,23 @@ namespace Thermodynamics
             float airDensity = planet.Entity.GetAirDensity(position);
             float windSpeed = planet.Entity.GetWindSpeed(position);
 
-
             float ambient = def.UndergroundTemperature;
             if (!isUnderground)
             {
                 float dot = (float)Vector3D.Dot(Vector3D.Normalize(local), FrameSolarDirection);
-                ambient = def.NightTemperature + ((dot + 1f) * 0.5f * (def.DayTemperature - def.NightTemperature));
+                ambient = def.NightTemperature + (dot + 1f) * 0.5f * (def.DayTemperature - def.NightTemperature);
             }
             else
             {
+                // Implement underground core temperatures
+                float distanceToCore = (float)local.Length();
+                float coreTemp = def.CoreTemperature;// Added to PlanetDefinition
+                float surfaceDistance = (float)surfacePointLocal.Length();
+
+                // Calculate temperature gradient based on depth
+                float depthRatio = 1 - (distanceToCore / surfaceDistance);
+                ambient = def.UndergroundTemperature + (coreTemp - def.UndergroundTemperature) * depthRatio;
+
                 FrameSolarOccluded = true;
             }
 
@@ -424,114 +423,150 @@ namespace Thermodynamics
             float frameAmbiSquared = FrameAmbientTemprature * FrameAmbientTemprature;
             FrameAmbientTempratureP4 = frameAmbiSquared * frameAmbiSquared;
             FrameSolarDecay = 1 - def.SolarDecay * airDensity;
-
-            //FrameWindDirection = Vector3.Cross(planet.GravityComponent.GetWorldGravityNormalized(position), planet.Entity.WorldMatrix.Forward).Normalized() * windSpeed;
-            //MySimpleObjectDraw.DrawLine(position, position + FrameWindDirection, MyStringId.GetOrCompute("Square"), ref color2, 0.1f);
-
-            //TODO: implement underground core temparatures
         }
 
-        private void PrepareSolarEnvironment(ref Vector3D position)
+        void PrepareSolarEnvironment(ref Vector3D position)
         {
+            // Early exit if solar heating is disabled
             if (!Settings.Instance.EnableSolarHeat) return;
 
+            // Update radiation node and initialize frame values
             SolarRadiationNode.Update();
-
             FrameSolarOccluded = false;
             FrameSolarDirection = MyVisualScriptLogicProvider.GetSunDirection();
             FrameMatrix = Grid.WorldMatrix;
 
-            LineD line = new LineD(position, position + (FrameSolarDirection * 15000000));
-            List<MyLineSegmentOverlapResult<MyEntity>> results = new List<MyLineSegmentOverlapResult<MyEntity>>();
-            MyGamePruningStructure.GetTopmostEntitiesOverlappingRay(ref line, results);
-            LineD subLine;
+            // Constants for ray casting
+            const double maxSolarDistance = 15000000;
+            const int rayCastDistance = 28;
 
-            for (int i = 0; i < results.Count; i++)
+            // Create the primary ray for solar occlusion checking
+            LineD solarRay = new LineD(position, position + FrameSolarDirection * (float)maxSolarDistance);
+
+            // Cache results list to avoid repeated allocations
+            List<MyLineSegmentOverlapResult<MyEntity>> results = new List<MyLineSegmentOverlapResult<MyEntity>>(32);
+            MyGamePruningStructure.GetTopmostEntitiesOverlappingRay(ref solarRay, results);
+
+            // Sort results by distance to improve early-out performance
+            results.Sort((a, b) => a.Distance.CompareTo(b.Distance));
+
+            foreach (var result in results)
             {
-                MyLineSegmentOverlapResult<MyEntity> ent = results[i];
-                MyEntity e = ent.Element;
+                MyEntity entity = result.Element;
 
-                if (e is MyPlanet)
+                // Skip null or invalid entities
+                if (entity?.Physics == null) continue;
+
+                // Handle planets
+                MyPlanet planet = entity as MyPlanet;
+                if (planet != null)
                 {
-                    MyPlanet myPlanet = e as MyPlanet;
-                    Vector3D planetLocal = position - myPlanet.PositionComp.WorldMatrixRef.Translation;
-                    double distance = planetLocal.Length();
-                    Vector3D planetDirection = planetLocal / distance;
-
-                    double dot = Vector3D.Dot(planetDirection, FrameSolarDirection);
-                    double occlusionDot = Tools.GetLargestOcclusionDotProduct(Tools.GetVisualSize(distance, myPlanet.AverageRadius));
-
-                    if (dot < occlusionDot)
+                    if (CheckPlanetOcclusion(ref position, planet))
                     {
                         FrameSolarOccluded = true;
                         break;
                     }
+                    continue;
                 }
 
-                if (e is MyVoxelBase)
+                // Handle voxel entities
+                MyVoxelBase voxel = entity as MyVoxelBase;
+                if (voxel != null && !(voxel.RootVoxel is MyPlanet))
                 {
-                    MyVoxelBase voxel = e as MyVoxelBase;
-                    if (voxel.RootVoxel is MyPlanet) continue;
-
-                    voxel.PositionComp.WorldAABB.Intersect(ref line, out subLine);
-                    //Vector3D start = Vector3D.Transform((Vector3D)(Vector3)ExposedSurface[i] * gridSize, matrix);
-                    var green = Color.Green.ToVector4();
-
-                    if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
-                    {
-                        MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref green, 0.2f);
-                    }
-
-                    IHitInfo hit;
-                    MyAPIGateway.Physics.CastRay(subLine.From, subLine.To, out hit, 28); // 28
-
-                    if (hit != null)
+                    if (CheckVoxelOcclusion(ref solarRay, voxel, rayCastDistance))
                     {
                         FrameSolarOccluded = true;
                         break;
                     }
+                    continue;
                 }
 
-                if (e is MyCubeGrid && e.Physics != null && e.EntityId != Grid.EntityId)
-                {
-                    MyCubeGrid g = (e as MyCubeGrid);
-                    List<MyCubeGrid> grids = new List<MyCubeGrid>();
-                    g.GetConnectedGrids(GridLinkTypeEnum.Physical, grids);
-
-                    for (int j = 0; j < grids.Count; j++)
-                    {
-                        if (grids[j].EntityId == Grid.EntityId) continue;
-                    }
-
-                    g.PositionComp.WorldAABB.Intersect(ref line, out subLine);
-
-                    var blue = Color.Blue.ToVector4();
-
-                    if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
-                    {
-
-                        MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref blue, 0.2f);
-                    }
-
-                    Vector3I? hit = (e as MyCubeGrid).RayCastBlocks(subLine.From, subLine.To);
-
-                    if (hit.HasValue)
-                    {
-                        FrameSolarOccluded = true;
-                        break;
-                    }
-                }
+                // Handle grid entities
+                MyCubeGrid grid = entity as MyCubeGrid;
+                if (grid == null) continue;
+                if (!CheckGridOcclusion(ref solarRay, grid)) continue;
+                FrameSolarOccluded = true;
+                break;
             }
 
-            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
-            {
-                var color = (FrameSolarOccluded) ? Color.Red.ToVector4() : Color.White.ToVector4();
-                var color2 = Color.LightGoldenrodYellow.ToVector4();
-                MySimpleObjectDraw.DrawLine(position, position + (FrameSolarDirection * 15000000), MyStringId.GetOrCompute("Square"), ref color, 0.1f);
-            }
+            // Debug visualization
+            DrawDebugLines(ref position, ref solarRay);
         }
 
+        private bool CheckPlanetOcclusion(ref Vector3D position, MyPlanet planet)
+        {
+            Vector3D planetLocal = position - planet.PositionComp.WorldMatrixRef.Translation;
+            double distance = planetLocal.Length();
 
+            // Skip if too far from planet
+            if (distance > planet.AverageRadius * 2)
+                return false;
+
+            Vector3D planetDirection = planetLocal / distance;
+            double dot = Vector3D.Dot(planetDirection, FrameSolarDirection);
+            double occlusionDot = Tools.GetLargestOcclusionDotProduct(
+                Tools.GetVisualSize(distance, planet.AverageRadius));
+
+            return dot < occlusionDot;
+        }
+
+        private bool CheckVoxelOcclusion(ref LineD ray, MyVoxelBase voxel, int raycastDistance)
+        {
+            LineD subLine;
+            voxel.PositionComp.WorldAABB.Intersect(ref ray, out subLine);
+
+            // Debug visualization for voxel intersection
+            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+            {
+                Vector4 green = Color.Green.ToVector4();
+                MySimpleObjectDraw.DrawLine(subLine.From, subLine.To,
+                    MyStringId.GetOrCompute("Square"), ref green, 0.2f);
+            }
+
+            IHitInfo hit;
+            MyAPIGateway.Physics.CastRay(subLine.From, subLine.To, out hit, raycastDistance);
+            return hit != null;
+        }
+
+        private bool CheckGridOcclusion(ref LineD ray, MyCubeGrid grid)
+        {
+            // Skip self-occlusion
+            if (grid.EntityId == Grid.EntityId) return false;
+
+            // Check connected grids
+            List<MyCubeGrid> connectedGrids = new List<MyCubeGrid>();
+            grid.GetConnectedGrids(GridLinkTypeEnum.Physical, connectedGrids);
+
+            for (int i = 0; i < connectedGrids.Count; i++)
+            {
+                if (connectedGrids[i].EntityId == Grid.EntityId)
+                    return false;
+            }
+
+            LineD subLine;
+            grid.PositionComp.WorldAABB.Intersect(ref ray, out subLine);
+
+            // Debug visualization for grid intersection
+            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+            {
+                Vector4 blue = Color.Blue.ToVector4();
+                MySimpleObjectDraw.DrawLine(subLine.From, subLine.To,
+                    MyStringId.GetOrCompute("Square"), ref blue, 0.2f);
+            }
+
+            Vector3I? hit = grid.RayCastBlocks(subLine.From, subLine.To);
+            return hit.HasValue;
+        }
+
+        private void DrawDebugLines(ref Vector3D position, ref LineD solarRay)
+        {
+            if (!Settings.Debug || MyAPIGateway.Utilities.IsDedicated)
+                return;
+
+            Vector4 rayColor = FrameSolarOccluded ? Color.Red.ToVector4() : Color.White.ToVector4();
+            MySimpleObjectDraw.DrawLine(position, solarRay.To,
+                MyStringId.GetOrCompute("Square"), ref rayColor, 0.1f);
+        }
         /// <summary>
         /// Calculates thermal cell count second to match the desired simulation speed
         /// </summary>
@@ -545,23 +580,20 @@ namespace Thermodynamics
         /// </summary>
         public float GetFrameQuota()
         {
-            return 0.00000001f + ((Thermals.UsedLength * Settings.Instance.SimulationSpeed * Settings.Instance.Frequency) / 60f);
+            return 0.00000001f + Thermals.UsedLength * Settings.Instance.SimulationSpeed * Settings.Instance.Frequency / 60f;
         }
 
         /// <summary>
-        /// gets a the thermal cell at a specific location
+        /// gets the thermal cell at a specific location
         /// </summary>
         /// <param name="position"></param>
         /// <returns></returns>
         public ThermalCell Get(Vector3I position)
         {
             int flat = position.Flatten();
-            if (PositionToIndex.ContainsKey(flat))
-            {
-                return Thermals.ItemArray[PositionToIndex[flat]];
-            }
+            int value;
+            return PositionToIndex.TryGetValue(flat, out value) ? Thermals.ItemArray[value] : null;
 
-            return null;
         }
     }
 }

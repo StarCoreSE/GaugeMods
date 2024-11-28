@@ -88,11 +88,9 @@ namespace Thermodynamics
                             }
 
                             int ns;
-                            if (NodeSurfaces.TryGetValue(n, out ns))
-                            {
-                                state |= ((ns & 1 << i + 6) >> 6);
-                                processQueue.Enqueue(n);
-                            }
+                            if (!NodeSurfaces.TryGetValue(n, out ns)) continue;
+                            state |= ((ns & 1 << i + 6) >> 6);
+                            processQueue.Enqueue(n);
                         }
 
                         NodeSurfaces.Add(node, state);
@@ -145,18 +143,14 @@ namespace Thermodynamics
                             }
 
                             int ns;
-                            if (NodeSurfaces.TryGetValue(n, out ns))
-                            {
-                                state |= ((ns & 1 << i + 6) >> 6);
-                                processQueue.Enqueue(n);
-                            }
+                            if (!NodeSurfaces.TryGetValue(n, out ns)) continue;
+                            state |= ((ns & 1 << i + 6) >> 6);
+                            processQueue.Enqueue(n);
                         }
 
-                        if (NodeSurfaces[node] != state)
-                        {
-                            ResetSpacialMapping();
-                            NodeSurfaces[node] = state;
-                        }
+                        if (NodeSurfaces[node] == state) continue;
+                        ResetSpacialMapping();
+                        NodeSurfaces[node] = state;
                     }
                 }
             }
@@ -188,13 +182,15 @@ namespace Thermodynamics
                         {
                             Vector3I n = node + neighbors[i];
 
-                            if (!(n.X >= min.X && n.Y >= min.Y && n.Z >= min.Z &&
-                                    n.X < max.X && n.Y < max.Y && n.Z < max.Z) &&
-                                    NodeSurfaces.ContainsKey(n))
-                            {
-                                int oppositeFace = (i % 2 == 0) ? i+1 : i-1; 
-                                NodeSurfaces[n] &= ~(1 << oppositeFace);
-                            }
+                            if (n.X >= min.X &&
+                                n.Y >= min.Y &&
+                                n.Z >= min.Z &&
+                                n.X < max.X &&
+                                n.Y < max.Y &&
+                                n.Z < max.Z ||
+                                !NodeSurfaces.ContainsKey(n)) continue;
+                            int oppositeFace = (i % 2 == 0) ? i+1 : i-1; 
+                            NodeSurfaces[n] &= ~(1 << oppositeFace);
                         }
                     }
                 }
@@ -363,7 +359,7 @@ namespace Thermodynamics
                     // do not queue this node if it is airtight
                     if ((flag & 1 << shift) != 0) 
                     {
-                        //make sure something is queued for finding internal rooms
+                        //TODO: make sure something is queued for finding internal rooms
                         //if (SolidQueue.Count == 0)
                         //{
                         //    SolidQueue.Enqueue(n);
@@ -382,61 +378,63 @@ namespace Thermodynamics
 
         private void CrawlInside(ref int loopCount)
         {
-            Vector3I[] neighbors = Base6Directions.IntDirections;
-            // crawl over the current room
-            while (RoomQueue.Count > 0 && loopCount < NodeCountPerFrame)
+            while(true)
             {
-                loopCount++;
-
-                Vector3I node = RoomQueue.Dequeue();
-
-                int flag;
-                NodeSurfaces.TryGetValue(node, out flag);
-
-                for (int i = 0; i < 6; i++)
+                Vector3I[] neighbors = Base6Directions.IntDirections;
+                // crawl over the current room
+                while(RoomQueue.Count > 0 && loopCount < NodeCountPerFrame)
                 {
-                    Vector3I n = node + neighbors[i];
-                    if (Rooms.ContainsKey(n)) continue;
+                    loopCount++;
 
-                    if ((flag & 1 << i) == 0) 
+                    Vector3I node = RoomQueue.Dequeue();
+
+                    int flag;
+                    NodeSurfaces.TryGetValue(node, out flag);
+
+                    for (int i = 0; i < 6; i++)
                     {
+                        Vector3I n = node + neighbors[i];
+                        if (Rooms.ContainsKey(n)) continue;
+
+                        if ((flag & 1 << i) != 0) continue;
                         RoomQueue.Enqueue(n);
                         Rooms.Add(n, CurrentRoomId);
                     }
                 }
-            }
 
-            // find a new room to crawl over
-            while (RoomQueue.Count == 0 && SolidQueue.Count > 0 && loopCount < NodeCountPerFrame)
-            {
-                loopCount++;
-
-                Vector3I node = SolidQueue.Dequeue();
-                int surfaces = NodeSurfaces[node];
-
-                for (int i = 0; i < neighbors.Length; i++)
+                // find a new room to crawl over
+                while(RoomQueue.Count == 0 && SolidQueue.Count > 0 && loopCount < NodeCountPerFrame)
                 {
-                    Vector3I n = node + neighbors[i];
-                    if (ExteriorNodes.Contains(n) || SolidNodes.Contains(n) || Rooms.ContainsKey(n)) continue;
+                    loopCount++;
 
-                    if ((surfaces & 1 << i) == 0)
+                    Vector3I node = SolidQueue.Dequeue();
+                    int surfaces = NodeSurfaces[node];
+
+                    for (int i = 0; i < neighbors.Length; i++)
                     {
-                        RoomQueue.Enqueue(n);
-                        Rooms.Add(n, CurrentRoomId++);
-                        SolidQueue.Enqueue(node);
-                        break;
-                    }
-                    else
-                    {
-                        SolidQueue.Enqueue(n);
+                        Vector3I n = node + neighbors[i];
+                        if (ExteriorNodes.Contains(n) || SolidNodes.Contains(n) || Rooms.ContainsKey(n)) continue;
+
+                        if ((surfaces & 1 << i) == 0)
+                        {
+                            RoomQueue.Enqueue(n);
+                            Rooms.Add(n, CurrentRoomId++);
+                            SolidQueue.Enqueue(node);
+                            break;
+                        }
+                        else
+                        {
+                            SolidQueue.Enqueue(n);
+                        }
                     }
                 }
-            }
 
-            // keep calling this function if there is more work to do
-            if (loopCount < NodeCountPerFrame && SolidQueue.Count > 0)
-            {
-                CrawlInside(ref loopCount);
+                // keep calling this function if there is more work to do
+                if (loopCount < NodeCountPerFrame && SolidQueue.Count > 0)
+                {
+                    continue;
+                }
+                break;
             }
         }
     }

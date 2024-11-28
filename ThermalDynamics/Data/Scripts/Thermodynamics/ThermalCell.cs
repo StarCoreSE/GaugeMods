@@ -22,10 +22,9 @@ using System.Net;
 using VRageRender.Messages;
 using static VRage.Game.MyObjectBuilder_CurveDefinition;
 
-namespace Thermodynamics
-{
-    public class ThermalCell
-    {
+
+namespace Thermodynamics {
+    public class ThermalCell {
         public int Id;
         public long Frame;
 
@@ -38,12 +37,12 @@ namespace Thermodynamics
         public float ThrustEnergyConsumption;
         public float HeatGeneration;
 
-        public float C; // c =  Temp / (watt * meter)
-        public float Mass; // kg
-        public float Area; // m^2
-        public float ExposedSurfaceArea; // m^2 of all exposed faces on this block
+        public float C;// c =  Temp / (watt * meter)
+        public float Mass;// kg
+        public float Area;// m^2
+        public float ExposedSurfaceArea;// m^2 of all exposed faces on this block
         public float Radiation;
-        public float ThermalMassInv; // 1 / SpecificHeat * Mass
+        public float ThermalMassInv;// 1 / SpecificHeat * Mass
         public float Boltzmann;
         public float[] kA;
 
@@ -54,11 +53,11 @@ namespace Thermodynamics
 
         public List<ThermalCell> Neighbors = new List<ThermalCell>();
         public List<int> TouchingSerfacesByNeighbor = new List<int>();
-        
+
         public int ExposedSurfaces = 0;
         private int[] ExposedSurfacesByDirection = new int[6];
         //public List<Vector3I> ExposedSurfaceDirections = new List<Vector3I>();
-
+        private Queue<Action> pendingListenerActions = new Queue<Action>();
         public ThermalCell(ThermalGrid g, IMySlimBlock b)
         {
             Grid = g;
@@ -66,9 +65,7 @@ namespace Thermodynamics
             Id = b.Position.Flatten();
             Definition = ThermalCellDefinition.GetDefinition(Block.BlockDefinition.Id);
 
-            //TODO: the listeners need to handle changes at the end
-            //of the update cycle instead of whenever.
-            SetupListeners();
+            SetupListeners();// listeners now queue changes
 
             Mass = Block.Mass;
             Area = Block.CubeGrid.GridSize * Block.CubeGrid.GridSize;
@@ -78,6 +75,8 @@ namespace Thermodynamics
 
             UpdateHeat();
         }
+        public float PreviousTemperature { get; set; }
+
 
         private void SetupListeners()
         {
@@ -87,102 +86,118 @@ namespace Thermodynamics
             if (fat is IMyThrust)
             {
                 IMyThrust thrust = (fat as IMyThrust);
-                thrust.ThrustChanged += OnThrustChanged;
+                thrust.ThrustChanged += (block, old, current) =>
+                {
+                    pendingListenerActions.Enqueue(() => OnThrustChanged(block, old, current));
+                };
                 OnThrustChanged(thrust, 0, thrust.CurrentThrust);
-
             }
             else
             {
-                fat.Components.ComponentAdded += OnComponentAdded;
-                fat.Components.ComponentRemoved += OnComponentRemoved;
+                fat.Components.ComponentAdded += (type, component) =>
+                {
+                    pendingListenerActions.Enqueue(() => OnComponentAdded(type, component));
+                };
+                fat.Components.ComponentRemoved += (type, component) =>
+                {
+                    pendingListenerActions.Enqueue(() => OnComponentRemoved(type, component));
+                };
 
                 if (fat.Components.Contains(typeof(MyResourceSourceComponent)))
                 {
-                    fat.Components.Get<MyResourceSourceComponent>().OutputChanged += PowerProducedChanged;
+                    fat.Components.Get<MyResourceSourceComponent>().OutputChanged += (resourceType, oldOutput, source) =>
+                    {
+                        pendingListenerActions.Enqueue(() => PowerProducedChanged(resourceType, oldOutput, source));
+                    };
                 }
 
                 if (fat.Components.Contains(typeof(MyResourceSinkComponent)))
                 {
-                    fat.Components.Get<MyResourceSinkComponent>().CurrentInputChanged += PowerConsumedChanged;
+                    fat.Components.Get<MyResourceSinkComponent>().CurrentInputChanged += (resourceType, oldInput, sink) =>
+                    {
+                        pendingListenerActions.Enqueue(() => PowerConsumedChanged(resourceType, oldInput, sink));
+                    };
                 }
             }
 
             if (fat is IMyPistonBase)
             {
-                (fat as IMyPistonBase).AttachedEntityChanged += GridGroupChanged;
+                (fat as IMyPistonBase).AttachedEntityChanged += (block) =>
+                {
+                    pendingListenerActions.Enqueue(() => GridGroupChanged(block));
+                };
             }
             else if (fat is IMyMotorBase)
             {
-                (fat as IMyMotorBase).AttachedEntityChanged += GridGroupChanged;
+                (fat as IMyMotorBase).AttachedEntityChanged += (block) =>
+                {
+                    pendingListenerActions.Enqueue(() => GridGroupChanged(block));
+                };
             }
             else if (fat is IMyDoor)
             {
-                (fat as IMyDoor).DoorStateChanged += (state) => Grid.UpdateBlockMapping(ref Block);
+                (fat as IMyDoor).DoorStateChanged += (state) =>
+                {
+                    pendingListenerActions.Enqueue(() => Grid.UpdateBlockMapping(ref Block));
+                };
             }
             else if (fat is IMyLandingGear)
             {
-                // had to use this crappy method because the better method is broken
-                // KEEN!!! fix your code please!
                 IMyLandingGear gear = (fat as IMyLandingGear);
                 gear.StateChanged += (state) =>
                 {
-                    IMyEntity entity = gear.GetAttachedEntity();
-                    ThermalCell c = Grid.Get(gear.Position);
-
-                    // if the entity is not MyCubeGrid reset landing gear neighbors because we probably detached
-                    if (!(entity is MyCubeGrid))
+                    pendingListenerActions.Enqueue(() =>
                     {
-                        c.AddAllNeighbors();
-                        return;
-                    }
+                        IMyEntity entity = gear.GetAttachedEntity();
+                        ThermalCell c = Grid.Get(gear.Position);
 
-                    // get the search area
-                    MyCubeGrid grid = entity as MyCubeGrid;
-                    ThermalGrid gtherms = grid.GameLogic.GetAs<ThermalGrid>();
-
-                    Vector3D oldMin = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Min.X, gear.Min.Y, gear.Min.Z));
-                    Vector3D oldMax = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Max.X, gear.Max.Y, gear.Min.Z));
-
-                    oldMax += gear.WorldMatrix.Down * (grid.GridSize + 0.2f);
-
-                    Vector3I min = grid.WorldToGridInteger(oldMin);
-                    Vector3I max = grid.WorldToGridInteger(oldMax);
-
-                    //MyLog.Default.Info($"[{Settings.Name}] min {min} max {max}");
-
-                    // look for active cells on the other grid that are inside the search area
-                    Vector3I temp = Vector3I.Zero;
-                    for (int x = min.X; x <= max.X; x++)
-                    {
-                        temp.X = x;
-                        for (int y = min.Y; y <= max.Y; y++)
+                        if (!(entity is MyCubeGrid))
                         {
-                            temp.Y = y;
-                            for (int z = min.Z; z <= max.Z; z++)
-                            {
-                                temp.Z = z;
+                            c.AddAllNeighbors();
+                            return;
+                        }
 
-                                ThermalCell ncell = gtherms.Get(temp);
-                                //MyLog.Default.Info($"[{Settings.Name}] testing {temp} {ncell != null}");
-                                if (ncell != null)
+                        MyCubeGrid grid = entity as MyCubeGrid;
+                        ThermalGrid gtherms = grid.GameLogic.GetAs<ThermalGrid>();
+
+                        Vector3D oldMin = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Min.X, gear.Min.Y, gear.Min.Z));
+                        Vector3D oldMax = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Max.X, gear.Max.Y, gear.Min.Z));
+
+                        oldMax += gear.WorldMatrix.Down * (grid.GridSize + 0.2f);
+
+                        Vector3I min = grid.WorldToGridInteger(oldMin);
+                        Vector3I max = grid.WorldToGridInteger(oldMax);
+
+                        Vector3I temp = Vector3I.Zero;
+                        for (int x = min.X; x <= max.X; x++)
+                        {
+                            temp.X = x;
+                            for (int y = min.Y; y <= max.Y; y++)
+                            {
+                                temp.Y = y;
+                                for (int z = min.Z; z <= max.Z; z++)
                                 {
-                                    c.AddNeighbor(ncell);
+                                    temp.Z = z;
+
+                                    ThermalCell ncell = gtherms.Get(temp);
+                                    if (ncell != null)
+                                    {
+                                        c.AddNeighbor(ncell);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    c.CalculatekA();
-
+                        c.CalculatekA();
+                    });
                 };
             }
         }
-
         private void OnComponentAdded(Type compType, IMyEntityComponentBase component)
         {
             if (compType == typeof(MyResourceSourceComponent))
             {
-                (component as MyResourceSourceComponent).OutputChanged += PowerProducedChanged;
+                ((MyResourceSourceComponent)component).OutputChanged += PowerProducedChanged;
             }
 
             if (compType == typeof(MyResourceSinkComponent))
@@ -252,26 +267,28 @@ namespace Thermodynamics
         {
             try
             {
-                if (resourceTypeId == MyResourceDistributorComponent.ElectricityId)
-                {
-                    EnergyConsumption = sink.CurrentInputByType(resourceTypeId) * Tools.MWtoWatt;
-                    UpdateHeat();
-                }
+                if (resourceTypeId != MyResourceDistributorComponent.ElectricityId) return;
+                EnergyConsumption = sink.CurrentInputByType(resourceTypeId) * Tools.MWtoWatt;
+                UpdateHeat();
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
         }
 
         private void PowerProducedChanged(MyDefinitionId resourceTypeId, float oldOutput, MyResourceSourceComponent source)
         {
             try
             {
-                if (resourceTypeId == MyResourceDistributorComponent.ElectricityId)
-                {
-                    EnergyProduction = source.CurrentOutputByType(resourceTypeId) * Tools.MWtoWatt;
-                    UpdateHeat();
-                }
+                if (resourceTypeId != MyResourceDistributorComponent.ElectricityId) return;
+                EnergyProduction = source.CurrentOutputByType(resourceTypeId) * Tools.MWtoWatt;
+                UpdateHeat();
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
         }
 
         public void ClearNeighbors()
@@ -280,12 +297,10 @@ namespace Thermodynamics
             {
                 ThermalCell ncell = Neighbors[i];
                 int j = ncell.Neighbors.IndexOf(this);
-                if (j != -1)
-                {
-                    ncell.Neighbors.RemoveAt(j);
-                    ncell.TouchingSerfacesByNeighbor.RemoveAt(j);
-                    ncell.CalculatekA();
-                }
+                if (j == -1) continue;
+                ncell.Neighbors.RemoveAt(j);
+                ncell.TouchingSerfacesByNeighbor.RemoveAt(j);
+                ncell.CalculatekA();
             }
 
             Neighbors.Clear();
@@ -296,13 +311,13 @@ namespace Thermodynamics
         public void AddAllNeighbors()
         {
             ClearNeighbors();
-            //get a list of current neighbors from the grid
             List<IMySlimBlock> neighbors = new List<IMySlimBlock>();
             Block.GetNeighbours(neighbors);
 
             for (int i = 0; i < neighbors.Count; i++)
             {
                 IMySlimBlock n = neighbors[i];
+                if (!Contains(n.Position)) continue;// Use Contains for boundary check
                 ThermalCell ncell = Grid.Get(n.Position);
                 AddNeighbor(ncell);
             }
@@ -366,19 +381,17 @@ namespace Thermodynamics
                     }
 
                     BoundingBox neighborBox = new BoundingBox(Vector3.Min(b.Start, b.End), Vector3.Max(b.Start, b.End));
-                    
-                    if (mainBox.Intersects(neighborBox)) 
-                    {
-                        BoundingBox box = mainBox.Intersect(neighborBox);
 
-                        Vector3I va = new Vector3I((int)Math.Round(box.Max.X - box.Min.X), (int)Math.Round(box.Max.Y - box.Min.Y), (int)Math.Round(box.Max.Z - box.Min.Z));
+                    if (!mainBox.Intersects(neighborBox)) continue;
+                    BoundingBox box = mainBox.Intersect(neighborBox);
 
-                        int area = (va.X == 0) ? 1 : va.X;
-                        area *= (va.Y == 0) ? 1 : va.Y;
-                        area *= (va.Z == 0) ? 1 : va.Z;
+                    Vector3I va = new Vector3I((int)Math.Round(box.Max.X - box.Min.X), (int)Math.Round(box.Max.Y - box.Min.Y), (int)Math.Round(box.Max.Z - box.Min.Z));
 
-                        totalArea += area;
-                    }
+                    int area = (va.X == 0) ? 1 : va.X;
+                    area *= (va.Y == 0) ? 1 : va.Y;
+                    area *= (va.Z == 0) ? 1 : va.Z;
+
+                    totalArea += area;
                 }
             }
 
@@ -406,12 +419,10 @@ namespace Thermodynamics
             }
 
             int j = n2.Neighbors.IndexOf(this);
-            if (i != -1)
-            {
-                n2.Neighbors.RemoveAt(j);
-                n2.TouchingSerfacesByNeighbor.RemoveAt(j);
-                n2.CalculatekA();
-            }
+            if (i == -1) return;
+            n2.Neighbors.RemoveAt(j);
+            n2.TouchingSerfacesByNeighbor.RemoveAt(j);
+            n2.CalculatekA();
         }
 
         public float GetTemperature()
@@ -435,20 +446,35 @@ namespace Thermodynamics
         /// </summary>
         internal void Update()
         {
-            // TODO: wind/liquid convective cooling
-            //float viscosity = 
-            //float windIntensity = DirectionalRadiationIntensity(ref Grid.FrameWindDirection, ref Grid.WindNode);
-            //float v = Grid.FrameWindDirection.Length();
-            //float hc = 10.45f - v + 10f * (float)Math.Sqrt(v);
+            try
+            {
+                // Process any pending listener actions
+                while(pendingListenerActions.Count > 0)
+                {
+                    try
+                    {
+                        Action action = pendingListenerActions.Dequeue();
+                        action.Invoke();
+                    }
+                    catch (Exception ex)
+                    {
+                        MyLog.Default.Error($"Error processing thermal listener action: {ex}");
+                    }
+                }
 
-            UpdateFrameAndLastTemperature();
-            float totalRadiation = CalculateTotalRadiation();
-            float deltaTemperature = CalculateDeltaTemperature();
-            ApplyTemperatureChanges(totalRadiation, deltaTemperature);
-            UpdateHeatGeneration();
-            ApplyHeatGeneration();
-            HandleCriticalTemperature();
-            UpdateDebugVisuals();
+                UpdateFrameAndLastTemperature();
+                float totalRadiation = CalculateTotalRadiation();
+                float deltaTemperature = CalculateDeltaTemperature();
+                ApplyTemperatureChanges(totalRadiation, deltaTemperature);
+                UpdateHeatGeneration();
+                ApplyHeatGeneration();
+                HandleCriticalTemperature();
+                UpdateDebugVisuals();
+            }
+            catch (Exception ex)
+            {
+                MyLog.Default.Error($"Error in thermal cell update: {ex}");
+            }
         }
 
         private void UpdateFrameAndLastTemperature()
@@ -462,11 +488,9 @@ namespace Thermodynamics
             float temperatureSquared = Temperature * Temperature;
             float totalRadiation = Boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
 
-            if (Settings.Instance.EnableSolarHeat && !Grid.FrameSolarOccluded)
-            {
-                float intensity = DirectionalRadiationIntensity(ref Grid.FrameSolarDirection, ref Grid.SolarRadiationNode);
-                totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
-            }
+            if (!Settings.Instance.EnableSolarHeat || Grid.FrameSolarOccluded) return totalRadiation;
+            float intensity = DirectionalRadiationIntensity(ref Grid.FrameSolarDirection, ref Grid.SolarRadiationNode);
+            totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
 
             return totalRadiation;
         }
@@ -511,13 +535,11 @@ namespace Thermodynamics
 
         private void UpdateDebugVisuals()
         {
-            if (Settings.DebugBlockColors && MyAPIGateway.Session.IsServer)
+            if (!Settings.DebugBlockColors || !MyAPIGateway.Session.IsServer) return;
+            Vector3 color = Tools.GetTemperatureColor(Temperature);
+            if (Block.ColorMaskHSV != color)
             {
-                Vector3 color = Tools.GetTemperatureColor(Temperature);
-                if (Block.ColorMaskHSV != color)
-                {
-                    Block.CubeGrid.ColorBlocks(Block.Min, Block.Max, color);
-                }
+                Block.CubeGrid.ColorBlocks(Block.Min, Block.Max, color);
             }
         }
 
@@ -529,42 +551,192 @@ namespace Thermodynamics
             ExposedSurfacesByDirection = new int[6];
         }
 
+        private Dictionary<Vector3I, float> internalRoomTemperatures = new Dictionary<Vector3I, float>();
+        private Dictionary<Vector3I, RoomData> internalRooms = new Dictionary<Vector3I, RoomData>();
+        private const float ROOM_TEMPERATURE_EXCHANGE_RATE = 0.1f;
+        private const float ROOM_HEAT_CAPACITY = 1005f;// Approximate heat capacity of air (J/kg·K)
+        private const float ROOM_AIR_DENSITY = 1.225f;// Approximate density of air at room temperature (kg/m³)
+
+        private struct RoomData {
+            public float Temperature;
+            public float Volume;
+            public float ThermalMass;
+            public HashSet<Vector3I> Nodes;
+
+            public RoomData(float temp, float vol, HashSet<Vector3I> nodes)
+            {
+                Temperature = temp;
+                Volume = vol;
+                Nodes = nodes;
+                ThermalMass = ROOM_HEAT_CAPACITY * ROOM_AIR_DENSITY * Volume;
+            }
+        }
+
+        private void HandleInternalRooms(Vector3I nodeNei)
+        {
+            if (!internalRooms.ContainsKey(nodeNei))
+            {
+                // Find all connected internal nodes and create a new room
+                HashSet<Vector3I> roomNodes = new HashSet<Vector3I>();
+                FindConnectedInternalNodes(nodeNei, roomNodes);
+
+                float roomVolume = roomNodes.Count * Block.CubeGrid.GridSize * Block.CubeGrid.GridSize * Block.CubeGrid.GridSize;
+                float averageTemp = CalculateRoomAverageTemperature(roomNodes);
+
+                internalRooms[nodeNei] = new RoomData(averageTemp, roomVolume, roomNodes);
+            }
+
+            RoomData roomData = internalRooms[nodeNei];
+
+            // Calculate heat exchange
+            float surfaceArea = Block.CubeGrid.GridSize * Block.CubeGrid.GridSize;// Area of one face
+            float heatTransferCoefficient = 5.0f;// Approximate value for natural convection
+
+            float heatTransferred = heatTransferCoefficient * surfaceArea * (Temperature - roomData.Temperature) * Settings.Instance.TimeScaleRatio;
+
+            // Update block temperature
+            float blockTemperatureChange = heatTransferred / (Definition.SpecificHeat * Mass);
+            Temperature -= blockTemperatureChange;
+
+            // Update room temperature
+            float roomTemperatureChange = heatTransferred / roomData.ThermalMass;
+            roomData.Temperature += roomTemperatureChange;
+
+            // Update the room data in the dictionary
+            internalRooms[nodeNei] = roomData;
+
+            // Periodically equalize temperatures between connected rooms
+            if (Grid.SimulationFrame % 60 == 0)// Adjust frequency as needed
+            {
+                EqualizeConnectedRooms(nodeNei);
+            }
+        }
+        private void EqualizeConnectedRooms(Vector3I node)
+        {
+            RoomData currentRoom;
+            if (!internalRooms.TryGetValue(node, out currentRoom)) return;
+
+            HashSet<Vector3I> checkedNodes = new HashSet<Vector3I>();
+            Queue<Vector3I> toCheck = new Queue<Vector3I>();
+            toCheck.Enqueue(node);
+
+            while(toCheck.Count > 0)
+            {
+                Vector3I currentNode = toCheck.Dequeue();
+                if (!checkedNodes.Add(currentNode)) continue;
+
+                foreach (Vector3I direction in Base6Directions.IntDirections)
+                {
+                    Vector3I neighborNode = currentNode + direction;
+                    RoomData neighborRoom;
+                    if (!internalRooms.TryGetValue(neighborNode, out neighborRoom)) continue;
+
+                    if (currentRoom.Temperature != neighborRoom.Temperature)
+                    {
+                        // Calculate equalized temperature based on thermal masses
+                        float totalThermalMass = currentRoom.ThermalMass + neighborRoom.ThermalMass;
+                        float equalizedTemp = (currentRoom.Temperature * currentRoom.ThermalMass +
+                                               neighborRoom.Temperature * neighborRoom.ThermalMass) /
+                                              totalThermalMass;
+
+                        // Update temperatures
+                        currentRoom.Temperature = equalizedTemp;
+                        neighborRoom.Temperature = equalizedTemp;
+
+                        internalRooms[node] = currentRoom;
+                        internalRooms[neighborNode] = neighborRoom;
+                    }
+
+                    toCheck.Enqueue(neighborNode);
+                }
+            }
+        }
+        private void FindConnectedInternalNodes(Vector3I start, HashSet<Vector3I> roomNodes)
+        {
+            Queue<Vector3I> queue = new Queue<Vector3I>();
+            queue.Enqueue(start);
+
+            while(queue.Count > 0)
+            {
+                Vector3I current = queue.Dequeue();
+                if (!roomNodes.Add(current)) continue;
+
+                foreach (Vector3I direction in Base6Directions.IntDirections)
+                {
+                    Vector3I neighbor = current + direction;
+                    if (Grid.Grid.CubeExists(neighbor) || Contains(neighbor)) continue;
+                    if (Grid.ExteriorNodes.Contains(neighbor)) continue;// Skip if it's an exterior node
+
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+
+        private float CalculateRoomAverageTemperature(HashSet<Vector3I> roomNodes)
+        {
+            float totalTemp = 0;
+            int contributingBlocks = 0;
+
+            foreach (Vector3I node in roomNodes)
+            {
+                foreach (Vector3I direction in Base6Directions.IntDirections)
+                {
+                    Vector3I blockPos = node + direction;
+                    if (Contains(blockPos)) continue;
+                    ThermalCell cell = Grid.Get(blockPos);
+                    if (cell == null) continue;
+                    totalTemp += cell.Temperature;
+                    contributingBlocks++;
+                }
+            }
+
+            return contributingBlocks > 0 ? totalTemp / contributingBlocks : Grid.FrameAmbientTemprature;
+        }
+
         public void UpdateSurfaces(ref HashSet<Vector3I> exterior, ref Dictionary<Vector3I, int> nodeSurfaces)
         {
-            //MyLog.Default.Info($"[Thermals] Update Surfaces");
             ResetExposedSurfaces();
 
             Vector3I min = Block.Min;
-            Vector3I max = Block.Max + 1;
-            Vector3I[] neighbors = Base6Directions.IntDirections;
-            MyCubeGrid grid = Grid.Grid;
+            Vector3I size = Block.Max - min + Vector3I.One;
+            int xMask = (1 << size.X) - 1;
+            int yMask = (1 << size.Y) - 1;
+            int zMask = (1 << size.Z) - 1;
 
+            // Pre-shift masks to match block position
+            int xShiftedMask = xMask << min.X;
+            int yShiftedMask = yMask << min.Y;
+            int zShiftedMask = zMask << min.Z;
 
-            for (int x = min.X; x < max.X; x++)
+            for (int x = min.X; x < Block.Max.X + 1; x++)
             {
-                for (int y = min.Y; y < max.Y; y++)
+                if ((1 << x & xShiftedMask) == 0) continue;
+
+                for (int y = min.Y; y < Block.Max.Y + 1; y++)
                 {
-                    for (int z = min.Z; z < max.Z; z++)
+                    if ((1 << y & yShiftedMask) == 0) continue;
+
+                    for (int z = min.Z; z < Block.Max.Z + 1; z++)
                     {
+                        if ((1 << z & zShiftedMask) == 0) continue;
+
                         Vector3I node = new Vector3I(x, y, z);
-                        int n = nodeSurfaces[node];
+                        int surfaceBits = nodeSurfaces[node];
 
-                        for (int i = 0; i < neighbors.Length; i++) 
+                        for (int i = 0; i < 6; i++)
                         {
-                            Vector3I nodeNei = node + neighbors[i];
+                            if ((surfaceBits & (1 << i)) != 0) continue;
 
-                            // neghboring node is not airtight
-                            if ((n & 1 << i) == 0)
+                            Vector3I nodeNei = node + Base6Directions.IntDirections[i];
+
+                            if (exterior.Contains(nodeNei))
                             {
-                                if (exterior.Contains(nodeNei))
-                                {
-                                    ExposedSurfaces++;
-                                    ExposedSurfacesByDirection[i]++;
-                                }
-                                else
-                                {
-                                    //TODO: handle internal rooms
-                                }
+                                ExposedSurfaces++;
+                                ExposedSurfacesByDirection[i]++;
+                            }
+                            else
+                            {
+                                HandleInternalRooms(nodeNei);
                             }
                         }
                     }
@@ -572,17 +744,17 @@ namespace Thermodynamics
             }
 
             UpdateExposedSurfaceArea();
-            //MyLog.Default.Info($"[Thermals] Exposed Surfaces: {ExposedSurfaces}");
         }
 
 
-        public bool Contains(Vector3I n) 
+        public bool Contains(Vector3I n)
         {
-            Vector3I min = Block.Min;
-            Vector3I max = Block.Max + 1;
+            Vector3I relativePos = n - Block.Min;
+            Vector3I size = Block.Max - Block.Min + Vector3I.One;
 
-            return n.X >= min.X && n.Y >= min.Y && n.Z >= min.Z &&
-                   n.X < max.X && n.Y < max.Y && n.Z < max.Z;
+            return (relativePos.X & ~(size.X - 1)) == 0 &&
+                   (relativePos.Y & ~(size.Y - 1)) == 0 &&
+                   (relativePos.Z & ~(size.Z - 1)) == 0;
         }
 
 
@@ -598,7 +770,7 @@ namespace Thermodynamics
             MatrixD matrix = Grid.FrameMatrix;
             bool isCube = (Block.Max - Block.Min).Volume() <= 1;
 
-            for (int i = 0; i < ExposedSurfacesByDirection.Length; i++) 
+            for (int i = 0; i < ExposedSurfacesByDirection.Length; i++)
             {
                 intensity += CalculateDirectionIntensity(i, ExposedSurfacesByDirection[i], ref targetDirection, ref node, matrix, isCube);
             }
@@ -616,7 +788,7 @@ namespace Thermodynamics
 
             if (isCube)
             {
-                node.Sides[directionIndex] += dot*surfaceCount;
+                node.Sides[directionIndex] += dot * surfaceCount;
                 node.SideSurfaces[directionIndex] += surfaceCount;
                 return dot;
             }

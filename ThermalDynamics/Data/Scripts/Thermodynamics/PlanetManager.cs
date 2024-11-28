@@ -27,12 +27,10 @@ namespace Thermodynamics
             private PlanetDefinition definition = NullDef;
             public PlanetDefinition Definition() 
             {
-                if (definition == NullDef && Entity.DefinitionId.HasValue) 
-                {
-                    definition = PlanetDefinition.GetDefinition(Entity.DefinitionId.Value);
+                if (definition != NullDef || !Entity.DefinitionId.HasValue) return definition;
+                definition = PlanetDefinition.GetDefinition(Entity.DefinitionId.Value);
 
-                    MyLog.Default.Info($"[{Settings.Name}] updated planet definition: {Entity.DisplayName}");
-                }
+                MyLog.Default.Info($"[{Settings.Name}] updated planet definition: {Entity.DisplayName}");
 
                 return definition;
             }
@@ -56,18 +54,16 @@ namespace Thermodynamics
 
         private void AddPlanet(IMyEntity ent)
         {
-            if (ent is MyPlanet)
-            {
-                MyPlanet entity = ent as MyPlanet;
+            if (!(ent is MyPlanet)) return;
+            MyPlanet entity = (MyPlanet)ent;
 
-                //MyLog.Default.Info($"[{Settings.Name}] Added Planet: {entity.DisplayName} - {entity.DefinitionId.HasValue}");
-                Planets.Add(new Planet()
-                {
-                    Entity = entity,
-                    Position = entity.PositionComp.WorldMatrixRef.Translation,
-                    GravityComponent = entity.Components.Get<MyGravityProviderComponent>(),
-                });
-            }
+            //MyLog.Default.Info($"[{Settings.Name}] Added Planet: {entity.DisplayName} - {entity.DefinitionId.HasValue}");
+            Planets.Add(new Planet()
+            {
+                Entity = entity,
+                Position = entity.PositionComp.WorldMatrixRef.Translation,
+                GravityComponent = entity.Components.Get<MyGravityProviderComponent>(),
+            });
         }
 
         private void RemovePlanet(IMyEntity ent)
@@ -77,7 +73,7 @@ namespace Thermodynamics
 
 
         /// <summary>
-        /// returns the gravity force vetor being applied at a location
+        /// returns the gravity force vector being applied at a location
         /// also returns total air pressure at that location
         /// </summary>
         public static ExternalForceData GetExternalForces(Vector3D worldPosition)
@@ -91,18 +87,14 @@ namespace Thermodynamics
                 data.Gravity += p.GravityComponent.GetWorldGravity(worldPosition);
 
                 double d = (p.Position - worldPosition).LengthSquared();
-                if (d < distance)
-                {
-                    planet = p;
-                    distance = d;
-                }
+                if (!(d < distance)) continue;
+                planet = p;
+                distance = d;
             }
 
-            if (planet?.Entity.HasAtmosphere == true)
-            {
-                data.AtmosphericPressure = planet.Entity.GetAirDensity(worldPosition);
-                data.WindSpeed = planet.Entity.GetWindSpeed(worldPosition);
-            }
+            if (planet?.Entity.HasAtmosphere != true) return data;
+            data.AtmosphericPressure = planet.Entity.GetAirDensity(worldPosition);
+            data.WindSpeed = planet.Entity.GetWindSpeed(worldPosition);
 
             return data;
         }
@@ -120,11 +112,9 @@ namespace Thermodynamics
             {
                 Planet p = Planets[i];
                 double d = (p.Position - position).LengthSquared();
-                if (d < distance) 
-                {
-                    current = p;
-                    distance = d;
-                }
+                if (!(d < distance)) continue;
+                current = p;
+                distance = d;
             }
 
             return current;
