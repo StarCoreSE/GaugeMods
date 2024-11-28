@@ -708,22 +708,28 @@ namespace Thermodynamics {
 
         public void UpdateSurfaces(ref HashSet<Vector3I> exterior, ref Dictionary<Vector3I, int> nodeSurfaces)
         {
-            ResetExposedSurfaces();
+            // Reset exposed surfaces using bitwise operation
+            ExposedSurfaces = 0;
 
             Vector3I min = Block.Min;
             Vector3I size = Block.Max - min + Vector3I.One;
+
+            // Create masks for each dimension
             int xMask = (1 << size.X) - 1;
             int yMask = (1 << size.Y) - 1;
             int zMask = (1 << size.Z) - 1;
 
-            // Pre-shift masks to match block position
+            // Pre-shift masks 
             int xShiftedMask = xMask << min.X;
             int yShiftedMask = yMask << min.Y;
             int zShiftedMask = zMask << min.Z;
 
-            for (int x = min.X; x < Block.Max.X + 1; x++)
+            // Use parallel processing 
+            Dictionary<Vector3I, int> ints = nodeSurfaces;
+            HashSet<Vector3I> @is = exterior;
+            MyAPIGateway.Parallel.For(min.X, Block.Max.X + 1, x =>
             {
-                if ((1 << x & xShiftedMask) == 0) continue;
+                if ((1 << x & xShiftedMask) == 0) return;
 
                 for (int y = min.Y; y < Block.Max.Y + 1; y++)
                 {
@@ -734,18 +740,18 @@ namespace Thermodynamics {
                         if ((1 << z & zShiftedMask) == 0) continue;
 
                         Vector3I node = new Vector3I(x, y, z);
-                        int surfaceBits = nodeSurfaces[node];
+                        int surfaceBits = ints[node];
 
+                        // Check each direction 
                         for (int i = 0; i < 6; i++)
                         {
                             if ((surfaceBits & (1 << i)) != 0) continue;
 
                             Vector3I nodeNei = node + Base6Directions.IntDirections[i];
 
-                            if (exterior.Contains(nodeNei))
+                            if (@is.Contains(nodeNei))
                             {
                                 ExposedSurfaces++;
-                                ExposedSurfacesByDirection[i]++;
                             }
                             else
                             {
@@ -754,7 +760,7 @@ namespace Thermodynamics {
                         }
                     }
                 }
-            }
+            });
 
             UpdateExposedSurfaceArea();
         }
@@ -765,9 +771,9 @@ namespace Thermodynamics {
             Vector3I relativePos = n - Block.Min;
             Vector3I size = Block.Max - Block.Min + Vector3I.One;
 
-            return (relativePos.X & ~(size.X - 1)) == 0 &&
-                   (relativePos.Y & ~(size.Y - 1)) == 0 &&
-                   (relativePos.Z & ~(size.Z - 1)) == 0;
+            return ((relativePos.X & ~(size.X - 1)) |
+                    (relativePos.Y & ~(size.Y - 1)) |
+                    (relativePos.Z & ~(size.Z - 1))) == 0;
         }
 
 
