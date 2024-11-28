@@ -83,6 +83,7 @@ namespace Thermodynamics {
             if (Block.FatBlock == null) return;
 
             IMyCubeBlock fat = Block.FatBlock;
+
             if (fat is IMyThrust)
             {
                 IMyThrust thrust = (fat as IMyThrust);
@@ -120,79 +121,91 @@ namespace Thermodynamics {
                 }
             }
 
-            if (fat is IMyPistonBase)
+            IMyPistonBase pistonBase = fat as IMyPistonBase;
+            if (pistonBase != null)
             {
-                (fat as IMyPistonBase).AttachedEntityChanged += (block) =>
-                {
-                    pendingListenerActions.Enqueue(() => GridGroupChanged(block));
-                };
+                pistonBase.AttachedEntityChanged += HandleAttachedEntityChanged;
             }
-            else if (fat is IMyMotorBase)
+            else
             {
-                (fat as IMyMotorBase).AttachedEntityChanged += (block) =>
+                IMyMotorBase motorBase = fat as IMyMotorBase;
+                if (motorBase != null)
                 {
-                    pendingListenerActions.Enqueue(() => GridGroupChanged(block));
-                };
-            }
-            else if (fat is IMyDoor)
-            {
-                (fat as IMyDoor).DoorStateChanged += (state) =>
+                    motorBase.AttachedEntityChanged += HandleAttachedEntityChanged;
+                }
+                else
                 {
-                    pendingListenerActions.Enqueue(() => Grid.UpdateBlockMapping(ref Block));
-                };
-            }
-            else if (fat is IMyLandingGear)
-            {
-                IMyLandingGear gear = (fat as IMyLandingGear);
-                gear.StateChanged += (state) =>
-                {
-                    pendingListenerActions.Enqueue(() =>
+                    IMyDoor door = fat as IMyDoor;
+                    if (door != null)
                     {
-                        IMyEntity entity = gear.GetAttachedEntity();
-                        ThermalCell c = Grid.Get(gear.Position);
-
-                        if (!(entity is MyCubeGrid))
+                        door.DoorStateChanged += (state) =>
                         {
-                            c.AddAllNeighbors();
-                            return;
-                        }
-
-                        MyCubeGrid grid = entity as MyCubeGrid;
-                        ThermalGrid gtherms = grid.GameLogic.GetAs<ThermalGrid>();
-
-                        Vector3D oldMin = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Min.X, gear.Min.Y, gear.Min.Z));
-                        Vector3D oldMax = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Max.X, gear.Max.Y, gear.Min.Z));
-
-                        oldMax += gear.WorldMatrix.Down * (grid.GridSize + 0.2f);
-
-                        Vector3I min = grid.WorldToGridInteger(oldMin);
-                        Vector3I max = grid.WorldToGridInteger(oldMax);
-
-                        Vector3I temp = Vector3I.Zero;
-                        for (int x = min.X; x <= max.X; x++)
+                            pendingListenerActions.Enqueue(() => Grid.UpdateBlockMapping(ref Block));
+                        };
+                    }
+                    else
+                    {
+                        IMyLandingGear gear = fat as IMyLandingGear;
+                        if (gear != null)
                         {
-                            temp.X = x;
-                            for (int y = min.Y; y <= max.Y; y++)
+                            gear.StateChanged += (state) =>
                             {
-                                temp.Y = y;
-                                for (int z = min.Z; z <= max.Z; z++)
+                                pendingListenerActions.Enqueue(() =>
                                 {
-                                    temp.Z = z;
+                                    IMyEntity entity = gear.GetAttachedEntity();
+                                    ThermalCell c = Grid.Get(gear.Position);
 
-                                    ThermalCell ncell = gtherms.Get(temp);
-                                    if (ncell != null)
+                                    if (!(entity is MyCubeGrid))
                                     {
-                                        c.AddNeighbor(ncell);
+                                        c.AddAllNeighbors();
+                                        return;
                                     }
-                                }
-                            }
-                        }
 
-                        c.CalculatekA();
-                    });
-                };
+                                    MyCubeGrid grid = entity as MyCubeGrid;
+                                    ThermalGrid gtherms = grid.GameLogic.GetAs<ThermalGrid>();
+
+                                    Vector3D oldMin = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Min.X, gear.Min.Y, gear.Min.Z));
+                                    Vector3D oldMax = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Max.X, gear.Max.Y, gear.Min.Z));
+
+                                    oldMax += gear.WorldMatrix.Down * (grid.GridSize + 0.2f);
+
+                                    Vector3I min = grid.WorldToGridInteger(oldMin);
+                                    Vector3I max = grid.WorldToGridInteger(oldMax);
+
+                                    Vector3I temp = Vector3I.Zero;
+                                    for (int x = min.X; x <= max.X; x++)
+                                    {
+                                        temp.X = x;
+                                        for (int y = min.Y; y <= max.Y; y++)
+                                        {
+                                            temp.Y = y;
+                                            for (int z = min.Z; z <= max.Z; z++)
+                                            {
+                                                temp.Z = z;
+
+                                                ThermalCell ncell = gtherms.Get(temp);
+                                                if (ncell != null)
+                                                {
+                                                    c.AddNeighbor(ncell);
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    c.CalculatekA();
+                                });
+                            };
+                        }
+                    }
+                }
             }
         }
+
+        private void HandleAttachedEntityChanged(IMyMechanicalConnectionBlock block)
+        {
+            pendingListenerActions.Enqueue(() => GridGroupChanged(block));
+        }
+
         private void OnComponentAdded(Type compType, IMyEntityComponentBase component)
         {
             if (compType == typeof(MyResourceSourceComponent))
