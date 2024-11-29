@@ -35,7 +35,7 @@
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
 					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Decimal Name="SpecificHeat" Value="50" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0.1" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0.01" />
@@ -44,8 +44,147 @@
 				</Group>
 			</ModExtensions>
 		</Definition>
-
+		
 		<!-- Conveyer / Thermal Transfer -->
+
+		<Definition>
+			<Id>
+				<TypeId>CubeBlock</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Corner</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Decimal Name="Conductivity" Value="1500" />
+					<Decimal Name="SpecificHeat" Value="50" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+		<Definition>
+			<Id>
+				<TypeId>CubeBlock</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Corner</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Decimal Name="Conductivity" Value="1500" />
+					<Decimal Name="SpecificHeat" Value="50" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		
+		<Definition>
+			<Id>
+				<TypeId>CubeBlock</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Corner_DoubleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Decimal Name="Conductivity" Value="1500" />
+					<Decimal Name="SpecificHeat" Value="50" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlock</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Corner_SingleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Decimal Name="Conductivity" Value="1500" />
+					<Decimal Name="SpecificHeat" Value="50" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlock</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Straight</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Decimal Name="Conductivity" Value="1500" />
+					<Decimal Name="SpecificHeat" Value="50" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlock</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Straight_DoubleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Decimal Name="Conductivity" Value="1500" />
+					<Decimal Name="SpecificHeat" Value="50" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlock</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Straight_Sink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Decimal Name="Conductivity" Value="1500" />
+					<Decimal Name="SpecificHeat" Value="50" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>UpgradeModule</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPump</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Decimal Name="Conductivity" Value="1500" />
+					<Decimal Name="SpecificHeat" Value="50" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
 		
 		<Definition>
 			<Id>

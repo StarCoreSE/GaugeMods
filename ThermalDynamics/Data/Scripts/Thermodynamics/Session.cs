@@ -5,9 +5,11 @@ using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.EntityComponents;
 using Sandbox.Game.SessionComponents;
 using Sandbox.ModAPI;
+using SENetworkAPI;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
@@ -21,6 +23,7 @@ namespace Thermodynamics
 	public class Session : MySessionComponentBase
 	{
 
+        public const ushort ModID = 30323;
         public static DefinitionExtensionsAPI Definitions;
         public Session()
         {
@@ -31,6 +34,12 @@ namespace Thermodynamics
         private void Done()
         {
             MyLog.Default.Info($"[{Settings.Name}] Definition Extention API - Done");
+        }
+
+        public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
+        {
+            NetworkAPI.Init(ModID, Settings.Name);
+            NetworkAPI.LogNetworkTraffic = true;
         }
 
         protected override void UnloadData()
@@ -125,9 +134,18 @@ namespace Thermodynamics
                     $"CrawlDone: {g.ThermalCellUpdateComplete} " +
                     $"sbn: {string.Join(", ", c.TouchingSerfacesByNeighbor)}", 1, "White");
 
-                MyAPIGateway.Utilities.ShowNotification(
-                    $"[Cell] Airtight out: {((value & 1 << 0) != 0 ? 1:0)}, {((value & 1 << 1) != 0 ? 1:0)}, {((value & 1 << 2) != 0?1:0)}, {((value & 1 << 3) != 0?1:0)}, {((value & 1 << 4) != 0?1:0)}, {((value & 1 << 5) != 0 ? 1 : 0)}, " +
-                    $"in: {((value & 1 << 6) != 0?1:0)}, {((value & 1 << 7) != 0 ? 1 : 0)}, {((value & 1 << 8) != 0 ? 1 : 0)}, {((value & 1 << 9) != 0 ? 1 : 0)}, {((value & 1 << 10) != 0?1:0)}, {((value & 1 << 11) != 0?1:0)}", 1, "White");
+
+                if (g.Pumps.Count > 0)
+                {
+                    MyAPIGateway.Utilities.ShowNotification(
+                        $"[Grid] Coolant Loop: {g.Pumps[0].LoopTemp.ToString("n4")}, area: {g.Pumps[0].area}", 1, "White");
+                }
+                
+
+
+                //MyAPIGateway.Utilities.ShowNotification(
+                //    $"[Cell] Airtight out: {((value & 1 << 0) != 0 ? 1:0)}, {((value & 1 << 1) != 0 ? 1:0)}, {((value & 1 << 2) != 0?1:0)}, {((value & 1 << 3) != 0?1:0)}, {((value & 1 << 4) != 0?1:0)}, {((value & 1 << 5) != 0 ? 1 : 0)}, " +
+                //    $"in: {((value & 1 << 6) != 0?1:0)}, {((value & 1 << 7) != 0 ? 1 : 0)}, {((value & 1 << 8) != 0 ? 1 : 0)}, {((value & 1 << 9) != 0 ? 1 : 0)}, {((value & 1 << 10) != 0?1:0)}, {((value & 1 << 11) != 0?1:0)}", 1, "White");
 
 
             }
@@ -135,7 +153,7 @@ namespace Thermodynamics
 
         public override void Draw()
 		{
-            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+            if (Settings.DebugTextureColors && !MyAPIGateway.Utilities.IsDedicated)
             {
                 //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
                 MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;

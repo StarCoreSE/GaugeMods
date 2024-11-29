@@ -16,7 +16,8 @@ namespace Thermodynamics
 		public const string Filename = "ThermodynamicsConfig.cfg";
 		public const string Name = "Thermodynamics";
 		public const bool Debug = true;
-		public const bool DebugBlockColors = false;
+		public const bool DebugBlockColors = true;
+		public const bool DebugTextureColors = false;
 
 		public static Settings Instance;
 
@@ -75,8 +76,8 @@ namespace Thermodynamics
 				Version = 1,
 				EnableSolarHeat = false,
 				EnableDamage = true,
-				Frequency = 60,
-				SimulationSpeed = 1,
+				Frequency = 1,
+				SimulationSpeed = 10,
                 SolarEnergy = 1000f, 
 				EnvironmentalRaycastDistance = 5000f,
 				VaccumeRadiationStrength = 0.05f,

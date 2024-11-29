@@ -6,8 +6,8 @@
 				<TypeId>CubeBlock</TypeId>
 				<SubtypeId>Gauge_LG_CoolantPipe_Straight_Sink</SubtypeId>
 			</Id>
-			<DisplayName>{LOC:DisplayName_Gauge_LG_CoolantPipe_Straight_Sink}</DisplayName>
-			<Description>{LOC:Description_Gauge_LG_CoolantPipe_Straight_Sink}</Description>
+			<DisplayName>Coolant Pipe Single</DisplayName>
+			<Description>A pipe containing coolant liquid. When connected in a loop to a Heat Pump, the liquid will circulate spreading heat quickly to different areas.</Description>
 			<Icon>Textures\GUI\Icons\Gauge\LG_CoolantPipeStraight_OneSink.dds</Icon>
 			<CubeSize>Large</CubeSize>
 			<BlockTopology>TriangleMesh</BlockTopology>

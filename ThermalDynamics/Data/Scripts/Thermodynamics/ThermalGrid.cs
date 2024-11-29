@@ -42,6 +42,8 @@ namespace Thermodynamics
         public ThermalRadiationNode SolarRadiationNode = new ThermalRadiationNode();
         public ThermalRadiationNode WindNode = new ThermalRadiationNode();
 
+        public List<CoolantPump> Pumps = new List<CoolantPump>();
+
         /// <summary>
         /// current frame per second
         /// </summary>
@@ -310,7 +312,6 @@ namespace Thermodynamics
             SimulationQuota = GetSimulationQuota();
         }
 
-
         public override void UpdateBeforeSimulation()
         {
 
@@ -346,6 +347,12 @@ namespace Thermodynamics
                 // prepare for the next simulation after a full iteration
                 if (SimulationIndex == cellCount || SimulationIndex == -1)
                 {
+                    // TODO: this is a temperary coolant flow setup it needs to be integrated into the frame quota somehow
+                    foreach (CoolantPump pump in Pumps) 
+                    {
+                        pump.Simulate();
+                    }
+
                     if (!ThermalCellUpdateComplete)
                         ThermalCellUpdateComplete = true;
 
@@ -359,8 +366,6 @@ namespace Thermodynamics
                     Direction *= -1;
                     // make sure the end cells in the list go once per frame
                     SimulationIndex += Direction;
-
-
                 }
 
 

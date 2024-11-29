@@ -14,13 +14,7 @@ using VRage.ModAPI;
 using Sandbox.Game.Entities;
 using Sandbox.Game;
 using VRage.ObjectBuilders;
-using System.IO.Compression;
 using VRage.Game.Components.Interfaces;
-using System.Drawing;
-using System.Security.AccessControl;
-using System.Net;
-using VRageRender.Messages;
-using static VRage.Game.MyObjectBuilder_CurveDefinition;
 
 namespace Thermodynamics
 {
@@ -418,6 +412,7 @@ namespace Thermodynamics
         {
             return Temperature;
         }
+        
         private void UpdateHeat()
         {
             // power produced and consumed are in Watts or Joules per second.
@@ -521,7 +516,6 @@ namespace Thermodynamics
             }
         }
 
-
         private void ResetExposedSurfaces()
         {
             //MyLog.Default.Info($"[Thermals] Reset Exposed Surfaces");
@@ -574,17 +568,6 @@ namespace Thermodynamics
             UpdateExposedSurfaceArea();
             //MyLog.Default.Info($"[Thermals] Exposed Surfaces: {ExposedSurfaces}");
         }
-
-
-        public bool Contains(Vector3I n) 
-        {
-            Vector3I min = Block.Min;
-            Vector3I max = Block.Max + 1;
-
-            return n.X >= min.X && n.Y >= min.Y && n.Z >= min.Z &&
-                   n.X < max.X && n.Y < max.Y && n.Z < max.Z;
-        }
-
 
         private void UpdateExposedSurfaceArea()
         {

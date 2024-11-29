@@ -6,8 +6,8 @@
 				<TypeId>CubeBlock</TypeId>
 				<SubtypeId>Gauge_LG_CoolantPipe_Corner_SingleSink</SubtypeId>
 			</Id>
-			<DisplayName>{LOC:DisplayName_Gauge_LG_CoolantPipe_Corner_SingleSink}</DisplayName>
-			<Description>{LOC:Description_Gauge_LG_CoolantPipe_Corner_SingleSink}</Description>
+			<DisplayName>Coolant Pipe Corner Single</DisplayName>
+			<Description>A pipe containing coolant liquid. When connected in a loop to a Heat Pump, the liquid will circulate spreading heat quickly to different areas.</Description>
 			<Icon>Textures\GUI\Icons\Gauge\LG_CoolantPipeCorner_OneSink.dds</Icon>
 			<CubeSize>Large</CubeSize>
 			<BlockTopology>TriangleMesh</BlockTopology>
@@ -27,7 +27,7 @@
 				<Model BuildPercentUpperBound="0.50" File="Models\Gauge\LG\Gauge_LG_CoolantPipe_Corner_SingleSink_BS1.mwm"/>
 				<Model BuildPercentUpperBound="1.00" File="Models\Gauge\LG\Gauge_LG_CoolantPipe_Corner_SingleSink_BS2.mwm"/>
 			</BuildProgressModels>
-			<BlockPairName>Gauge_LG_CoolantPipe_Corner_SingleSink</BlockPairName>
+			<BlockPairName>Gauge_LG_CoolantPipe_Corner_Single</BlockPairName>
 			<MirroringX>HalfY</MirroringX>
 			<MirroringY>XHalfY</MirroringY>
 			<MirroringZ>MinusHalfY</MirroringZ>
