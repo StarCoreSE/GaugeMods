@@ -77,7 +77,7 @@ namespace Thermodynamics
 				EnableSolarHeat = false,
 				EnableDamage = true,
 				Frequency = 1,
-				SimulationSpeed = 10,
+				SimulationSpeed = 1,
                 SolarEnergy = 1000f, 
 				EnvironmentalRaycastDistance = 5000f,
 				VaccumeRadiationStrength = 0.05f,

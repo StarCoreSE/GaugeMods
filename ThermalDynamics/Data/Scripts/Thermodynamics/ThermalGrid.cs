@@ -215,13 +215,17 @@ namespace Thermodynamics
                 return;
             }
 
+            ThermalCellDefinition def = ThermalCellDefinition.GetDefinition(b.BlockDefinition.Id);
+            if (def.Ignore) return;
+
             AddBlockMapping(ref b);
-            ThermalCell cell = new ThermalCell(this, b);
+            ThermalCell cell = new ThermalCell(this, b, def);
             cell.AddAllNeighbors();
 
             int index = Thermals.Allocate();
             PositionToIndex.Add(cell.Id, index);
             Thermals.ItemArray[index] = cell;
+            
         }
 
         private void BlockRemoved(IMySlimBlock b)
@@ -235,6 +239,10 @@ namespace Thermodynamics
             }
 
             //MyLog.Default.Info($"[{Settings.Name}] [{Grid.EntityId}] Removed ({b.Position.Flatten()}) {b.Position}");
+
+            // dont process ignored blocks
+            ThermalCellDefinition def = ThermalCellDefinition.GetDefinition(b.BlockDefinition.Id);
+            if (def.Ignore) return;
 
             RemoveBlockMapping(ref b);
 

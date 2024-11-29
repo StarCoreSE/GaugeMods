@@ -59,7 +59,7 @@ namespace Thermodynamics
             float mass = 200f;
 
             // c =  Temp / (watt * meter)
-            float specificHeat = 1000f;
+            float specificHeat = 100f;
             C = 1 / (specificHeat * mass * Block.CubeGrid.GridSize);
             thermalMassInv = 1f / (specificHeat * mass);
 

@@ -53,18 +53,21 @@ namespace Thermodynamics
         private int[] ExposedSurfacesByDirection = new int[6];
         //public List<Vector3I> ExposedSurfaceDirections = new List<Vector3I>();
 
-        public ThermalCell(ThermalGrid g, IMySlimBlock b)
+        public ThermalCell(ThermalGrid g, IMySlimBlock b, ThermalCellDefinition def)
         {
             Grid = g;
             Block = b;
             Id = b.Position.Flatten();
-            Definition = ThermalCellDefinition.GetDefinition(Block.BlockDefinition.Id);
+            Definition = def;
 
             //TODO: the listeners need to handle changes at the end
             //of the update cycle instead of whenever.
             SetupListeners();
 
             Mass = Block.Mass;
+
+            MyLog.Default.Info($"[{Settings.Name}] {Block.BlockDefinition.Id} -- mass: {Mass}");
+;
             Area = Block.CubeGrid.GridSize * Block.CubeGrid.GridSize;
             C = 1 / (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize);
             ThermalMassInv = 1f / (Definition.SpecificHeat * Mass);

@@ -13,6 +13,7 @@ namespace Thermodynamics
     public class ThermalCellDefinition
     {
         private static readonly MyStringId GroupId = MyStringId.GetOrCompute("ThermalBlockProperties");
+        private static readonly MyStringId IgnoreId = MyStringId.GetOrCompute("Ignore");
         private static readonly MyStringId ConductivityId = MyStringId.GetOrCompute("Conductivity");
         private static readonly MyStringId SpecificHeatId = MyStringId.GetOrCompute("SpecificHeat");
         private static readonly MyStringId EmissivityId = MyStringId.GetOrCompute("Emissivity");
@@ -22,12 +23,17 @@ namespace Thermodynamics
         private static readonly MyStringId CriticalTemperatureScalerId = MyStringId.GetOrCompute("CriticalTemperatureScaler");
         private static readonly MyDefinitionId DefaultCubeBlockDefinitionId = new MyDefinitionId(typeof(MyObjectBuilder_EnvironmentDefinition), Settings.DefaultSubtypeId);
 
+        /// <summary>
+        /// The block type should be ignored
+        /// </summary>
+        [ProtoMember(1)]
+        public bool Ignore;
 
         /// <summary>
         /// Conductivity equation: watt / ( meter * Temp)
         /// For examples see https://www.engineeringtoolbox.com/thermal-conductivity-metals-d_858.html
         /// </summary>
-        [ProtoMember(1)]
+        [ProtoMember(5)]
         public float Conductivity;
 
         /// <summary>
@@ -78,8 +84,11 @@ namespace Thermodynamics
                 }
             }
 
-            double dvalue;
+            bool isTrue;
+            if (lookup.TryGetBool(defId, GroupId, IgnoreId, out isTrue))
+                def.Ignore = isTrue;
 
+            double dvalue;
             if (lookup.TryGetDouble(defId, GroupId, ConductivityId, out dvalue))
                 def.Conductivity = (float)dvalue;
 

@@ -9,13 +9,14 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
+					<Bool Name="Ignore" Value="false" />
 					<!-- For Conductivity examples see https://www.engineeringtoolbox.com/thermal-conductivity-metals-d_858.html -->
 					<!-- Values generally range from 0 to 500. most material should be under 100-->
 					<!-- This assume the temperature is absolute 0 and will deminish as temperature rises-->
-					<Decimal Name="Conductivity" Value="700" />
+					<Decimal Name="Conductivity" Value="1000" />
 					<!--For specific heat examples see https://en.wikipedia.org/wiki/Table_of_specific_heat_capacities-->
 					<!--Make sure to convert from g to kg my multiplying 1000-->
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<!-- For examples of Emissivity see https://www.engineeringtoolbox.com/emissivity-coefficients-d_447.html-->
 					<!--This is a number between 0 and 1 that represents how much energy will radiate away -->
 					<Decimal Name="Emissivity" Value="0.25" />
@@ -26,7 +27,7 @@
 				</Group>
 			</ModExtensions>
 		</Definition>
-		
+
 		<Definition>
 			<Id>
 				<TypeId>Reactor</TypeId>
@@ -34,8 +35,9 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="5000" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0.1" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0.01" />
@@ -45,7 +47,7 @@
 			</ModExtensions>
 		</Definition>
 		
-		<!-- Conveyer / Thermal Transfer -->
+		<!-- Coolant Systems -->
 
 		<Definition>
 			<Id>
@@ -54,12 +56,13 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="1000" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0" />
-					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
 				</Group>
 			</ModExtensions>
@@ -72,12 +75,13 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="1000" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0" />
-					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
 				</Group>
 			</ModExtensions>
@@ -90,12 +94,13 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="1000" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0" />
-					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
 				</Group>
 			</ModExtensions>
@@ -107,12 +112,13 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="1000" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0" />
-					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
 				</Group>
 			</ModExtensions>
@@ -124,12 +130,13 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="1000" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0" />
-					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
 				</Group>
 			</ModExtensions>
@@ -141,12 +148,13 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="1000" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0" />
-					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
 				</Group>
 			</ModExtensions>
@@ -158,12 +166,13 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="1000" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0" />
-					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
 				</Group>
 			</ModExtensions>
@@ -175,103 +184,14 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="1000" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0" />
-					<Decimal Name="CriticalTemperature" Value="1500" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="0.5"/>
-				</Group>
-			</ModExtensions>
-		</Definition>
-		
-		<Definition>
-			<Id>
-				<TypeId>Conveyor</TypeId>
-				<SubtypeId>DefaultThermodynamics</SubtypeId>
-			</Id>
-			<ModExtensions>
-				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
-					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="0.01" />
-					<Decimal Name="CriticalTemperature" Value="1000" />
-					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
-				</Group>
-			</ModExtensions>
-		</Definition>
-
-		<Definition>
-			<Id>
-				<TypeId>Conveyor</TypeId>
-				<SubtypeId>SmallShipConveyorHub</SubtypeId>
-			</Id>
-			<ModExtensions>
-				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1100" />
-					<Decimal Name="SpecificHeat" Value="100" />
-					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="0.01" />
-					<Decimal Name="CriticalTemperature" Value="1000" />
-					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
-				</Group>
-			</ModExtensions>
-		</Definition>
-
-		<Definition>
-			<Id>
-				<TypeId>Conveyor</TypeId>
-				<SubtypeId>SmallBlockConveyorConverter</SubtypeId>
-			</Id>
-			<ModExtensions>
-				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
-					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="0.01" />
-					<Decimal Name="CriticalTemperature" Value="1000" />
-					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
-				</Group>
-			</ModExtensions>
-		</Definition>
-
-		<Definition>
-			<Id>
-				<TypeId>ConveyorConnector</TypeId>
-				<SubtypeId>DefaultThermodynamics</SubtypeId>
-			</Id>
-			<ModExtensions>
-				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="50" />
-					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="0.01" />
-					<Decimal Name="CriticalTemperature" Value="1000" />
-					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
-				</Group>
-			</ModExtensions>
-		</Definition>
-
-		<Definition>
-			<Id>
-				<TypeId>ConveyorConnector</TypeId>
-				<SubtypeId>ConveyorTubeCurvedMedium</SubtypeId>
-			</Id>
-			<ModExtensions>
-				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1100" />
-					<Decimal Name="SpecificHeat" Value="100" />
-					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="0.01" />
-					<Decimal Name="CriticalTemperature" Value="1000" />
-					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
 			</ModExtensions>
 		</Definition>
@@ -285,11 +205,12 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="1000" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="3" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="1" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
@@ -305,11 +226,12 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="3500" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="3" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="1" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
@@ -323,11 +245,12 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="3500" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="3" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="1" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
@@ -341,11 +264,12 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="3500" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="3" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="1" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
@@ -359,11 +283,12 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="3500" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="3" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="1" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
@@ -379,11 +304,12 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="3500" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="3" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="1" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
@@ -397,11 +323,12 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="3500" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="3" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="1" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
@@ -415,11 +342,12 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="3500" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="3" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="1" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
@@ -433,11 +361,12 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="1500" />
-					<Decimal Name="SpecificHeat" Value="100" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="3500" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
-					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
-					<Decimal Name="ConsumerWasteEnergy" Value="3" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="1" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
@@ -445,20 +374,74 @@
 		</Definition>
 		
 		
-		<!-- Miscellaneous - Other - Random -->
+		<!-- Low mass blocks that need special behaviors -->
 		
 		<Definition>
 			<Id>
 				<TypeId>InteriorLight</TypeId>
-				<SubtypeId>DefaultThermodynamics</SubtypeId>
+				<SubtypeId>SmallLight</SubtypeId>
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Decimal Name="Conductivity" Value="10" />
-					<Decimal Name="SpecificHeat" Value="50" />
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="50" />
+					<Decimal Name="SpecificHeat" Value="25" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0.01" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+		<Definition>
+			<Id>
+				<TypeId>CameraBlock</TypeId>
+				<SubtypeId>LargeCameraBlock</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="100" />
+					<Decimal Name="SpecificHeat" Value="25" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0.01" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0.01" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+		<Definition>
+			<Id>
+				<TypeId>CubeBlock</TypeId>
+				<SubtypeId>LargeBlockArmorCorner2Tip</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="100" />
+					<Decimal Name="SpecificHeat" Value="25" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+		<Definition>
+			<Id>
+				<TypeId>CubeBlock</TypeId>
+				<SubtypeId>LargeBlockArmorHalfSlopeCorner</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="Ignore" Value="false" />
+					<Decimal Name="Conductivity" Value="100" />
+					<Decimal Name="SpecificHeat" Value="25" />
+					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
