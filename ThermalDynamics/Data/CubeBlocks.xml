@@ -13,7 +13,7 @@
 					<!-- For Conductivity examples see https://www.engineeringtoolbox.com/thermal-conductivity-metals-d_858.html -->
 					<!-- Values generally range from 0 to 500. most material should be under 100-->
 					<!-- This assume the temperature is absolute 0 and will deminish as temperature rises-->
-					<Decimal Name="Conductivity" Value="50" />
+					<Decimal Name="Conductivity" Value="500" />
 					<!--For specific heat examples see https://en.wikipedia.org/wiki/Table_of_specific_heat_capacities-->
 					<!--Make sure to convert from g to kg my multiplying 1000-->
 					<Decimal Name="SpecificHeat" Value="25" />
