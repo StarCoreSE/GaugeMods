@@ -30,7 +30,7 @@ namespace Thermodynamics
         /// </summary>
         public int CurrentRoomId = 1;
         public int NodeCountPerFrame = 1;
-        public bool NodeUpdateComplete = false;
+        public bool CrawlComplete = false;
 
         public Queue<Vector3I> ExteriorQueue = new Queue<Vector3I>();
         public Queue<Vector3I> SolidQueue = new Queue<Vector3I>();
@@ -60,8 +60,6 @@ namespace Thermodynamics
             block.Orientation.GetMatrix(out matrix);
             matrix.TransposeRotationInPlace();
             MyCubeBlockDefinition.MountPoint[] mountPoints = def.MountPoints;
-
-            MyLog.Default.Info($"[{Settings.Name}] Block Start");
 
             for (int x = min.X; x < max.X; x++)
             {
@@ -314,8 +312,9 @@ namespace Thermodynamics
             RoomQueue.Clear();
             Rooms.Clear();
 
-            NodeCountPerFrame = Math.Max((int)((max - min).Size / 60f), 1);
-            NodeUpdateComplete = false;
+            NodeCountPerFrame = (int)Math.Max(Math.Ceiling((max - min).Size / 60f), 1f);
+            CrawlComplete = false;
+            ThermalCellUpdateComplete = false;
         }
 
         public void MapSurfaces()
@@ -331,8 +330,7 @@ namespace Thermodynamics
             }
             else 
             {
-                NodeUpdateComplete = true;
-                ThermalCellUpdateComplete = false;
+                CrawlComplete = true;
             }
 
         }
@@ -439,5 +437,6 @@ namespace Thermodynamics
                 CrawlInside(ref loopCount);
             }
         }
+
     }
 }

@@ -79,6 +79,8 @@ namespace Thermodynamics
 
 
         public bool ThermalCellUpdateComplete = true;
+        public bool RunningCellUpdate = false;
+
 
 
         public Vector3 FrameWindDirection;
@@ -323,6 +325,7 @@ namespace Thermodynamics
         {
 
             FrameCount++;
+            MapSurfaces();
             //MyAPIGateway.Utilities.ShowNotification($"[Loop] f: {MyAPIGateway.Session.GameplayFrameCounter} fc: {FrameCount} sf: {SimulationFrame} sq: {SimulationQuota}", 1, "White");
 
             // if you are done processing the required blocks this second
@@ -347,10 +350,8 @@ namespace Thermodynamics
             //MyAPIGateway.Utilities.ShowNotification($"[Loop] c: {count} frameC: {QuotaPerSecond} simC: {60f * QuotaPerSecond}", 1, "White");
 
             //Stopwatch sw = Stopwatch.StartNew();
-            while (FrameQuota >= 1)
+            while (FrameQuota >= 1 || SimulationQuota == 0)
             {
-                if (SimulationQuota == 0) break;
-
                 // prepare for the next simulation after a full iteration
                 if (SimulationIndex == cellCount || SimulationIndex == -1)
                 {
@@ -360,13 +361,21 @@ namespace Thermodynamics
                         pump.Simulate();
                     }
 
-                    if (!ThermalCellUpdateComplete)
-                        ThermalCellUpdateComplete = true;
+                    if (!ThermalCellUpdateComplete) 
+                    {
+                        if (RunningCellUpdate)
+                        {
+                            RunningCellUpdate = false;
+                            ThermalCellUpdateComplete = true;
+                        }
+                        else 
+                        {
+                            RunningCellUpdate = true;
+                        }
+                    }
 
                     // start a new simulation frame
                     SimulationFrame++;
-
-                    MapSurfaces();
                     PrepareNextSimulationStep();
 
                     // reverse the index direction
@@ -375,13 +384,12 @@ namespace Thermodynamics
                     SimulationIndex += Direction;
                 }
 
-
                 //MyLog.Default.Info($"[{Settings.Name}] Frame: {FrameCount} SimFrame: {SimulationFrame}: Index: {SimulationIndex} Quota: {SimulationQuota} FrameQuota:{FrameQuota}");
 
                 ThermalCell cell = Thermals.ItemArray[SimulationIndex];
                 if (cell != null)
                 {
-                    if (!ThermalCellUpdateComplete)
+                    if (RunningCellUpdate)
                     { 
                         cell.UpdateSurfaces(ref ExteriorNodes, ref NodeSurfaces);
                     }

@@ -94,14 +94,14 @@ namespace Thermodynamics
                 if (c == null)
                     return;
 
-                MyAPIGateway.Utilities.ShowNotification($"[Env] " +
+                /*MyAPIGateway.Utilities.ShowNotification($"[Env] " +
                     $"sim: {Settings.Instance.SimulationSpeed.ToString("n2")} " +
                     $"freq: {Settings.Instance.Frequency.ToString("n2")} " +
                     $"tstep: {Settings.Instance.TimeScaleRatio.ToString("n2")} " +
                     $"ambT: {(g.FrameAmbientTemprature).ToString("n4")} " +
-                    //$"decay: {g.FrameSolarDecay.ToString("n4")} " +
                     $"wind: {g.FrameWindDirection.Length().ToString("n4")} " +
                     $"isOcc: {g.FrameSolarOccluded}", 1, "White");
+                */
 
                 MyAPIGateway.Utilities.ShowNotification($"[Cell] {c.Block.Position} " +
                     $"T: {c.Temperature.ToString("n4")} " +
@@ -131,7 +131,9 @@ namespace Thermodynamics
                     $"RNodes: {g.Rooms.Count} " +
                     $"sq: {g.SolidQueue.Count} " +
                     $"rq: {g.RoomQueue.Count} " +
-                    $"CrawlDone: {g.ThermalCellUpdateComplete} " +
+                    $"Crawl: {g.CrawlComplete} " +
+                    $"Update: {g.RunningCellUpdate} " +
+                    $"Complete: {g.ThermalCellUpdateComplete} " +
                     $"sbn: {string.Join(", ", c.TouchingSerfacesByNeighbor)}", 1, "White");
 
 
@@ -141,11 +143,9 @@ namespace Thermodynamics
                         $"[Grid] Coolant Loop: {g.Pumps[0].LoopTemp.ToString("n4")}, area: {g.Pumps[0].area}", 1, "White");
                 }
                 
-
-
-                //MyAPIGateway.Utilities.ShowNotification(
-                //    $"[Cell] Airtight out: {((value & 1 << 0) != 0 ? 1:0)}, {((value & 1 << 1) != 0 ? 1:0)}, {((value & 1 << 2) != 0?1:0)}, {((value & 1 << 3) != 0?1:0)}, {((value & 1 << 4) != 0?1:0)}, {((value & 1 << 5) != 0 ? 1 : 0)}, " +
-                //    $"in: {((value & 1 << 6) != 0?1:0)}, {((value & 1 << 7) != 0 ? 1 : 0)}, {((value & 1 << 8) != 0 ? 1 : 0)}, {((value & 1 << 9) != 0 ? 1 : 0)}, {((value & 1 << 10) != 0?1:0)}, {((value & 1 << 11) != 0?1:0)}", 1, "White");
+                MyAPIGateway.Utilities.ShowNotification(
+                    $"[Cell] Airtight out: {((value & 1 << 0) != 0 ? 1:0)}, {((value & 1 << 1) != 0 ? 1:0)}, {((value & 1 << 2) != 0?1:0)}, {((value & 1 << 3) != 0?1:0)}, {((value & 1 << 4) != 0?1:0)}, {((value & 1 << 5) != 0 ? 1 : 0)}, " +
+                    $"in: {((value & 1 << 6) != 0?1:0)}, {((value & 1 << 7) != 0 ? 1 : 0)}, {((value & 1 << 8) != 0 ? 1 : 0)}, {((value & 1 << 9) != 0 ? 1 : 0)}, {((value & 1 << 10) != 0?1:0)}, {((value & 1 << 11) != 0?1:0)}", 1, "White");
 
 
             }
