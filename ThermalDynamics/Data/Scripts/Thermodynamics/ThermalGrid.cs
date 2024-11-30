@@ -87,7 +87,6 @@ namespace Thermodynamics
 
         public float FrameAmbientTemprature;
         public float FrameAmbientTempratureP4;
-        //public float FrameSolarDecay;
         public bool FrameSolarOccluded;
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)

@@ -99,7 +99,7 @@ namespace Thermodynamics
                     $"freq: {Settings.Instance.Frequency.ToString("n2")} " +
                     $"tstep: {Settings.Instance.TimeScaleRatio.ToString("n2")} " +
                     $"ambT: {(g.FrameAmbientTemprature).ToString("n4")} " +
-                    $"decay: {g.FrameSolarDecay.ToString("n4")} " +
+                    //$"decay: {g.FrameSolarDecay.ToString("n4")} " +
                     $"wind: {g.FrameWindDirection.Length().ToString("n4")} " +
                     $"isOcc: {g.FrameSolarOccluded}", 1, "White");
 
