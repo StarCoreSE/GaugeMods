@@ -74,11 +74,11 @@ namespace Thermodynamics
 		{
 			Settings s = new Settings {
 				Version = 1,
-				EnableSolarHeat = false,
+				EnableSolarHeat = true,	  //atm includes all external heat source
 				EnableDamage = true,
 				Frequency = 1,
-				SimulationSpeed = 1,
-                SolarEnergy = 1000f, 
+				SimulationSpeed = 10,
+                SolarEnergy = 0f, 
 				EnvironmentalRaycastDistance = 5000f,
 				VaccumeRadiationStrength = 0.05f,
 				PresurizedAtmoConductivity = 0.026f,
