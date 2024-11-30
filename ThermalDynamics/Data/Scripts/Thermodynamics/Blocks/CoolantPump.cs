@@ -92,7 +92,7 @@ namespace Thermodynamics
                 float cDelta = (c.C * cDT * c.ThermalMassInv) * Settings.Instance.TimeScaleRatio;
 
                 LoopTemp = Math.Max(0, LoopTemp + myDelta);
-                c.Temperature = Math.Max(0, c.Temperature + cDelta);
+                c.Temperature = LoopTemp;
 
                 //MyLog.Default.Info($"index: {i}, temp difference: {c.Temperature - LoopTemp} --- delta in: {myDelta}, to block: {cDelta}");
 
