@@ -22,9 +22,13 @@ namespace Thermodynamics
 		public static Settings Instance;
 
         public static readonly MyStringHash DefaultSubtypeId = MyStringHash.GetOrCompute("DefaultThermodynamics");
+        public static readonly MyStringHash DefaultLowMassSubtypeId = MyStringHash.GetOrCompute("DefaultLowMassThermodynamics");
 
         [ProtoMember(1)]
 		public int Version;
+
+		[ProtoMember(3)]
+		public bool EnableEnvironment;
 
 		[ProtoMember(5)]
 		public bool EnableSolarHeat;
@@ -46,16 +50,16 @@ namespace Thermodynamics
 		public float SimulationSpeed;
 
 		/// <summary>
+		/// the temperature in kelven for space
+		/// </summary>
+		[ProtoMember(30)]
+		public float VacuumTemperature;
+
+		/// <summary>
 		/// SolarEnergy = watts/m^2
 		/// </summary>
-		[ProtoMember(110)]
+		[ProtoMember(40)]
 		public float SolarEnergy;
-
-		[ProtoMember(120)]
-		public float EnvironmentalRaycastDistance;
-
-		[ProtoMember(130)]
-		public float VaccumeRadiationStrength;
 
 		[ProtoMember(140)]
 		public float PresurizedAtmoConductivity;
@@ -74,20 +78,19 @@ namespace Thermodynamics
 		{
 			Settings s = new Settings {
 				Version = 1,
-				EnableSolarHeat = true,	  //atm includes all external heat source
+				EnableEnvironment = true,
+				EnableSolarHeat = false,
 				EnableDamage = true,
 				Frequency = 1,
-				SimulationSpeed = 10,
-                SolarEnergy = 0f, 
-				EnvironmentalRaycastDistance = 5000f,
-				VaccumeRadiationStrength = 0.05f,
+				SimulationSpeed = 1,
+				VacuumTemperature = 2.7f,
+                SolarEnergy = 0f,
 				PresurizedAtmoConductivity = 0.026f,
 				PresurizedAtmoSpecificHeat = 1005,
             };
 
 			s.Init();
-			return s;
-			
+			return s;	
 		}
 
 		private void Init() {

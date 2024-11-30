@@ -458,7 +458,12 @@ namespace Thermodynamics
         private float CalculateTotalRadiation()
         {
             float temperatureSquared = Temperature * Temperature;
-            float totalRadiation = Boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
+            float totalRadiation = 0;
+
+            if (Settings.Instance.EnableEnvironment) 
+            { 
+                totalRadiation = Boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
+            } 
 
             if (Settings.Instance.EnableSolarHeat && !Grid.FrameSolarOccluded)
             {
