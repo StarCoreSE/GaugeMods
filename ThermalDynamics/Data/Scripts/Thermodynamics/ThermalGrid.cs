@@ -78,9 +78,7 @@ namespace Thermodynamics
         private int Direction = 1;
 
 
-        public bool ThermalCellUpdateComplete = true;
-        public bool RunningCellUpdate = false;
-
+        public long SurfaceUpdateFrame = 0;
 
 
         public Vector3 FrameWindDirection;
@@ -110,6 +108,9 @@ namespace Thermodynamics
 
             Grid.OnBlockAdded += BlockAdded;
             Grid.OnBlockRemoved += BlockRemoved;
+
+
+            SurfaceCheckComplete += () => { SurfaceUpdateFrame = SimulationFrame+1; };
 
             NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
         }
@@ -210,6 +211,7 @@ namespace Thermodynamics
 
         private void BlockAdded(IMySlimBlock b)
         {
+            OnBlockAddOrUpdate(b);
             if (Grid.EntityId != b.CubeGrid.EntityId)
             {
                 MyLog.Default.Info($"[{Settings.Name}] Adding Skipped - Grid: {Grid.EntityId} BlockGrid: {b.CubeGrid.EntityId} {b.Position}");
@@ -219,7 +221,6 @@ namespace Thermodynamics
             ThermalCellDefinition def = ThermalCellDefinition.GetDefinition(b.BlockDefinition.Id);
             if (def.Ignore) return;
 
-            AddBlockMapping(ref b);
             ThermalCell cell = new ThermalCell(this, b, def);
             cell.AddAllNeighbors();
 
@@ -231,6 +232,7 @@ namespace Thermodynamics
 
         private void BlockRemoved(IMySlimBlock b)
         {
+            OnBlockRemoved(b);
             MyLog.Default.Info($"[{Settings.Name}] block removed");
 
             if (Grid.EntityId != b.CubeGrid.EntityId)
@@ -244,8 +246,6 @@ namespace Thermodynamics
             // dont process ignored blocks
             ThermalCellDefinition def = ThermalCellDefinition.GetDefinition(b.BlockDefinition.Id);
             if (def.Ignore) return;
-
-            RemoveBlockMapping(ref b);
 
             int flat = b.Position.Flatten();
             int index = PositionToIndex[flat];
@@ -323,10 +323,10 @@ namespace Thermodynamics
 
         public override void UpdateBeforeSimulation()
         {
-
             FrameCount++;
-            MapSurfaces();
             //MyAPIGateway.Utilities.ShowNotification($"[Loop] f: {MyAPIGateway.Session.GameplayFrameCounter} fc: {FrameCount} sf: {SimulationFrame} sq: {SimulationQuota}", 1, "White");
+
+            GridMapperUpdate();
 
             // if you are done processing the required blocks this second
             // wait for the start of the next second interval
@@ -361,19 +361,6 @@ namespace Thermodynamics
                         pump.Simulate();
                     }
 
-                    if (!ThermalCellUpdateComplete) 
-                    {
-                        if (RunningCellUpdate)
-                        {
-                            RunningCellUpdate = false;
-                            ThermalCellUpdateComplete = true;
-                        }
-                        else 
-                        {
-                            RunningCellUpdate = true;
-                        }
-                    }
-
                     // start a new simulation frame
                     SimulationFrame++;
                     PrepareNextSimulationStep();
@@ -389,9 +376,9 @@ namespace Thermodynamics
                 ThermalCell cell = Thermals.ItemArray[SimulationIndex];
                 if (cell != null)
                 {
-                    if (RunningCellUpdate)
+                    if (SurfaceUpdateFrame == SimulationFrame)
                     { 
-                        cell.UpdateSurfaces(ref ExteriorNodes, ref NodeSurfaces);
+                        cell.UpdateSurfaces();
                     }
 
                     cell.Update();

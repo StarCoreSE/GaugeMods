@@ -143,7 +143,7 @@ namespace Thermodynamics
         {
             Matrix m;
             Block.Orientation.GetMatrix(out m);
-            Vector3I[] directions = Base6Directions.IntDirections;
+            Vector3I[] directions = ThermalGrid.Directions;
 
             Vector3I right;
             Vector3I.Transform(ref directions[(int)Base6Directions.Direction.Right], ref m, out right);
@@ -170,16 +170,16 @@ namespace Thermodynamics
 
             Matrix m;
             b.Orientation.GetMatrix(out m);
-            Vector3I[] directions = Base6Directions.IntDirections;
+            Vector3I[] directions = ThermalGrid.Directions;
 
             Vector3I left;
-            Vector3I.Transform(ref directions[(int)Base6Directions.Direction.Left], ref m, out left);
+            Vector3I.Transform(ref directions[1], ref m, out left);
 
             Vector3I up;
-            Vector3I.Transform(ref directions[(int)Base6Directions.Direction.Up], ref m, out up);
+            Vector3I.Transform(ref directions[2], ref m, out up);
 
             Vector3I forward;
-            Vector3I.Transform(ref directions[(int)Base6Directions.Direction.Forward], ref m, out forward);
+            Vector3I.Transform(ref directions[0], ref m, out forward);
 
 
             if (subtypelower.Contains("coolantpump"))

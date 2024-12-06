@@ -94,21 +94,14 @@ namespace Thermodynamics
                 if (c == null)
                     return;
 
-                /*MyAPIGateway.Utilities.ShowNotification($"[Env] " +
-                    $"sim: {Settings.Instance.SimulationSpeed.ToString("n2")} " +
-                    $"freq: {Settings.Instance.Frequency.ToString("n2")} " +
-                    $"tstep: {Settings.Instance.TimeScaleRatio.ToString("n2")} " +
-                    $"ambT: {(g.FrameAmbientTemprature).ToString("n4")} " +
-                    $"wind: {g.FrameWindDirection.Length().ToString("n4")} " +
-                    $"isOcc: {g.FrameSolarOccluded}", 1, "White");
-                */
-
-                MyAPIGateway.Utilities.ShowNotification($"[Cell] {c.Block.Position} " +
+                MyAPIGateway.Utilities.ShowNotification(
+                    //$"[Cell] {c.Block.Position} " +
                     $"T: {c.Temperature.ToString("n4")} " +
-                    $"dT: {c.DeltaTemperature.ToString("n6")} " +
-                    $"Gen: {c.HeatGeneration.ToString("n4")} " +
-                    $"ext: {c.ExposedSurfaces.ToString("n4")} " +
-                    $"kA: {string.Join(", ", c.kA)}", 1, "White");
+                    $"Gain: {(c.DeltaTemperature + c.HeatGeneration).ToString("n6")} " +
+                    $"dT: {c.DeltaTemperature.ToString("n4")} " +
+                    $"In: {c.HeatGeneration.ToString("n4")} " + 
+                    $"ESA: {c.ExposedSurfaces.ToString("n0")} " +
+                    $"", 1, "White");
 
                 MyAPIGateway.Utilities.ShowNotification(
                     $"[Calc] m: {c.Mass.ToString("n0")} " +
@@ -119,35 +112,18 @@ namespace Thermodynamics
                     $"cwe: {c.Definition.ConsumerWasteEnergy} " +
                     $"tm: {(c.Definition.SpecificHeat * c.Mass).ToString("n0")} " +
                     $"c: {c.C.ToString("n4")} " +
-                    $"r: {c.Radiation.ToString("n2")} " +
-                    $"rdt: {(c.Radiation * c.ThermalMassInv).ToString("n4")} " +
                     $"prod: {c.EnergyProduction} " +
                     $"cons: {(c.EnergyConsumption + c.ThrustEnergyConsumption)} ", 1, "White");
 
-                int value = g.NodeSurfaces[position];
-                MyAPIGateway.Utilities.ShowNotification(
-                    $"[Grid] Exterior: {g.ExteriorNodes.Count} " +
-                    $"Nodes: {g.NodeSurfaces.Count} " +
-                    $"RNodes: {g.Rooms.Count} " +
-                    $"sq: {g.SolidQueue.Count} " +
-                    $"rq: {g.RoomQueue.Count} " +
-                    $"Crawl: {g.CrawlComplete} " +
-                    $"Update: {g.RunningCellUpdate} " +
-                    $"Complete: {g.ThermalCellUpdateComplete} " +
-                    $"sbn: {string.Join(", ", c.TouchingSerfacesByNeighbor)}", 1, "White");
+                MyAPIGateway.Utilities.ShowNotification($"[Grid] {g.DebugSurfaceStateText(g.Surfaces[position])} ", 1, "White");
 
+                MyAPIGateway.Utilities.ShowNotification($"[Grid] {string.Join(" ", c.TouchingSerfacesByNeighbor)}", 1, "White");
 
                 if (g.Pumps.Count > 0)
                 {
                     MyAPIGateway.Utilities.ShowNotification(
                         $"[Grid] Coolant Loop: {g.Pumps[0].LoopTemp.ToString("n4")}, area: {g.Pumps[0].area}", 1, "White");
                 }
-                
-                MyAPIGateway.Utilities.ShowNotification(
-                    $"[Cell] Airtight out: {((value & 1 << 0) != 0 ? 1:0)}, {((value & 1 << 1) != 0 ? 1:0)}, {((value & 1 << 2) != 0?1:0)}, {((value & 1 << 3) != 0?1:0)}, {((value & 1 << 4) != 0?1:0)}, {((value & 1 << 5) != 0 ? 1 : 0)}, " +
-                    $"in: {((value & 1 << 6) != 0?1:0)}, {((value & 1 << 7) != 0 ? 1 : 0)}, {((value & 1 << 8) != 0 ? 1 : 0)}, {((value & 1 << 9) != 0 ? 1 : 0)}, {((value & 1 << 10) != 0?1:0)}, {((value & 1 << 11) != 0?1:0)}", 1, "White");
-
-
             }
         }
 
