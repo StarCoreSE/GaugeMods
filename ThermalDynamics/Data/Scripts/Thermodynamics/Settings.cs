@@ -89,7 +89,7 @@ namespace Thermodynamics
 				EnableEnvironment = true,
 				EnableSolarHeat = true,
 				EnableDamage = true,
-				Frequency = 4,
+				Frequency = 3,
 				SimulationSpeed = 1,
 				VacuumTemperature = 2.7f,
                 SolarEnergy = 500f,

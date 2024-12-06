@@ -69,25 +69,11 @@ namespace Thermodynamics
             ThermalMassInv = 1f / (Definition.SpecificHeat * Mass);
             Boltzmann = -1 * Definition.Emissivity * Tools.BoltzmannConstant;
 
-
-            //if (Mass < 500)
-            //{
-            //    Definition.Conductivity = 50;
-            //}
-            //else 
-            //{
-
-            //    float value = (Definition.SpecificHeat * Definition.SpecificHeat * Mass * Mass * Block.CubeGrid.GridSize) / (Area * ((Block.Max + 1) - Block.Min).LargestFace());
-
-
-            //}
-
             float value =  (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize) / (6 * Area * ((Block.Max + 1) - Block.Min).LargestFace());
-
             k = value * Definition.Conductivity;
             Definition.Conductivity = value;
 
-
+            //MyLog.Default.Info($"face: {(Block.Max + 1) - Block.Min} -- {((Block.Max + 1) - Block.Min).LargestFace()} -- {(6 * Area * ((Block.Max + 1) - Block.Min).LargestFace())} --- other: {(Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize)}");
             UpdateHeat();
         }
 
