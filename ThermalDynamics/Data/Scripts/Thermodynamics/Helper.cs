@@ -36,5 +36,25 @@ namespace Thermodynamics
 
             return vector;
         }
+
+        public static int LargestFace(this Vector3I vector)
+        {
+            int s1 = 0;
+            int s2 = 0;
+            for (int i = 0; i < 3; i++)
+            {
+                if (vector[i] >= s1) 
+                {
+                    s2 = s1;
+                    s1 = vector[i];
+                }
+            }
+
+
+
+            return s1*s2;
+        }
+
+
     }
 }

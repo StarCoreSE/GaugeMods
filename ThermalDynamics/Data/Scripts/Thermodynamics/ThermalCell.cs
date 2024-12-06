@@ -28,6 +28,7 @@ namespace Thermodynamics
         public float ThrustEnergyConsumption;
         public float HeatGeneration;
 
+        public float k;
         public float C; // c =  Temp / (watt * meter)
         public float Mass; // kg
         public float Area; // m^2
@@ -67,6 +68,25 @@ namespace Thermodynamics
             C = 1 / (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize);
             ThermalMassInv = 1f / (Definition.SpecificHeat * Mass);
             Boltzmann = -1 * Definition.Emissivity * Tools.BoltzmannConstant;
+
+
+            //if (Mass < 500)
+            //{
+            //    Definition.Conductivity = 50;
+            //}
+            //else 
+            //{
+
+            //    float value = (Definition.SpecificHeat * Definition.SpecificHeat * Mass * Mass * Block.CubeGrid.GridSize) / (Area * ((Block.Max + 1) - Block.Min).LargestFace());
+
+
+            //}
+
+            float value =  (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize) / (6 * Area * ((Block.Max + 1) - Block.Min).LargestFace());
+
+            k = value * Definition.Conductivity;
+            Definition.Conductivity = value;
+
 
             UpdateHeat();
         }
@@ -438,7 +458,9 @@ namespace Thermodynamics
                 deltaTemperature += kA[i] * (neighborTemp - Temperature);
             }
 
-            DeltaTemperature = (C * deltaTemperature + totalRadiation * ThermalMassInv) * Settings.Instance.TimeScaleRatio;
+            DeltaTemperature = ((C * deltaTemperature) + (totalRadiation * ThermalMassInv)) * Settings.Instance.TimeScaleRatio;
+
+
             Temperature = Math.Max(0, Temperature + DeltaTemperature);
 
             // update heat generation
@@ -489,8 +511,6 @@ namespace Thermodynamics
             ExposedSurfaces = ExposedSurfacesByDirection[0] + ExposedSurfacesByDirection[1] + ExposedSurfacesByDirection[2] +
                 ExposedSurfacesByDirection[3] + ExposedSurfacesByDirection[4] + ExposedSurfacesByDirection[5];
 
-            MyLog.Default.Info($"[Thermals] Exposed Surface Area ");
-
             UpdateExposedSurfaceArea();
         }
 
@@ -503,21 +523,20 @@ namespace Thermodynamics
         internal float DirectionalRadiationIntensity(ref Vector3 targetDirection, ref ThermalRadiationNode node)
         {
             float intensity = 0;
-            MatrixD matrix = Grid.FrameMatrix;
             bool isCube = (Block.Max - Block.Min).Volume() <= 1;
 
-            for (int i = 0; i < ExposedSurfacesByDirection.Length; i++)
+            for (int i = 0; i < 6; i++)
             {
-                intensity += CalculateDirectionIntensity(i, ExposedSurfacesByDirection[i], ref targetDirection, ref node, matrix, isCube);
+                intensity += CalculateDirectionIntensity(i, ExposedSurfacesByDirection[i], ref targetDirection, ref node, isCube);
             }
 
             return intensity;
         }
 
-        private float CalculateDirectionIntensity(int directionIndex, int surfaceCount, ref Vector3 targetDirection, ref ThermalRadiationNode node, MatrixD matrix, bool isCube)
+        private float CalculateDirectionIntensity(int directionIndex, int surfaceCount, ref Vector3 targetDirection, ref ThermalRadiationNode node, bool isCube)
         {
             Vector3I direction = ThermalGrid.Directions[directionIndex];
-            Vector3D startDirection = Vector3D.Rotate(direction, matrix);
+            Vector3D startDirection = Vector3D.Rotate(direction, Grid.FrameMatrix);
             float dot = Vector3.Dot(startDirection, targetDirection);
 
             dot = Math.Max(0, dot);
@@ -536,7 +555,7 @@ namespace Thermodynamics
 
         private void DebugDrawColors()
         {
-            if (Settings.DebugBlockColors && MyAPIGateway.Session.IsServer)
+            if (Settings.Instance.DebugBlockColors && MyAPIGateway.Session.IsServer)
             {
                 Vector3 color = Tools.GetTemperatureColor(Temperature);
                 if (Block.ColorMaskHSV != color)

@@ -78,6 +78,9 @@ namespace Thermodynamics
         private int Direction = 1;
 
 
+        public float HottestBlock = 0;
+
+
         public long SurfaceUpdateFrame = 0;
 
 
@@ -495,7 +498,7 @@ namespace Thermodynamics
                     //Vector3D start = Vector3D.Transform((Vector3D)(Vector3)ExposedSurface[i] * gridSize, matrix);
                     var green = Color.Green.ToVector4();
 
-                    if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+                    if (Settings.Instance.Debug && !MyAPIGateway.Utilities.IsDedicated)
                     {
                         MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref green, 0.2f);
                     }
@@ -525,7 +528,7 @@ namespace Thermodynamics
 
                     var blue = Color.Blue.ToVector4();
 
-                    if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+                    if (Settings.Instance.Debug && !MyAPIGateway.Utilities.IsDedicated)
                     {
 
                         MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref blue, 0.2f);
@@ -541,7 +544,7 @@ namespace Thermodynamics
                 }
             }
 
-            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+            if (Settings.Instance.Debug && !MyAPIGateway.Utilities.IsDedicated)
             {
                 var color = (FrameSolarOccluded) ? Color.Red.ToVector4() : Color.White.ToVector4();
                 var color2 = Color.LightGoldenrodYellow.ToVector4();

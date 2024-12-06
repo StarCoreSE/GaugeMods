@@ -110,7 +110,7 @@ namespace Thermodynamics
             if (lookup.TryGetDouble(defId, GroupId, CriticalTemperatureScalerId, out dvalue))
                 def.CriticalTemperatureScaler = (float)dvalue;
 
-            def.Conductivity = Math.Max(0, def.Conductivity);
+            def.Conductivity = Math.Min(1, Math.Max(0, def.Conductivity));
 
             def.SpecificHeat = Math.Max(0, def.SpecificHeat);
 
@@ -122,7 +122,7 @@ namespace Thermodynamics
 
             def.CriticalTemperature = Math.Max(0, def.CriticalTemperature);
 
-            def.CriticalTemperatureScaler = Math.Max(0, Math.Min(1, def.CriticalTemperatureScaler));
+            def.CriticalTemperatureScaler = Math.Max(0, def.CriticalTemperatureScaler);
 
             return def;
         }

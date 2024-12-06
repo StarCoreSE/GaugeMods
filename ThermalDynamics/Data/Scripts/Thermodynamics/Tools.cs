@@ -16,7 +16,6 @@ namespace Thermodynamics
         public const float KphToMps = 1000f / 60f / 60f;
         public const float BoltzmannConstant = 0.00000005670374419f;
         public const float VacuumTemperaturePower4 = 53.1441f; // vacuum temp is 2.7 kelven. 2.7^4 is 53.1441;
-        public const float ConductivityScaler = 1f / 10000f;
 
         /// <summary>
         /// Converts a single axis direction vector into a number
@@ -67,7 +66,7 @@ namespace Thermodynamics
         /// <param name="low">0 is black this value is blue</param>
         /// <param name="high">this value is red max value is white</param>
         /// <returns>HSV Vector3</returns>
-        public static Vector3 GetTemperatureColor(float temp, float max = 2000, float low = 265f, float high = 500f)
+        public static Vector3 GetTemperatureColor(float temp, float max = 1000, float low = 265f, float high = 500f)
         {
             // Clamp the temperature to the range 0-max
             float t = Math.Max(0, Math.Min(max, temp));

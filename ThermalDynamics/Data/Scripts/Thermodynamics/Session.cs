@@ -69,7 +69,7 @@ namespace Thermodynamics
 
         public override void Simulate()
         {
-            if (Settings.Debug && !MyAPIGateway.Utilities.IsDedicated)
+            if (Settings.Instance.Debug && !MyAPIGateway.Utilities.IsDedicated)
             {
                 //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
                 MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;

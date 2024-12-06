@@ -15,8 +15,8 @@ namespace Thermodynamics
 	{
 		public const string Filename = "ThermodynamicsConfig.cfg";
 		public const string Name = "Thermodynamics";
-		public const bool Debug = true;
-		public const bool DebugBlockColors = true;
+
+
 		public const bool DebugTextureColors = false;
 
 		public static Settings Instance;
@@ -27,10 +27,16 @@ namespace Thermodynamics
         [ProtoMember(1)]
 		public int Version;
 
+		[ProtoMember(2)]
+        public bool Debug;
+
 		[ProtoMember(3)]
+        public bool DebugBlockColors;
+
+        [ProtoMember(8)]
 		public bool EnableEnvironment;
 
-		[ProtoMember(5)]
+		[ProtoMember(9)]
 		public bool EnableSolarHeat;
 
 		[ProtoMember(10)]
@@ -78,13 +84,15 @@ namespace Thermodynamics
 		{
 			Settings s = new Settings {
 				Version = 1,
+				Debug = true,
+				DebugBlockColors = true,
 				EnableEnvironment = true,
-				EnableSolarHeat = false,
+				EnableSolarHeat = true,
 				EnableDamage = true,
-				Frequency = 1,
+				Frequency = 4,
 				SimulationSpeed = 1,
 				VacuumTemperature = 2.7f,
-                SolarEnergy = 0f,
+                SolarEnergy = 500f,
 				PresurizedAtmoConductivity = 0.026f,
 				PresurizedAtmoSpecificHeat = 1005,
             };
