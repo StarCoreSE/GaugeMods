@@ -13,7 +13,7 @@ namespace Thermodynamics
     public class ThermalCellDefinition
     {
         private static readonly MyStringId GroupId = MyStringId.GetOrCompute("ThermalBlockProperties");
-        private static readonly MyStringId IgnoreId = MyStringId.GetOrCompute("Ignore");
+        private static readonly MyStringId IgnoreId = MyStringId.GetOrCompute("IgnoreThermals");
         private static readonly MyStringId ConductivityId = MyStringId.GetOrCompute("Conductivity");
         private static readonly MyStringId SpecificHeatId = MyStringId.GetOrCompute("SpecificHeat");
         private static readonly MyStringId EmissivityId = MyStringId.GetOrCompute("Emissivity");
@@ -27,7 +27,7 @@ namespace Thermodynamics
         /// The block type should be ignored
         /// </summary>
         [ProtoMember(1)]
-        public bool Ignore;
+        public bool IgnoreThermals;
 
         /// <summary>
         /// Conductivity equation: watt / ( meter * Temp)
@@ -74,19 +74,19 @@ namespace Thermodynamics
             ThermalCellDefinition def = new ThermalCellDefinition();
             DefinitionExtensionsAPI lookup = Session.Definitions;
 
-            if (!lookup.DefinitionIdExists(defId)) 
+            bool isTrue;
+            if (!lookup.DefinitionIdExists(defId) || !lookup.TryGetBool(defId, GroupId, IgnoreId, out isTrue))
             {
                 defId = new MyDefinitionId(defId.TypeId, Settings.DefaultSubtypeId);
-                
-                if (!lookup.DefinitionIdExists(defId)) 
+
+                if (!lookup.DefinitionIdExists(defId))
                 {
                     defId = DefaultCubeBlockDefinitionId;
                 }
             }
 
-            bool isTrue;
             if (lookup.TryGetBool(defId, GroupId, IgnoreId, out isTrue))
-                def.Ignore = isTrue;
+                def.IgnoreThermals = isTrue;
 
             double dvalue;
             if (lookup.TryGetDouble(defId, GroupId, ConductivityId, out dvalue))

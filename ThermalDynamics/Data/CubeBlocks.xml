@@ -9,9 +9,9 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Bool Name="Ignore" Value="false" />
+					<Bool Name="IgnoreThermals" Value="false" />
 					<Decimal Name="Conductivity" Value="0.70" />
-					<Decimal Name="SpecificHeat" Value="1" />
+					<Decimal Name="SpecificHeat" Value="1.0" />
 					<Decimal Name="Emissivity" Value="0.125" />
 					<Decimal Name="ProducerWasteEnergy" Value="0.05" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0.05" />
@@ -21,8 +21,6 @@
 			</ModExtensions>
 		</Definition>
 
-		<!-- Hydrogen Thrusts Large -->
-
 		<Definition>
 			<Id>
 				<TypeId>Thrust</TypeId>
@@ -30,9 +28,28 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Bool Name="Ignore" Value="false" />
+					<Bool Name="IgnoreThermals" Value="false" />
 					<Decimal Name="Conductivity" Value="1" />
 					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0.25" />
+					<Decimal Name="CriticalTemperature" Value="1200" />
+					<Decimal Name="CriticalTemperatureScaler" Value="0.25"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+		<Definition>
+			<Id>
+				<TypeId>Reactor</TypeId>
+				<SubtypeId>DefaultThermodynamics</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="true" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="20" />
 					<Decimal Name="Emissivity" Value="0.25" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0.25" />
@@ -41,9 +58,6 @@
 				</Group>
 			</ModExtensions>
 		</Definition>
-
-
-
 
 	</CubeBlocks>
 </Definitions>
