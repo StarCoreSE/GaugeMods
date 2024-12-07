@@ -20,7 +20,8 @@ namespace Thermodynamics
     {
 
         private static readonly Guid StorageGuid = new Guid("f7cd64ae-9cd8-41f3-8e5d-3db992619343");
-
+        private static readonly Guid StorageGuidLoops = new Guid("f7cd64ae-9cd8-41f3-8e5d-3db992619344");
+        
         public MyCubeGrid Grid;
         public Dictionary<int, int> PositionToIndex = new Dictionary<int, int>();
         public MyFreeList<ThermalCell> Thermals = new MyFreeList<ThermalCell>();
@@ -153,21 +154,69 @@ namespace Thermodynamics
                     int f = bytes[i + 4];
                     f |= bytes[i + 5] << 8;
 
+                    MyLog.Default.Info($"[{Settings.Name}] [Unpack] {id} {PositionToIndex[id]} {Thermals.ItemArray[PositionToIndex[id]].Block.BlockDefinition.Id} - T: {f}");
+
                     Thermals.ItemArray[PositionToIndex[id]].Temperature = f;
                 }
 
-                //MyLog.Default.Info($"[{Settings.Name}] [Unpack] {id} {PositionToIndex[id]} {Thermals.list[PositionToIndex[id]].Block.BlockDefinition.Id} - T: {f}");
+
             }
             catch { }
         }
+
+        private string PackLoops()
+        {
+            byte[] bytes = new byte[ThermalLoops.Count * 3];
+
+            int bi = 0;
+            for (int i = 0; i < ThermalLoops.Count; i++)
+            {
+                ThermalLoop l = ThermalLoops[i];
+                if (l == null) continue;
+
+                bytes[bi] = (byte)i;
+                short t = (short)(l.Temperature);
+                bytes[bi + 1] = (byte)t;
+                bytes[bi + 2] = (byte)(t >> 8);
+
+                bi += 3;
+
+                //TODO: keep track of this. it might cause weird behaivor.
+                l.Temperature = t;
+            }
+
+            return Convert.ToBase64String(bytes);
+        }
+
+        private void UnpackLoops(string data)
+        {
+            try
+            {
+                byte[] bytes = Convert.FromBase64String(data);
+
+                for (int i = 0; i < bytes.Length; i += 3)
+                {
+                    int id = bytes[i];
+
+                    int f = bytes[i+1];
+                    f |= bytes[i+2] << 8;
+
+                    MyLog.Default.Info($"[{Settings.Name}] [UnpackLoops] {id} - T: {f}");
+
+                    ThermalLoops[id].Temperature = f;
+                }
+            }
+            catch { }
+        }
+
 
         private void Save()
         {
             //Stopwatch sw = Stopwatch.StartNew();
 
             string data = Pack();
+            string loopdata = PackLoops();
 
-            //string data = Convert.ToBase64String(MyAPIGateway.Utilities.SerializeToBinary(PackGridInfo()));
 
             MyModStorageComponentBase storage = Entity.Storage;
             if (storage.ContainsKey(StorageGuid))
@@ -178,6 +227,16 @@ namespace Thermodynamics
             {
                 storage.Add(StorageGuid, data);
             }
+
+            if (storage.ContainsKey(StorageGuidLoops))
+            {
+                storage[StorageGuidLoops] = loopdata;
+            }
+            else
+            {
+                storage.Add(StorageGuidLoops, loopdata);
+            }
+
             //sw.Stop();
             //MyLog.Default.Info($"[{Settings.Name}] [SAVE] {Grid.DisplayName} ({Grid.EntityId}) t-{((float)sw.ElapsedTicks / TimeSpan.TicksPerMillisecond).ToString("n8")}ms, size: {data.Length}");
         }
@@ -189,6 +248,11 @@ namespace Thermodynamics
             if (Entity.Storage.ContainsKey(StorageGuid))
             {
                 Unpack(Entity.Storage[StorageGuid]);
+            }
+
+            if (Entity.Storage.ContainsKey(StorageGuidLoops))
+            {
+                UnpackLoops(Entity.Storage[StorageGuidLoops]);
             }
 
             //sw.Stop();
