@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<CubeBlocks>
+		
+		<Definition>
+			<Id>
+				<TypeId>EnvironmentDefinition</TypeId>
+				<SubtypeId>DefaultThermodynamicsLoop</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalLoopProperties">
+					<Decimal Name="Mass" Value ="500" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="5" />
+					<Decimal Name="PipeSurfaceAreaScaler" Value ="1" />
+					<Decimal Name="PlateSurfaceAreaScaler" Value ="1" />
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+	</CubeBlocks>
+</Definitions>

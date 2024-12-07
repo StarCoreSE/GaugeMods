@@ -17,6 +17,7 @@ namespace Thermodynamics
         private static readonly MyStringId ConductivityId = MyStringId.GetOrCompute("Conductivity");
         private static readonly MyStringId SpecificHeatId = MyStringId.GetOrCompute("SpecificHeat");
         private static readonly MyStringId EmissivityId = MyStringId.GetOrCompute("Emissivity");
+        private static readonly MyStringId SurfaceAreaScalerId = MyStringId.GetOrCompute("SurfaceAreaScaler");
         private static readonly MyStringId ProducerWasteEnergyId = MyStringId.GetOrCompute("ProducerWasteEnergy");
         private static readonly MyStringId ConsumerWasteEnergyId = MyStringId.GetOrCompute("ConsumerWasteEnergy");
         private static readonly MyStringId CriticalTemperatureId = MyStringId.GetOrCompute("CriticalTemperature");
@@ -49,6 +50,9 @@ namespace Thermodynamics
         /// </summary>
         [ProtoMember(15)]
         public float Emissivity;
+
+        [ProtoMember(17)]
+        public float SurfaceAreaScaler;
 
         /// <summary>
         /// the percent of produced energy converted to heat
@@ -98,6 +102,9 @@ namespace Thermodynamics
             if (lookup.TryGetDouble(defId, GroupId, EmissivityId, out dvalue))
                 def.Emissivity = (float)dvalue;
 
+            if (lookup.TryGetDouble(defId, GroupId, SurfaceAreaScalerId, out dvalue))          
+                def.SurfaceAreaScaler = (float)dvalue;
+
             if (lookup.TryGetDouble(defId, GroupId, ProducerWasteEnergyId, out dvalue))
                 def.ProducerWasteEnergy = (float)dvalue;
 
@@ -115,6 +122,8 @@ namespace Thermodynamics
             def.SpecificHeat = Math.Max(0, def.SpecificHeat);
 
             def.Emissivity = Math.Max(0, def.Emissivity);
+
+            def.SurfaceAreaScaler = Math.Max(0, def.SurfaceAreaScaler);
 
             def.ProducerWasteEnergy = Math.Max(0, def.ProducerWasteEnergy);
 

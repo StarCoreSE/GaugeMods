@@ -1,2 +1,3 @@
-CubeBlocks.xml
+Cubes.xml
 Planets.xml
+Loops.xml

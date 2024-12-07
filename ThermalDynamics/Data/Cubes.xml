@@ -13,6 +13,7 @@
 					<Decimal Name="Conductivity" Value="0.70" />
 					<Decimal Name="SpecificHeat" Value="1.0" />
 					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
 					<Decimal Name="ProducerWasteEnergy" Value="0.05" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0.05" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
@@ -32,6 +33,7 @@
 					<Decimal Name="Conductivity" Value="1" />
 					<Decimal Name="SpecificHeat" Value="2" />
 					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0.25" />
 					<Decimal Name="CriticalTemperature" Value="1200" />
@@ -47,10 +49,11 @@
 			</Id>
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
-					<Bool Name="IgnoreThermals" Value="true" />
+					<Bool Name="IgnoreThermals" Value="false" />
 					<Decimal Name="Conductivity" Value="1" />
 					<Decimal Name="SpecificHeat" Value="20" />
 					<Decimal Name="Emissivity" Value="0.25" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
 					<Decimal Name="ProducerWasteEnergy" Value="0" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0.25" />
 					<Decimal Name="CriticalTemperature" Value="1500" />
