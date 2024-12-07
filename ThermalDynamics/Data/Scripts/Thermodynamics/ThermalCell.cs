@@ -62,7 +62,7 @@ namespace Thermodynamics
 
             Mass = Block.Mass;
 
-            //MyLog.Default.Info($"[{Settings.Name}] {Block.BlockDefinition.Id} -- mass: {Mass}");
+            MyLog.Default.Info($"[{Settings.Name}] {Block.BlockDefinition.Id} -- mass: {Mass}");
             
             Area = Block.CubeGrid.GridSize * Block.CubeGrid.GridSize;
             C = 1 / (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize);
@@ -468,7 +468,8 @@ namespace Thermodynamics
             if (Settings.Instance.EnableEnvironment)
             {
                 float temperatureSquared = Temperature * Temperature;
-                totalRadiation = Boltzmann * Definition.Emissivity * (temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4;
+                totalRadiation = Boltzmann * Definition.Emissivity * ((temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4);
+                //MyLog.Default.Info($"temp: {Temperature} - {Grid.FrameAmbientTemprature} --- {(temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4} --- {Boltzmann} --- {Definition.Emissivity} --- {totalRadiation}");
             }
 
             if (Settings.Instance.EnableSolarHeat && !Grid.FrameSolarOccluded)
