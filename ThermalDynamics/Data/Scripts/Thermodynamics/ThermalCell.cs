@@ -37,7 +37,6 @@ namespace Thermodynamics
         public float Boltzmann;
         public float[] kA;
 
-
         public ThermalGrid Grid;
         public IMySlimBlock Block;
         public ThermalCellDefinition Definition;
@@ -47,7 +46,10 @@ namespace Thermodynamics
 
         public int ExposedSurfaces = 0;
         private int[] ExposedSurfacesByDirection = new int[6];
-        //public List<Vector3I> ExposedSurfaceDirections = new List<Vector3I>();
+
+        public ThermalCell(ThermalGrid g) {
+            // used by ThermalLoop
+        }
 
         public ThermalCell(ThermalGrid g, IMySlimBlock b, ThermalCellDefinition def)
         {
@@ -60,21 +62,22 @@ namespace Thermodynamics
             //of the update cycle instead of whenever.
             SetupListeners();
 
-            Mass = Block.Mass;
+            Boltzmann = -1 * def.Emissivity * Tools.BoltzmannConstant;
 
-            MyLog.Default.Info($"[{Settings.Name}] {Block.BlockDefinition.Id} -- mass: {Mass}");
-            
-            Area = Block.CubeGrid.GridSize * Block.CubeGrid.GridSize;
-            C = 1 / (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize);
-            ThermalMassInv = 1f / (Definition.SpecificHeat * Mass);
-            Boltzmann = -1 * Definition.Emissivity * Tools.BoltzmannConstant;
-
-            float value =  (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize) / (6 * Area * ((Block.Max + 1) - Block.Min).LargestFace());
-            k = value * Definition.Conductivity;
-            Definition.Conductivity = value;
-
-            //MyLog.Default.Info($"face: {(Block.Max + 1) - Block.Min} -- {((Block.Max + 1) - Block.Min).LargestFace()} -- {(6 * Area * ((Block.Max + 1) - Block.Min).LargestFace())} --- other: {(Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize)}");
+            PrecalculateVariables();
             UpdateHeat();
+        }
+
+        public void PrecalculateVariables() 
+        {
+            Mass = Block.Mass;
+            Area = Block.CubeGrid.GridSize * Block.CubeGrid.GridSize * Definition.SurfaceAreaScaler;
+            C = 1 / (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize) * Settings.Instance.TimeScaleRatio;
+            ThermalMassInv = 1f / (Definition.SpecificHeat * Mass) * Settings.Instance.TimeScaleRatio;
+            
+            // get max conductivity then scale it by the conductivity value
+            // this is not a perfect calculation but it does a good enough job
+            k = Definition.Conductivity * (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize) / (6f * Area * ((Block.Max + 1) - Block.Min).LargestFace());
         }
 
         private void SetupListeners()
@@ -268,7 +271,7 @@ namespace Thermodynamics
             catch { }
         }
 
-        public void ClearNeighbors()
+        internal void ClearNeighbors()
         {
             for (int i = 0; i < Neighbors.Count; i++)
             {
@@ -287,7 +290,7 @@ namespace Thermodynamics
             CalculatekA();
         }
 
-        public void AddAllNeighbors()
+        internal void AddAllNeighbors()
         {
             ClearNeighbors();
             //get a list of current neighbors from the grid
@@ -302,7 +305,7 @@ namespace Thermodynamics
             }
         }
 
-        protected void AddNeighbor(ThermalCell n2)
+        internal void AddNeighbor(ThermalCell n2)
         {
             //MyLog.Default.Info($"[Thermals] AddNeighbours");
             Neighbors.Add(n2);
@@ -320,7 +323,7 @@ namespace Thermodynamics
         /// Maps out the surface area between two blocks
         /// </summary>
         /// <returns>area in grid units (not meters)</returns>
-        protected int FindSurfaceArea(ThermalCell neighbor)
+        internal int FindSurfaceArea(ThermalCell neighbor)
         {
 
             int index = Neighbors.IndexOf(neighbor);
@@ -380,17 +383,17 @@ namespace Thermodynamics
             return totalArea;
         }
 
-        protected void CalculatekA()
+        internal void CalculatekA()
         {
             kA = new float[Neighbors.Count];
             for (int i = 0; i < Neighbors.Count; i++)
             {
                 float area = Math.Min(Area, Neighbors[i].Area);
-                kA[i] = Definition.Conductivity * area * TouchingSerfacesByNeighbor[i];
+                kA[i] = k * area * TouchingSerfacesByNeighbor[i];
             }
         }
 
-        protected void RemoveNeighbor(ThermalCell n2)
+        internal void RemoveNeighbor(ThermalCell n2)
         {
             int i = Neighbors.IndexOf(n2);
             if (i != -1)
@@ -409,11 +412,6 @@ namespace Thermodynamics
             }
         }
 
-        public float GetTemperature()
-        {
-            return Temperature;
-        }
-
         private void UpdateHeat()
         {
             // power produced and consumed are in Watts or Joules per second.
@@ -424,7 +422,7 @@ namespace Thermodynamics
 
             float produced = EnergyProduction * Definition.ProducerWasteEnergy;
             float consumed = (EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy;
-            HeatGeneration = Settings.Instance.TimeScaleRatio * (produced + consumed) * ThermalMassInv;
+            HeatGeneration = (produced + consumed) * ThermalMassInv;
         }
         /// <summary>
         /// Update the temperature of each cell in the grid
@@ -444,13 +442,12 @@ namespace Thermodynamics
                 deltaTemperature += kA[i] * (neighborTemp - Temperature);
             }
 
-            DeltaTemperature = ((C * deltaTemperature) + (totalRadiation * ThermalMassInv)) * Settings.Instance.TimeScaleRatio;
-
+            DeltaTemperature = ((C * deltaTemperature) + (totalRadiation * ThermalMassInv));
 
             Temperature = Math.Max(0, Temperature + DeltaTemperature);
 
             // update heat generation
-            HeatGeneration = Settings.Instance.TimeScaleRatio * ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
+            HeatGeneration = ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
             Temperature += HeatGeneration;
 
 
@@ -481,8 +478,6 @@ namespace Thermodynamics
             return totalRadiation;
         }
 
-
-
         private void HandleCriticalTemperature()
         {
             if (Settings.Instance.EnableDamage && Temperature > Definition.CriticalTemperature)
@@ -491,7 +486,7 @@ namespace Thermodynamics
             }
         }
 
-        public void UpdateSurfaces()
+        internal void UpdateSurfaces()
         {
             ExposedSurfacesByDirection = Grid.GetExposedSurfacesByDirection(Block.Min, Block.Max+1);
 

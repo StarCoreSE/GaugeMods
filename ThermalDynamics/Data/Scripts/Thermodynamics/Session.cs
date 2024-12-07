@@ -96,10 +96,10 @@ namespace Thermodynamics
 
                 MyAPIGateway.Utilities.ShowNotification(
                     //$"[Cell] {c.Block.Position} " +
-                    $"T: {c.Temperature.ToString("n4")} " +
-                    $"Gain: {(c.DeltaTemperature + c.HeatGeneration).ToString("n6")} " +
-                    $"dT: {c.DeltaTemperature.ToString("n4")} " +
-                    $"In: {c.HeatGeneration.ToString("n4")} " + 
+                    $"T: {c.Temperature.ToString("n3")} " +
+                    $"Gain: {(c.DeltaTemperature + c.HeatGeneration).ToString("n3")} " +
+                    $"dT: {c.DeltaTemperature.ToString("n3")} " +
+                    $"In: {c.HeatGeneration.ToString("n3")} " + 
                     $"ESA: {c.ExposedSurfaces.ToString("n0")} " +
                     $"", 1, "White");
 
@@ -115,15 +115,19 @@ namespace Thermodynamics
                     $"prod: {c.EnergyProduction} " +
                     $"cons: {(c.EnergyConsumption + c.ThrustEnergyConsumption)} ", 1, "White");
 
+                MyAPIGateway.Utilities.ShowNotification($"[Solar] {g.FrameAmbientTemprature.ToString("n3")}", 1, "White");
+
                 MyAPIGateway.Utilities.ShowNotification($"[Grid] {g.DebugSurfaceStateText(g.Surfaces[position])} ", 1, "White");
 
                 MyAPIGateway.Utilities.ShowNotification($"[Grid] {string.Join(" ", c.TouchingSerfacesByNeighbor)}", 1, "White");
 
-                if (g.Pumps.Count > 0)
+                StringBuilder sb = new StringBuilder();
+                foreach (var loop in g.ThermalLoops) 
                 {
-                    MyAPIGateway.Utilities.ShowNotification(
-                        $"[Grid] Coolant Loop: {g.Pumps[0].LoopTemp.ToString("n4")}, area: {g.Pumps[0].area}", 1, "White");
+                    sb.Append($"{loop.Loop.Length}-{loop.Temperature.ToString("n3")}, ");
                 }
+                    
+                MyAPIGateway.Utilities.ShowNotification($"[Coolant] {sb.ToString()}", 1, "White");
             }
         }
 

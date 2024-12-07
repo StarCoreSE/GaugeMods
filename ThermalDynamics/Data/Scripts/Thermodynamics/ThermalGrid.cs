@@ -1,22 +1,9 @@
-﻿using ProtoBuf.Meta;
-using Sandbox.Definitions;
-using Sandbox.Engine.Physics;
-using Sandbox.Engine.Voxels;
-using Sandbox.Game;
+﻿using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
-using SpaceEngineers.Game.ModAPI;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Text;
-using System.Transactions;
-using System.Xml;
-using VRage;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
@@ -24,7 +11,6 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
-using VRage.Voxels;
 using VRageMath;
 
 namespace Thermodynamics
@@ -40,9 +26,6 @@ namespace Thermodynamics
         public MyFreeList<ThermalCell> Thermals = new MyFreeList<ThermalCell>();
         public Dictionary<int, float> RecentlyRemoved = new Dictionary<int, float>();
         public ThermalRadiationNode SolarRadiationNode = new ThermalRadiationNode();
-        public ThermalRadiationNode WindNode = new ThermalRadiationNode();
-
-        public List<CoolantPump> Pumps = new List<CoolantPump>();
 
         /// <summary>
         /// current frame per second
@@ -113,7 +96,7 @@ namespace Thermodynamics
             Grid.OnBlockRemoved += BlockRemoved;
 
 
-            SurfaceCheckComplete += () => { SurfaceUpdateFrame = SimulationFrame+1; };
+            SurfaceCheckComplete += () => { SurfaceUpdateFrame = SimulationFrame + 1; };
 
             NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
         }
@@ -124,7 +107,7 @@ namespace Thermodynamics
             Save();
             return base.IsSerialized();
         }
-        
+
         private string Pack()
         {
             byte[] bytes = new byte[Thermals.Count * 6];
@@ -175,7 +158,7 @@ namespace Thermodynamics
 
                 //MyLog.Default.Info($"[{Settings.Name}] [Unpack] {id} {PositionToIndex[id]} {Thermals.list[PositionToIndex[id]].Block.BlockDefinition.Id} - T: {f}");
             }
-            catch{ }
+            catch { }
         }
 
         private void Save()
@@ -222,15 +205,17 @@ namespace Thermodynamics
             }
 
             ThermalCellDefinition def = ThermalCellDefinition.GetDefinition(b.BlockDefinition.Id);
-            if (def.Ignore) return;
+            if (def.IgnoreThermals) return;
 
             ThermalCell cell = new ThermalCell(this, b, def);
             cell.AddAllNeighbors();
 
+            OnAddDoCoolantCheck(cell);
+
             int index = Thermals.Allocate();
             PositionToIndex.Add(cell.Id, index);
             Thermals.ItemArray[index] = cell;
-            
+
         }
 
         private void BlockRemoved(IMySlimBlock b)
@@ -248,11 +233,13 @@ namespace Thermodynamics
 
             // dont process ignored blocks
             ThermalCellDefinition def = ThermalCellDefinition.GetDefinition(b.BlockDefinition.Id);
-            if (def.Ignore) return;
+            if (def.IgnoreThermals) return;
 
             int flat = b.Position.Flatten();
             int index = PositionToIndex[flat];
             ThermalCell cell = Thermals.ItemArray[index];
+
+            OnRemoveDoCoolantCheck(cell);
 
             if (RecentlyRemoved.ContainsKey(cell.Id))
             {
@@ -358,10 +345,10 @@ namespace Thermodynamics
                 // prepare for the next simulation after a full iteration
                 if (SimulationIndex == cellCount || SimulationIndex == -1)
                 {
-                    // TODO: this is a temperary coolant flow setup it needs to be integrated into the frame quota somehow
-                    foreach (CoolantPump pump in Pumps) 
+
+                    foreach (ThermalLoop loop in ThermalLoops) 
                     {
-                        pump.Simulate();
+                        loop.Update();
                     }
 
                     // start a new simulation frame
@@ -380,7 +367,7 @@ namespace Thermodynamics
                 if (cell != null)
                 {
                     if (SurfaceUpdateFrame == SimulationFrame)
-                    { 
+                    {
                         cell.UpdateSurfaces();
                     }
 
@@ -404,50 +391,56 @@ namespace Thermodynamics
             PrepareEnvironmentTemprature(ref position);
         }
 
-        private void PrepareEnvironmentTemprature(ref Vector3D position) {
+        private void PrepareEnvironmentTemprature(ref Vector3D position)
+        {
 
             if (!Settings.Instance.EnableEnvironment) return;
 
+            if (!Settings.Instance.EnablePlanets)
+            {
+                SetFrameAmbiantTemperature(Settings.Instance.VacuumTemperature);
+                return;
+            }
+
             PlanetManager.Planet planet = PlanetManager.GetClosestPlanet(position);
-            float frameAmbiSquared;
             if (planet == null)
             {
-                FrameAmbientTemprature = Settings.Instance.VacuumTemperature;
-                frameAmbiSquared = FrameAmbientTemprature * FrameAmbientTemprature;
-                FrameAmbientTempratureP4 = frameAmbiSquared * frameAmbiSquared;
+                SetFrameAmbiantTemperature(Settings.Instance.VacuumTemperature);
+                return;
             }
-            else 
+
+            PlanetDefinition def = planet.Definition();
+            Vector3 local = position - planet.Position;
+            Vector3D surfacePointLocal = planet.Entity.GetClosestSurfacePointLocal(ref local);
+            bool isUnderground = local.LengthSquared() < surfacePointLocal.LengthSquared();
+            float airDensity = planet.Entity.GetAirDensity(position);
+            float windSpeed = planet.Entity.GetWindSpeed(position);
+
+            float ambient = def.UndergroundTemperature;
+            if (!isUnderground)
             {
-                bool isUnderground = false;
-                PlanetDefinition def = planet.Definition();
-                Vector3 local = position - planet.Position;
-                Vector3D surfacePointLocal = planet.Entity.GetClosestSurfacePointLocal(ref local);
-                isUnderground = local.LengthSquared() < surfacePointLocal.LengthSquared();
-                float airDensity = planet.Entity.GetAirDensity(position);
-                float windSpeed = planet.Entity.GetWindSpeed(position);
-
-
-                float ambient = def.UndergroundTemperature;
-                if (!isUnderground)
-                {
-                    float dot = (float)Vector3D.Dot(Vector3D.Normalize(local), FrameSolarDirection);
-                    ambient = def.NightTemperature + ((dot + 1f) * 0.5f * (def.DayTemperature - def.NightTemperature));
-                }
-                else
-                {
-                    FrameSolarOccluded = true;
-                }
-
-                FrameAmbientTemprature = Math.Max(Settings.Instance.VacuumTemperature, ambient * airDensity);
-                frameAmbiSquared = FrameAmbientTemprature * FrameAmbientTemprature;
-                FrameAmbientTempratureP4 = frameAmbiSquared * frameAmbiSquared;
-                //FrameSolarDecay = 1 - def.SolarDecay * airDensity;
+                float dot = (float)Vector3D.Dot(Vector3D.Normalize(local), FrameSolarDirection);
+                ambient = def.NightTemperature + ((dot + 1f) * 0.5f * (def.DayTemperature - def.NightTemperature));
             }
+            else
+            {
+                FrameSolarOccluded = true;
+            }
+
+            SetFrameAmbiantTemperature(Math.Max(Settings.Instance.VacuumTemperature, ambient * airDensity));
+
 
             //FrameWindDirection = Vector3.Cross(planet.GravityComponent.GetWorldGravityNormalized(position), planet.Entity.WorldMatrix.Forward).Normalized() * windSpeed;
             //MySimpleObjectDraw.DrawLine(position, position + FrameWindDirection, MyStringId.GetOrCompute("Square"), ref color2, 0.1f);
 
             //TODO: implement underground core temparatures
+        }
+
+        private void SetFrameAmbiantTemperature(float temperature)
+        {
+            FrameAmbientTemprature = temperature;
+            float frameAmbiSquared = FrameAmbientTemprature * FrameAmbientTemprature;
+            FrameAmbientTempratureP4 = frameAmbiSquared * frameAmbiSquared;
         }
 
         private void PrepareSolarEnvironment(ref Vector3D position)

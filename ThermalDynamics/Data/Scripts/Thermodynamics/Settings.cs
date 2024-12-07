@@ -22,7 +22,7 @@ namespace Thermodynamics
 		public static Settings Instance;
 
         public static readonly MyStringHash DefaultSubtypeId = MyStringHash.GetOrCompute("DefaultThermodynamics");
-        public static readonly MyStringHash DefaultLowMassSubtypeId = MyStringHash.GetOrCompute("DefaultLowMassThermodynamics");
+        public static readonly MyStringHash DefaultLoopSubtypeId = MyStringHash.GetOrCompute("DefaultThermodynamicsLoop");
 
         [ProtoMember(1)]
 		public int Version;
@@ -40,6 +40,10 @@ namespace Thermodynamics
 		public bool EnableSolarHeat;
 
 		[ProtoMember(10)]
+		public bool EnablePlanets;
+
+
+		[ProtoMember(14)]
 		public bool EnableDamage;
 
         /// <summary>
@@ -87,7 +91,8 @@ namespace Thermodynamics
 				Debug = true,
 				DebugBlockColors = true,
 				EnableEnvironment = true,
-				EnableSolarHeat = true,
+				EnableSolarHeat = false,
+				EnablePlanets = true,
 				EnableDamage = true,
 				Frequency = 3,
 				SimulationSpeed = 1,
