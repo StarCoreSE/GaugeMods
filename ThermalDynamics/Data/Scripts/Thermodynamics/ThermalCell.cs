@@ -465,7 +465,7 @@ namespace Thermodynamics
             if (Settings.Instance.EnableEnvironment)
             {
                 float temperatureSquared = Temperature * Temperature;
-                totalRadiation = Boltzmann * Definition.Emissivity * ((temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4);
+                totalRadiation = Boltzmann * ((temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4);
                 //MyLog.Default.Info($"temp: {Temperature} - {Grid.FrameAmbientTemprature} --- {(temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4} --- {Boltzmann} --- {Definition.Emissivity} --- {totalRadiation}");
             }
 
