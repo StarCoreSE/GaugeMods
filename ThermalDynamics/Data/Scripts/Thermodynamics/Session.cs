@@ -1,15 +1,9 @@
 ﻿using Draygo.BlockExtensionsAPI;
-using Sandbox.Game;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Cube;
-using Sandbox.Game.EntityComponents;
-using Sandbox.Game.SessionComponents;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Weapons;
 using SENetworkAPI;
 using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Security.Cryptography;
 using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
@@ -49,27 +43,13 @@ namespace Thermodynamics
             base.UnloadData();
         }
 
-        public Color GetTemperatureColor(float temp)
-        {
-            float max = 500f;
-            // Clamp the temperature to the range 0-100
-            float t = Math.Max(0, Math.Min(max, temp));
-
-
-
-            // Calculate the red and blue values using a linear scale
-            float red = (t / max);
-
-            float blue = (1f - (t / max));
-
-            return new Color(red, 0, blue, 255);
-        }
-
 
 
         public override void Simulate()
         {
-            if (Settings.Instance.Debug && !MyAPIGateway.Utilities.IsDedicated)
+            if (MyAPIGateway.Utilities.IsDedicated) return;
+
+            if (Settings.Instance.Debug)
             {
                 //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
                 MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;
@@ -131,9 +111,26 @@ namespace Thermodynamics
             }
         }
 
+        private bool UsingExtinguisherTool()
+        {
+            IMyCharacter character = MyAPIGateway.Session?.Player?.Controller?.ControlledEntity as IMyCharacter;
+
+            if (character == null || character.EquippedTool == null) return false;
+
+            IMyAutomaticRifleGun extinguisher = character.EquippedTool as IMyAutomaticRifleGun;
+            if (extinguisher != null && extinguisher.DefinitionId.SubtypeId.ToString() == "ExtinguisherGun") 
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         public override void Draw()
 		{
-            if (Settings.DebugTextureColors && !MyAPIGateway.Utilities.IsDedicated)
+            if (MyAPIGateway.Utilities.IsDedicated) return;
+
+            if (UsingExtinguisherTool()) 
             {
                 //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
                 MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;

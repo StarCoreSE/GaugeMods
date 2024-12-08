@@ -154,7 +154,7 @@ namespace Thermodynamics
                     int f = bytes[i + 4];
                     f |= bytes[i + 5] << 8;
 
-                    MyLog.Default.Info($"[{Settings.Name}] [Unpack] {id} {PositionToIndex[id]} {Thermals.ItemArray[PositionToIndex[id]].Block.BlockDefinition.Id} - T: {f}");
+                    //MyLog.Default.Info($"[{Settings.Name}] [Unpack] {id} {PositionToIndex[id]} {Thermals.ItemArray[PositionToIndex[id]].Block.BlockDefinition.Id} - T: {f}");
 
                     Thermals.ItemArray[PositionToIndex[id]].Temperature = f;
                 }
@@ -201,7 +201,7 @@ namespace Thermodynamics
                     int f = bytes[i+1];
                     f |= bytes[i+2] << 8;
 
-                    MyLog.Default.Info($"[{Settings.Name}] [UnpackLoops] {id} - T: {f}");
+                    //MyLog.Default.Info($"[{Settings.Name}] [UnpackLoops] {id} - T: {f}");
 
                     ThermalLoops[id].Temperature = f;
                 }

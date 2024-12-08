@@ -17,7 +17,7 @@ namespace Thermodynamics
 		public const string Name = "Thermodynamics";
 
 
-		public const bool DebugTextureColors = false;
+		public const bool DebugTextureColors = true;
 
 		public static Settings Instance;
 
@@ -94,10 +94,10 @@ namespace Thermodynamics
 				EnableSolarHeat = true,
 				EnablePlanets = true,
 				EnableDamage = true,
-				Frequency = 2,
+				Frequency = 60,
 				SimulationSpeed = 1,
 				VacuumTemperature = 2.7f,
-                SolarEnergy = 500f,
+                SolarEnergy = 1000f,
 				PresurizedAtmoConductivity = 0.026f,
 				PresurizedAtmoSpecificHeat = 1005,
             };
