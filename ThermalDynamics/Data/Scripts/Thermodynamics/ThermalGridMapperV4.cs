@@ -121,14 +121,14 @@ namespace Thermodynamics
 
             Queue<Vector3I> processQueue = new Queue<Vector3I>();
 
-            //List<MyCubeBlockDefinition.MountPoint> mounts = new List<MyCubeBlockDefinition.MountPoint>();
+            List<MyCubeBlockDefinition.MountPoint> mounts = new List<MyCubeBlockDefinition.MountPoint>();
             MyCubeBlockDefinition def = block.BlockDefinition as MyCubeBlockDefinition;
             bool isAirtight = def?.IsAirTight == true;
             Matrix matrix;
             MyBlockOrientation orientation = block.Orientation;
             orientation.GetMatrix(out matrix);
             matrix.TransposeRotationInPlace();
-            //MyCubeGrid.TransformMountPoints(mounts, def, def.MountPoints, ref orientation);
+            MyCubeGrid.TransformMountPoints(mounts, def, def.MountPoints, ref orientation);
 
             // look at all cells within the block
             for (int x = min.X; x < max.X; x++)
@@ -204,24 +204,24 @@ namespace Thermodynamics
                             }
 
                             //perform mount point check
-                            //for (int b = 0; b < mounts.Count; b++)
-                            //{
-                            //    MyCubeBlockDefinition.MountPoint m = mounts[b];
-                            //    if (!m.Enabled || m.Normal != dir)
-                            //    {
-                            //        continue;
-                            //    }
+                            for (int b = 0; b < mounts.Count; b++)
+                            {
+                                MyCubeBlockDefinition.MountPoint m = mounts[b];
+                                if (!m.Enabled || m.Normal != dir)
+                                {
+                                    continue;
+                                }
 
-                            //    Vector3 mmin = Vector3.Min(m.Start, m.End) - local;
-                            //    Vector3 mmax = Vector3.Max(m.Start, m.End) - local;
-                            //    BoundingBox mountBox = new BoundingBox(mmin, mmax);
-                            //    BoundingBox cellbox = mountBounds[a];
+                                Vector3 mmin = Vector3.Min(m.Start, m.End) - local;
+                                Vector3 mmax = Vector3.Max(m.Start, m.End) - local;
+                                BoundingBox mountBox = new BoundingBox(mmin, mmax);
+                                BoundingBox cellbox = mountBounds[a];
 
-                            //    if (cellbox.Intersects(mountBox))
-                            //    {
-                            //        state |= 1 << a + (int)SurfaceFlags.SelfMountPointOffset;
-                            //    }
-                            //}
+                                if (cellbox.Intersects(mountBox))
+                                {
+                                    state |= 1 << a + (int)SurfaceFlags.SelfMountPointOffset;
+                                }
+                            }
 
                             int ns;
                             if (Surfaces.TryGetValue(ncell, out ns))
@@ -234,8 +234,8 @@ namespace Thermodynamics
                                 int bitp = 5 - a;
                                 state |= (ns & 1 << bitp) >> bitp << a + (int)SurfaceFlags.NeighborAirtightOffset;
 
-                                //bitp = 5 - a + (int)SurfaceFlags.SelfMountPointOffset;
-                                //state |= (ns & 1 << bitp) >> bitp << a + (int)SurfaceFlags.SelfMountPointOffset;
+                                bitp = 5 - a + (int)SurfaceFlags.SelfMountPointOffset;
+                                state |= (ns & 1 << bitp) >> bitp << a + (int)SurfaceFlags.NeighborMountPointOffset;
 
                                 processQueue.Enqueue(ncell);
                             }
@@ -295,7 +295,7 @@ namespace Thermodynamics
                             {
                                 int surface = Surfaces[n];
                                 surface &= ~(1 << 5 - i + (int)SurfaceFlags.NeighborAirtightOffset);
-                                //surface &= ~(1 << 5 - i + (int)SurfaceFlags.NeighborMountPointOffset);
+                                surface &= ~(1 << 5 - i + (int)SurfaceFlags.NeighborMountPointOffset);
                                 Surfaces[n] = surface;
 
                                 //MyLog.Default.Info(DebugSurfaceStateText(surface));
@@ -329,7 +329,7 @@ namespace Thermodynamics
                 state |= (ns & 1 << bitp) >> bitp << i + (int)SurfaceFlags.NeighborAirtightOffset;
 
                 bitp = 5 - i + (int)SurfaceFlags.SelfMountPointOffset;
-                state |= (ns & 1 << bitp) >> bitp << i + (int)SurfaceFlags.SelfMountPointOffset;
+                state |= (ns & 1 << bitp) >> bitp << i + (int)SurfaceFlags.NeighborMountPointOffset;
 
             }
             Surfaces[cell] = state;
@@ -586,7 +586,12 @@ namespace Thermodynamics
                                 // and the neighbor cell is exposed
                                 if ((cellState & 1 << i + (int)SurfaceFlags.NeighborAirtightOffset) == 0 && Rooms[0].Contains(n))
                                 {
-                                    exposedSurfaces[i]++;
+
+                                    //MyLog.Default.Info($"mountpointself: {(cellState & 1 << i + (int)SurfaceFlags.NeighborMountPointOffset) ! 1}")
+                                    if (!((cellState & 1 << i + (int)SurfaceFlags.NeighborMountPointOffset) != 0 && (cellState & 1 << i + (int)SurfaceFlags.SelfMountPointOffset) != 0)) 
+                                    {
+                                        exposedSurfaces[i]++;
+                                    }
                                 }
                             }
                         }

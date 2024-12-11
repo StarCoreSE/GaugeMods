@@ -509,11 +509,9 @@ namespace Thermodynamics
 
         private void PrepareSolarEnvironment(ref Vector3D position)
         {
-
-            FrameSolarDirection = MyVisualScriptLogicProvider.GetSunDirection();
-
             if (!Settings.Instance.EnableSolarHeat) return;
 
+            FrameSolarDirection = MyVisualScriptLogicProvider.GetSunDirection();
             SolarRadiationNode.Update();
 
             FrameSolarOccluded = false;
@@ -553,10 +551,10 @@ namespace Thermodynamics
 
                     voxel.PositionComp.WorldAABB.Intersect(ref line, out subLine);
                     //Vector3D start = Vector3D.Transform((Vector3D)(Vector3)ExposedSurface[i] * gridSize, matrix);
-                    var green = Color.Green.ToVector4();
 
-                    if (Settings.Instance.Debug && !MyAPIGateway.Utilities.IsDedicated)
+                    if (Settings.Instance.DebugSolarRaycast && !MyAPIGateway.Utilities.IsDedicated)
                     {
+                        var green = Color.Green.ToVector4();
                         MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref green, 0.2f);
                     }
 
@@ -585,7 +583,7 @@ namespace Thermodynamics
 
                     var blue = Color.Blue.ToVector4();
 
-                    if (Settings.Instance.Debug && !MyAPIGateway.Utilities.IsDedicated)
+                    if (Settings.Instance.DebugSolarRaycast && !MyAPIGateway.Utilities.IsDedicated)
                     {
 
                         MySimpleObjectDraw.DrawLine(subLine.From, subLine.To, MyStringId.GetOrCompute("Square"), ref blue, 0.2f);
@@ -601,10 +599,9 @@ namespace Thermodynamics
                 }
             }
 
-            if (Settings.Instance.Debug && !MyAPIGateway.Utilities.IsDedicated)
+            if (Settings.Instance.DebugSolarRaycast && !MyAPIGateway.Utilities.IsDedicated)
             {
                 var color = (FrameSolarOccluded) ? Color.Red.ToVector4() : Color.White.ToVector4();
-                var color2 = Color.LightGoldenrodYellow.ToVector4();
                 MySimpleObjectDraw.DrawLine(position, position + (FrameSolarDirection * 15000000), MyStringId.GetOrCompute("Square"), ref color, 0.1f);
             }
         }

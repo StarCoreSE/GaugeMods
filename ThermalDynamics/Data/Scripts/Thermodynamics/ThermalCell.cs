@@ -37,6 +37,10 @@ namespace Thermodynamics
         public float Boltzmann;
         public float[] kA;
 
+
+        public float IntensityDebug;
+
+
         public ThermalGrid Grid;
         public IMySlimBlock Block;
         public ThermalCellDefinition Definition;
@@ -450,12 +454,8 @@ namespace Thermodynamics
             HeatGeneration = ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
             Temperature += HeatGeneration;
 
-
-            //TODO: this is only used for debug and can be removed later on
-            //Radiation = C * totalRadiation * ThermalMassInv;
-
             HandleCriticalTemperature();
-            DebugDrawColors();
+            DebugDrawColorsTemperature();
         }
 
         private float CalculateTotalRadiation()
@@ -472,6 +472,8 @@ namespace Thermodynamics
             if (Settings.Instance.EnableSolarHeat && !Grid.FrameSolarOccluded)
             {
                 float intensity = DirectionalRadiationIntensity(ref Grid.FrameSolarDirection, ref Grid.SolarRadiationNode);
+                IntensityDebug = intensity;
+                DebugDrawColorsSolar(intensity);
                 totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
             }
 
@@ -505,41 +507,50 @@ namespace Thermodynamics
         internal float DirectionalRadiationIntensity(ref Vector3 targetDirection, ref ThermalRadiationNode node)
         {
             float intensity = 0;
-            bool isCube = (Block.Max - Block.Min).Volume() <= 1;
 
             for (int i = 0; i < 6; i++)
             {
-                intensity += CalculateDirectionIntensity(i, ExposedSurfacesByDirection[i], ref targetDirection, ref node, isCube);
-            }
+                int surfaceCount = ExposedSurfacesByDirection[i];
+                if (surfaceCount == 0) continue;
 
+                Vector3D startDirection = Vector3D.Rotate(ThermalGrid.Directions[i], Grid.FrameMatrix);
+                float dot = Vector3.Dot(startDirection, targetDirection);
+
+                dot = Math.Max(0, dot);
+
+                if (surfaceCount > 1)
+                {
+                    node.Sides[i] += dot * surfaceCount;
+                    node.SideSurfaces[i] += surfaceCount;
+                    intensity += dot;
+                }
+                else
+                {
+                    intensity += Math.Min(dot, node.SideAverages[i]);
+                }
+            }
             return intensity;
         }
 
-        private float CalculateDirectionIntensity(int directionIndex, int surfaceCount, ref Vector3 targetDirection, ref ThermalRadiationNode node, bool isCube)
+
+        private void DebugDrawColorsTemperature()
         {
-            Vector3I direction = ThermalGrid.Directions[directionIndex];
-            Vector3D startDirection = Vector3D.Rotate(direction, Grid.FrameMatrix);
-            float dot = Vector3.Dot(startDirection, targetDirection);
-
-            dot = Math.Max(0, dot);
-
-            if (isCube)
+            if (Settings.Instance.DebugTemperatureBlockColors && MyAPIGateway.Session.IsServer)
             {
-                node.Sides[directionIndex] += dot * surfaceCount;
-                node.SideSurfaces[directionIndex] += surfaceCount;
-                return dot;
-            }
-            else
-            {
-                return Math.Min(dot, node.SideAverages[directionIndex]);
+                Vector3 color = Tools.GetTemperatureColor(Temperature);
+                if (Block.ColorMaskHSV != color)
+                {
+                    Block.CubeGrid.ColorBlocks(Block.Min, Block.Max, color);
+                }
             }
         }
 
-        private void DebugDrawColors()
+        private void DebugDrawColorsSolar(float intensity) 
         {
-            if (Settings.Instance.DebugBlockColors && MyAPIGateway.Session.IsServer)
+
+            if (Settings.Instance.DebugSolarRadiationBlockColors && MyAPIGateway.Session.IsServer)
             {
-                Vector3 color = Tools.GetTemperatureColor(Temperature);
+                Vector3 color = Tools.GetTemperatureColor(Math.Abs(intensity), 3, 0.5f, 1.5f);
                 if (Block.ColorMaskHSV != color)
                 {
                     Block.CubeGrid.ColorBlocks(Block.Min, Block.Max, color);

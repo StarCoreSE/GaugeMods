@@ -28,10 +28,16 @@ namespace Thermodynamics
 		public int Version;
 
 		[ProtoMember(2)]
-        public bool Debug;
+        public bool DebugTextOnScreen;
 
 		[ProtoMember(3)]
-        public bool DebugBlockColors;
+        public bool DebugTemperatureBlockColors;
+
+        [ProtoMember(4)]
+        public bool DebugSolarRadiationBlockColors;
+
+		[ProtoMember(5)]
+		public bool DebugSolarRaycast;
 
         [ProtoMember(8)]
 		public bool EnableEnvironment;
@@ -88,13 +94,15 @@ namespace Thermodynamics
 		{
 			Settings s = new Settings {
 				Version = 1,
-				Debug = true,
-				DebugBlockColors = true,
+				DebugTextOnScreen = true,
+				DebugTemperatureBlockColors = true,
+				DebugSolarRadiationBlockColors = false,
+				DebugSolarRaycast = false,
 				EnableEnvironment = true,
 				EnableSolarHeat = true,
 				EnablePlanets = true,
 				EnableDamage = true,
-				Frequency = 60,
+				Frequency = 3,
 				SimulationSpeed = 1,
 				VacuumTemperature = 2.7f,
                 SolarEnergy = 1000f,

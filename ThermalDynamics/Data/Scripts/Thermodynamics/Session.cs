@@ -49,7 +49,7 @@ namespace Thermodynamics
         {
             if (MyAPIGateway.Utilities.IsDedicated) return;
 
-            if (Settings.Instance.Debug)
+            if (Settings.Instance.DebugTextOnScreen)
             {
                 //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
                 MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;
@@ -75,7 +75,7 @@ namespace Thermodynamics
                     return;
 
                 MyAPIGateway.Utilities.ShowNotification(
-                    //$"[Cell] {c.Block.Position} " +
+                    $"[Cell] {c.Block.Position} " +
                     $"T: {c.Temperature.ToString("n3")} " +
                     $"Gain: {(c.DeltaTemperature + c.HeatGeneration).ToString("n3")} " +
                     $"dT: {c.DeltaTemperature.ToString("n3")} " +
@@ -95,11 +95,11 @@ namespace Thermodynamics
                     $"prod: {c.EnergyProduction} " +
                     $"cons: {(c.EnergyConsumption + c.ThrustEnergyConsumption)} ", 1, "White");
 
-                MyAPIGateway.Utilities.ShowNotification($"[Solar] {g.FrameAmbientTemprature.ToString("n3")}", 1, "White");
+                MyAPIGateway.Utilities.ShowNotification($"[Solar] Intensity: {c.IntensityDebug.ToString("n4")} Direction: {g.FrameSolarDirection.ToString("n3")}", 1, "White");
+                
+                MyAPIGateway.Utilities.ShowNotification($"[Env] Ambiant: {g.FrameAmbientTemprature.ToString("n3")}", 1, "White");
 
-                MyAPIGateway.Utilities.ShowNotification($"[Grid] {g.DebugSurfaceStateText(g.Surfaces[position])} ", 1, "White");
-
-                MyAPIGateway.Utilities.ShowNotification($"[Grid] {string.Join(" ", c.TouchingSerfacesByNeighbor)}", 1, "White");
+                MyAPIGateway.Utilities.ShowNotification($"[Surface] {g.DebugSurfaceStateText(g.Surfaces[position])} ", 1, "White");
 
                 StringBuilder sb = new StringBuilder();
                 foreach (var loop in g.ThermalLoops) 

@@ -4,7 +4,7 @@
         <HandItem xsi:type="MyObjectBuilder_HandItemDefinition">
             <Id Type="MyObjectBuilder_AutomaticRifle" Subtype="ExtinguisherGun" />
 
-            <WeaponType>RocketLauncher</WeaponType>
+            <WeaponType>Rifle</WeaponType>
 
             <LeftHandOrientation>
                 <X>0.324681967</X>

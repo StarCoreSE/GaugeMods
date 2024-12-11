@@ -18,7 +18,7 @@
             <Volume>30</Volume>
             <Model>Models\Bottle.mwm</Model>
             <PhysicalMaterial>Ammo</PhysicalMaterial>
-            <Capacity>1</Capacity>
+            <Capacity>1000</Capacity>
             <AmmoDefinitionId Subtype="Bottle" />
 
             <MinimumOfferAmount>50</MinimumOfferAmount>
