@@ -165,5 +165,27 @@ namespace Thermodynamics
         {
             return -1 + (0.85 * visualSize * visualSize * visualSize);
         }
+
+        public static float KelvinToCelsius(float kelvin) 
+        {
+            return kelvin - 273.15f;
+            
+        }
+        public static string KelvinToCelsiusString(float kelvin)
+        {
+            return $"{KelvinToCelsius(kelvin).ToString("n2")}°C";
+        }
+
+        public static float KelvinToFahrenheit(float kelvin)
+        {
+            return ((kelvin - 273.15f) * 9f / 5f) + 32f;
+        }
+
+        public static string KelvinToFahrenheitString(float kelvin)
+        {
+            return $"{KelvinToFahrenheit(kelvin).ToString("n2")}°F";
+        }
+
+
     }
 }

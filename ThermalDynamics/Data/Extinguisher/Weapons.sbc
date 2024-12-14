@@ -6,14 +6,15 @@
                 <TypeId>WeaponDefinition</TypeId>
                 <SubtypeId>ExtinguisherGun</SubtypeId>
             </Id>
-            <ProjectileAmmoData RateOfFire="1000" ShootSoundName="WepPlayRifleNoAmmo" ShotsInBurst="1"/>
+            <ProjectileAmmoData RateOfFire="200" ShootSoundName="WepPlayRifleNoAmmo" ShotsInBurst="1"/>
             <NoAmmoSoundName>WepPlayRifleNoAmmo</NoAmmoSoundName>
             <ReloadSoundName>WepRifleReloadShort</ReloadSoundName>
-			<ReleaseTimeAfterFire>0</ReleaseTimeAfterFire>
+			<ReleaseTimeAfterFire>1000</ReleaseTimeAfterFire>
 			<DeviateShotAngle>0</DeviateShotAngle>
 			<DeviateShotAngleAiming>0</DeviateShotAngleAiming>
 			<MuzzleFlashLifeSpan>0</MuzzleFlashLifeSpan>
 			<Effects>
+				<Effect Action="Shoot" Dummy="muzzle_projectile_1" ParticleForIronsights="MaterialHit_Snow" Particle="MaterialHit_Snow" Loop="true" InstantStop="false"/>
 			</Effects>
             <AmmoMagazines>
                 <AmmoMagazine Subtype="BottleMag" />
@@ -27,9 +28,5 @@
             <ShakeOnActionSecondary>false</ShakeOnActionSecondary>
             <ShakeOnActionTertiary>false</ShakeOnActionTertiary>
         </Weapon>
-
-
-
     </Weapons>
-
 </Definitions>

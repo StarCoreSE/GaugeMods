@@ -1,4 +1,5 @@
-﻿using Draygo.BlockExtensionsAPI;
+﻿using Draygo.API;
+using Draygo.BlockExtensionsAPI;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
@@ -10,6 +11,7 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using static VRageRender.MyBillboard;
 
 namespace Thermodynamics
 {
@@ -18,7 +20,15 @@ namespace Thermodynamics
 	{
 
         public const ushort ModID = 30323;
+
+        public static HudAPIv2 hudBase;
+        public static HudAPIv2.HUDMessage hudStatusTool;
+        public static HudAPIv2.HUDMessage hudStatusGrid;
         public static DefinitionExtensionsAPI Definitions;
+
+        private static StringBuilder ToolText = new StringBuilder($"");
+        private static StringBuilder GridText = new StringBuilder($"{Tools.KelvinToFahrenheitString(500)}\n{Tools.KelvinToCelsiusString(500)}");
+
         public Session()
         {
             MyLog.Default.Info($"[{Settings.Name}] Setup Definition Extention API");
@@ -34,6 +44,24 @@ namespace Thermodynamics
         {
             NetworkAPI.Init(ModID, Settings.Name);
             NetworkAPI.LogNetworkTraffic = true;
+
+            hudBase = new HudAPIv2(hudInit);
+        }
+
+        private void hudInit()
+        {
+            hudStatusTool = new HudAPIv2.HUDMessage(ToolText, new Vector2D(-1, 0), null, -1, 1, true, false, null, BlendTypeEnum.PostPP, "white");
+            hudStatusTool.InitialColor = Color.White;
+            hudStatusTool.Scale *= 1;
+            hudStatusTool.Origin = new Vector2D(0.02f, 0.015f);
+            hudStatusTool.Visible = true;
+
+            hudStatusTool = new HudAPIv2.HUDMessage(GridText, new Vector2D(-1, 0), null, -1, 1, true, false, null, BlendTypeEnum.PostPP, "white");
+            hudStatusTool.InitialColor = Color.Green;
+            hudStatusTool.Scale *= 1;
+            hudStatusTool.Origin = new Vector2D(0.75f, -0.5f);
+            hudStatusTool.Visible = true;
+
         }
 
         protected override void UnloadData()
@@ -42,8 +70,6 @@ namespace Thermodynamics
 
             base.UnloadData();
         }
-
-
 
         public override void Simulate()
         {
@@ -130,7 +156,14 @@ namespace Thermodynamics
 		{
             if (MyAPIGateway.Utilities.IsDedicated) return;
 
-            if (UsingExtinguisherTool()) 
+            DrawToolHud();
+            DrawGridHud();
+        }
+
+        private void DrawToolHud() 
+        {
+            ToolText.Clear();
+            if (UsingExtinguisherTool())
             {
                 //MyAPIGateway.Utilities.ShowNotification($"[Grid] Frequency: {Settings.Instance.Frequency}", 1, "White");
                 MatrixD matrix = MyAPIGateway.Session.Camera.WorldMatrix;
@@ -161,7 +194,14 @@ namespace Thermodynamics
                     ThermalCell n = c.Neighbors[i];
                     DrawBillboard(n, matrix);
                 }
+
+                ToolText.Append($"{Tools.KelvinToCelsiusString(c.Temperature)}");
             }
+        }
+
+        private void DrawGridHud() 
+        { 
+        
         }
 
         public void DrawBillboard(ThermalCell c, MatrixD cameraMatrix)
@@ -187,5 +227,7 @@ namespace Thermodynamics
                 scaler // Height of the billboard
             );
         }
+
+
     }
 }
