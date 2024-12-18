@@ -70,6 +70,7 @@ namespace Thermodynamics
         /// the number of blocks above the critical threshold
         /// </summary>
         public int CriticalBlocks = 0;
+        public int CurrentCriticalBlocks = 0;
 
         public long SurfaceUpdateFrame = 0;
 
@@ -457,7 +458,9 @@ namespace Thermodynamics
 
         private void PrepareNextSimulationStep()
         {
-            CriticalBlocks = 0;
+            CriticalBlocks = CurrentCriticalBlocks;
+            CurrentCriticalBlocks = 0;
+
             Vector3D position = Grid.PositionComp.WorldAABB.Center;
             PrepareSolarEnvironment(ref position);
             PrepareEnvironmentTemprature(ref position);
