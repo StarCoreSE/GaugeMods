@@ -508,17 +508,17 @@ namespace Thermodynamics
         {
             float intensity = 0;
 
+
+
             for (int i = 0; i < 6; i++)
             {
                 int surfaceCount = ExposedSurfacesByDirection[i];
                 if (surfaceCount == 0) continue;
 
                 Vector3D startDirection = Vector3D.Rotate(ThermalGrid.Directions[i], Grid.FrameMatrix);
-                float dot = Vector3.Dot(startDirection, targetDirection);
+                float dot = Math.Max(0,Vector3.Dot(startDirection, targetDirection));
 
-                dot = Math.Max(0, dot);
-
-                if (surfaceCount > 1)
+                if (surfaceCount == 1)
                 {
                     node.Sides[i] += dot * surfaceCount;
                     node.SideSurfaces[i] += surfaceCount;
