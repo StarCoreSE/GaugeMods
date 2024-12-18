@@ -6,7 +6,7 @@
                 <TypeId>WeaponDefinition</TypeId>
                 <SubtypeId>ExtinguisherGun</SubtypeId>
             </Id>
-            <ProjectileAmmoData RateOfFire="200" ShootSoundName="WepPlayRifleNoAmmo" ShotsInBurst="1"/>
+            <ProjectileAmmoData RateOfFire="70" ShootSoundName="FireExtinguisher" ShotsInBurst="1"/>
             <NoAmmoSoundName>WepPlayRifleNoAmmo</NoAmmoSoundName>
             <ReloadSoundName>WepRifleReloadShort</ReloadSoundName>
 			<ReleaseTimeAfterFire>1000</ReleaseTimeAfterFire>

@@ -1,0 +1,21 @@
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Sounds>
+    <Sound>
+      <Id>
+        <TypeId>AudioDefinition</TypeId>
+        <SubtypeId>FireExtinguisher</SubtypeId>
+      </Id>
+      <MaxDistance>2000</MaxDistance>
+      <!--<UpdateDistance>1000</UpdateDistance>-->
+      <Volume>1</Volume>
+      <VolumeVariation>0.2</VolumeVariation>
+      <PitchVariation>0.2</PitchVariation>
+      <Loopable>false</Loopable>
+      <Waves>
+        <Wave Type="D3">
+          <Start>Audio\FireExtinguisher.wav</Start>
+        </Wave>
+      </Waves>
+    </Sound>
+  </Sounds>
+</Definitions>
