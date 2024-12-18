@@ -24,7 +24,7 @@
 			<Blocks>
 				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Straight" />
 				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Straight_DoubleSink" />
-				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Straight_Sink" />
+				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Straight_SingleSink" />
 				<Block Type="MyObjectBuilder_UpgradeModule" Subtype="Gauge_SG_CoolantPump" />
 				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Corner_DoubleSink" />
 				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Corner_SingleSink" />
