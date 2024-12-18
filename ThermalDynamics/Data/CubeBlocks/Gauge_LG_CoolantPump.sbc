@@ -6,34 +6,37 @@
 				<TypeId>UpgradeModule</TypeId>
 				<SubtypeId>Gauge_LG_CoolantPump</SubtypeId>
 			</Id>
-			<DisplayName>Coolant Pump</DisplayName>
-			<Description>A pump used to curculate heat through pipe lines</Description>
+			<DisplayName>{LOC:DisplayName_Gauge_LG_CoolantPump}</DisplayName>
+			<Description>{LOC:Description_Gauge_CoolantPump}</Description>
 			<Icon>Textures\GUI\Icons\Cubes\SurvivalKitLarge.dds</Icon>
 			<CubeSize>Large</CubeSize>
 			<BlockTopology>TriangleMesh</BlockTopology>
 			<Size x="1" y="1" z="1" />
 			<ModelOffset x="0" y="0" z="0" />
-			<Model>Models\Cubes\Large\SurvivalKit.mwm</Model>
+			<Model>Models\Gauge\LG\Gauge_LG_CoolantPump.mwm</Model>
 			<Components>
-				<Component Subtype="SteelPlate" Count="31" />
-				<Component Subtype="Construction" Count="30" />
-				<Component Subtype="LargeTube" Count="4" />
-				<Component Subtype="Motor" Count="2" />
-				<Component Subtype="Computer" Count="20" />
-				<Component Subtype="SteelPlate" Count="10" />
+				<Component Subtype="LargeTube" Count="1" />
+				<Component Subtype="Construction" Count="10" />
+				<Component Subtype="Motor" Count="1" />
+				<Component Subtype="LargeTube" Count="2" />
+				<Component Subtype="Computer" Count="1" />
+				<Component Subtype="SteelPlate" Count="40" />
 			</Components>
 			<CriticalComponent Subtype="Computer" Index="0" />
 			<MountPoints>
-				<MountPoint Side="Left" StartX="0.1" StartY="0" EndX="0.9" EndY="0.9" />
-				<MountPoint Side="Right" StartX="0.1" StartY="0" EndX="0.9" EndY="0.9" />
-				<MountPoint Side="Bottom" StartX="0" StartY="0" EndX="1" EndY="1" Default="true" />
+				<MountPoint Side="Front" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00"/>
+				<MountPoint Side="Back" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00"/>
+				<MountPoint Side="Left" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00"/>
+				<MountPoint Side="Right" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00"/>
+				<MountPoint Side="Top" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00"/>
+				<MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00"/>
 			</MountPoints>
 			<BuildProgressModels>
-				<Model BuildPercentUpperBound="0.33" File="Models\Cubes\Large\SurvivalKit_Construction1.mwm" />
-				<Model BuildPercentUpperBound="0.66" File="Models\Cubes\Large\SurvivalKit_Construction2.mwm" />
-				<Model BuildPercentUpperBound="1.00" File="Models\Cubes\Large\SurvivalKit_Construction3.mwm" />
+				<Model BuildPercentUpperBound="0.33" File="Models\Gauge\LG\Gauge_LG_CoolantPump_BS1.mwm"/>
+				<Model BuildPercentUpperBound="0.67" File="Models\Gauge\LG\Gauge_LG_CoolantPump_BS2.mwm"/>
+				<Model BuildPercentUpperBound="1.00" File="Models\Gauge\LG\Gauge_LG_CoolantPump_BS3.mwm"/>
 			</BuildProgressModels>
-			<BlockPairName>CoolantPump</BlockPairName>
+			<BlockPairName>Gauge_LG_CoolantPump</BlockPairName>
 			<BuildTimeSeconds>20</BuildTimeSeconds>
 			<MirroringX>Z</MirroringX>
 			<MirroringZ>X</MirroringZ>

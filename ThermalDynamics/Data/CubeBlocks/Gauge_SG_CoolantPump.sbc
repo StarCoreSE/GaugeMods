@@ -1,0 +1,52 @@
+<?xml version="1.0" ?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<CubeBlocks>
+		<Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+			<Id>
+				<TypeId>UpgradeModule</TypeId>
+				<SubtypeId>Gauge_SG_CoolantPump</SubtypeId>
+			</Id>
+			<DisplayName>{LOC:DisplayName_Gauge_SG_CoolantPump}</DisplayName>
+			<Description>{LOC:Description_Gauge_CoolantPump}</Description>
+			<Icon>Textures\GUI\Icons\AstronautBackpack.dds</Icon>
+			<CubeSize>Small</CubeSize>
+			<BlockTopology>TriangleMesh</BlockTopology>
+			<Size x="1" y="1" z="3"/>
+			<ModelOffset x="0" y="0" z="0"/>
+			<Model>Models\Gauge\SG\Gauge_SG_CoolantPump.mwm</Model>
+			<Components>
+				<Component Subtype="Construction" Count="1" />
+				<Component Subtype="Motor" Count="1" />
+				<Component Subtype="SmallTube" Count="2" />
+				<Component Subtype="Computer" Count="1" />
+				<Component Subtype="SteelPlate" Count="4" />
+			</Components>
+			<CriticalComponent Subtype="Computer" Index="0" />
+			<MountPoints>
+				<MountPoint Side="Front" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00"/>
+				<MountPoint Side="Back" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00"/>
+				<MountPoint Side="Left" StartX="0.00" StartY="0.00" EndX="3.00" EndY="1.00"/>
+				<MountPoint Side="Right" StartX="0.00" StartY="0.00" EndX="3.00" EndY="1.00"/>
+				<MountPoint Side="Top" StartX="0.00" StartY="0.00" EndX="1.00" EndY="3.00"/>
+				<MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="1.00" EndY="3.00"/>
+			</MountPoints>
+			<BuildProgressModels>
+				<Model BuildPercentUpperBound="0.50" File="Models\Gauge\SG\Gauge_SG_CoolantPump_BS1.mwm"/>
+				<Model BuildPercentUpperBound="1.00" File="Models\Gauge\SG\Gauge_SG_CoolantPump_BS2.mwm"/>
+			</BuildProgressModels>
+			<BlockPairName>Gauge_SG_CoolantPump</BlockPairName>
+			<MirroringY>Z</MirroringY>
+			<MirroringZ>Y</MirroringZ>
+			<BuildTimeSeconds>10</BuildTimeSeconds>
+			<EdgeType>Light</EdgeType>
+			<PCU>100</PCU>
+			<PrimarySound>BlockModuleProductivity</PrimarySound>
+			<DamageEffectName>Damage_Electrical_Damaged</DamageEffectName>
+			<DamagedSound>ParticleElectrical</DamagedSound>
+			<EmissiveColorPreset>Default</EmissiveColorPreset>
+			<DestroyEffect>BlockDestroyedExplosion_Large</DestroyEffect>
+			<DestroySound>WepSmallWarheadExpl</DestroySound>
+			<IsAirTight>false</IsAirTight>
+		</Definition>
+	</CubeBlocks>
+</Definitions>

@@ -2,18 +2,34 @@
 <Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
     <BlockVariantGroups>
         <BlockVariantGroup>
-            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="CoolantGroup" />
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="CoolantGroupLarge" />
             <Icon>Textures\GUI\Icons\Gauge\LG_CoolantPipeStraight.dds</Icon>
-            <DisplayName>Coolant Pipe</DisplayName>
-            <Description>A pipe containing coolant liquid. When connected in a loop to a Heat Pump, the liquid will circulate spreading heat quickly to different areas.</Description>
+			<DisplayName>{LOC:DisplayName_Gauge_LG_CoolantPipe_Straight}</DisplayName>
+			<Description>{LOC:Description_Gauge_CoolantPipe}</Description>
             <Blocks>
                 <Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_LG_CoolantPipe_Straight" />
                 <Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_LG_CoolantPipe_Straight_DoubleSink" />
                 <Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_LG_CoolantPipe_Straight_Sink" />
-                <Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_LG_CoolantPipe_Corner" />
+				<Block Type="MyObjectBuilder_UpgradeModule" Subtype="Gauge_LG_CoolantPump" />
                 <Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_LG_CoolantPipe_Corner_DoubleSink" />
                 <Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_LG_CoolantPipe_Corner_SingleSink" />
+				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_LG_CoolantPipe_Corner" />
             </Blocks>
         </BlockVariantGroup>
+		<BlockVariantGroup>
+			<Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="CoolantGroupSmall" />
+			<Icon>Textures\GUI\Icons\Gauge\SG_CoolantPipeStraight.dds</Icon>
+			<DisplayName>{LOC:DisplayName_Gauge_SG_CoolantPipe_Straight}</DisplayName>
+			<Description>{LOC:Description_Gauge_CoolantPipe}</Description>
+			<Blocks>
+				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Straight" />
+				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Straight_DoubleSink" />
+				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Straight_Sink" />
+				<Block Type="MyObjectBuilder_UpgradeModule" Subtype="Gauge_SG_CoolantPump" />
+				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Corner_DoubleSink" />
+				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Corner_SingleSink" />
+				<Block Type="MyObjectBuilder_CubeBlock" Subtype="Gauge_SG_CoolantPipe_Corner" />
+			</Blocks>
+		</BlockVariantGroup>
     </BlockVariantGroups>
 </Definitions>

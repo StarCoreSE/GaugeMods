@@ -95,9 +95,9 @@ namespace Thermodynamics
 			Settings s = new Settings {
 				Version = 1,
 				DebugTextOnScreen = true,
-				DebugTemperatureBlockColors = true,
-				DebugSolarRadiationBlockColors = false,
-				DebugSolarRaycast = false,
+				DebugTemperatureBlockColors = false,
+				DebugSolarRadiationBlockColors = true,
+				DebugSolarRaycast = true,
 				EnableEnvironment = true,
 				EnableSolarHeat = true,
 				EnablePlanets = true,

@@ -6,8 +6,8 @@
 				<TypeId>CubeBlock</TypeId>
 				<SubtypeId>Gauge_LG_CoolantPipe_Corner_DoubleSink</SubtypeId>
 			</Id>
-			<DisplayName>Coolant Pipe Corner Double</DisplayName>
-			<Description>A pipe containing coolant liquid. When connected in a loop to a Heat Pump, the liquid will circulate spreading heat quickly to different areas.</Description>
+			<DisplayName>{LOC:DisplayName_Gauge_LG_CoolantPipe_Corner_DoubleSink}</DisplayName>
+			<Description>{LOC:Description_Gauge_CoolantPipe}</Description>
 			<Icon>Textures\GUI\Icons\Gauge\LG_CoolantPipeCorner_TwoSink.dds</Icon>
 			<CubeSize>Large</CubeSize>
 			<BlockTopology>TriangleMesh</BlockTopology>
@@ -15,7 +15,9 @@
 			<ModelOffset x="0" y="0" z="0"/>
 			<Model>Models\Gauge\LG\Gauge_LG_CoolantPipe_Corner_DoubleSink.mwm</Model>
 			<Components>
-				<Component Subtype="SteelPlate" Count="10"/>
+				<Component Subtype="LargeTube" Count="1" />
+				<Component Subtype="SteelPlate" Count="10" />
+				<Component Subtype="SteelPlate" Count="30" />
 			</Components>
 			<CriticalComponent Subtype="SteelPlate" Index="0"/>
 			<MountPoints>
