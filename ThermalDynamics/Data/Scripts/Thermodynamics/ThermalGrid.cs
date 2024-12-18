@@ -61,9 +61,15 @@ namespace Thermodynamics
         /// </summary>
         private int Direction = 1;
 
+        /// <summary>
+        /// the hottest block on the grid
+        /// </summary>
+        public ThermalCell HottestBlock;
 
-        public float HottestBlock = 0;
-
+        /// <summary>
+        /// the number of blocks above the critical threshold
+        /// </summary>
+        public int CriticalBlocks = 0;
 
         public long SurfaceUpdateFrame = 0;
 
@@ -209,7 +215,6 @@ namespace Thermodynamics
             catch { }
         }
 
-
         private void Save()
         {
             //Stopwatch sw = Stopwatch.StartNew();
@@ -279,7 +284,6 @@ namespace Thermodynamics
             int index = Thermals.Allocate();
             PositionToIndex.Add(cell.Id, index);
             Thermals.ItemArray[index] = cell;
-
         }
 
         private void BlockRemoved(IMySlimBlock b)
@@ -317,7 +321,6 @@ namespace Thermodynamics
             cell.ClearNeighbors();
             PositionToIndex.Remove(flat);
             Thermals.Free(index);
-
         }
 
         private void GridSplit(MyCubeGrid g1, MyCubeGrid g2)
@@ -436,6 +439,11 @@ namespace Thermodynamics
                     }
 
                     cell.Update();
+
+                    if (HottestBlock == null || cell.Temperature > HottestBlock.Temperature) 
+                    {
+                        HottestBlock = cell;
+                    }
                 }
 
                 FrameQuota--;
@@ -449,7 +457,7 @@ namespace Thermodynamics
 
         private void PrepareNextSimulationStep()
         {
-
+            CriticalBlocks = 0;
             Vector3D position = Grid.PositionComp.WorldAABB.Center;
             PrepareSolarEnvironment(ref position);
             PrepareEnvironmentTemprature(ref position);

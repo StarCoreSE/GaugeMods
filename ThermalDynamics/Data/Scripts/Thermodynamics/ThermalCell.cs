@@ -484,6 +484,7 @@ namespace Thermodynamics
         {
             if (Settings.Instance.EnableDamage && Temperature > Definition.CriticalTemperature)
             {
+                Grid.CriticalBlocks++;
                 Block.DoDamage((Temperature - Definition.CriticalTemperature) * Definition.CriticalTemperatureScaler, MyStringHash.GetOrCompute("thermal"), false);
             }
         }

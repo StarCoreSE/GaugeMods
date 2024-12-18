@@ -1,6 +1,7 @@
 ﻿using Draygo.API;
 using Draygo.BlockExtensionsAPI;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Cube;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
 using SENetworkAPI;
@@ -27,7 +28,8 @@ namespace Thermodynamics
         public static DefinitionExtensionsAPI Definitions;
 
         private static StringBuilder ToolText = new StringBuilder($"");
-        private static StringBuilder GridText = new StringBuilder($"{Tools.KelvinToFahrenheitString(500)}\n{Tools.KelvinToCelsiusString(500)}");
+        private static StringBuilder GridText = new StringBuilder($"");
+        private static Color GridTempColor = Color.Blue;
 
         public Session()
         {
@@ -52,15 +54,17 @@ namespace Thermodynamics
         {
             hudStatusTool = new HudAPIv2.HUDMessage(ToolText, new Vector2D(-1, 0), null, -1, 1, true, false, null, BlendTypeEnum.PostPP, "white");
             hudStatusTool.InitialColor = Color.White;
+            hudStatusTool.ShadowColor = Color.White;
             hudStatusTool.Scale *= 1;
             hudStatusTool.Origin = new Vector2D(0.02f, 0.015f);
             hudStatusTool.Visible = true;
 
-            hudStatusTool = new HudAPIv2.HUDMessage(GridText, new Vector2D(-1, 0), null, -1, 1, true, false, null, BlendTypeEnum.PostPP, "white");
-            hudStatusTool.InitialColor = Color.Green;
-            hudStatusTool.Scale *= 1;
-            hudStatusTool.Origin = new Vector2D(0.75f, -0.5f);
-            hudStatusTool.Visible = true;
+            hudStatusGrid = new HudAPIv2.HUDMessage(GridText, new Vector2D(-1, 0), null, -1, 1, true, false, null, BlendTypeEnum.PostPP, "white");
+            hudStatusGrid.InitialColor = Color.White;
+            hudStatusGrid.ShadowColor = Color.White;
+            hudStatusGrid.Scale *= 1;
+            hudStatusGrid.Origin = new Vector2D(0.75f, -0.45f);
+            hudStatusGrid.Visible = true;
 
         }
 
@@ -200,8 +204,24 @@ namespace Thermodynamics
         }
 
         private void DrawGridHud() 
-        { 
-        
+        {
+            GridText.Clear();
+            IMyCubeBlock controlledBlock = MyAPIGateway.Session?.Player?.Controller?.ControlledEntity as IMyCubeBlock;
+
+            if (controlledBlock == null) return;
+
+            MyCubeGrid grid = controlledBlock.CubeGrid as MyCubeGrid;
+            ThermalGrid tg = grid.GameLogic.GetAs<ThermalGrid>();
+
+            hudStatusGrid.InitialColor = ColorExtensions.HSVtoColor(Tools.GetTemperatureColor(tg.HottestBlock.Temperature));
+
+            if (tg.HottestBlock != null) 
+            {
+                GridText.Append($"Peak Temp: {Tools.KelvinToCelsiusString(tg.HottestBlock.Temperature)}\n");
+            }
+
+            GridText.Append($"Critical Blocks: {tg.CriticalBlocks}\n");
+            GridText.Append($"Coolant Loops: {tg.ThermalLoops.Count}\n");
         }
 
         public void DrawBillboard(ThermalCell c, MatrixD cameraMatrix)
