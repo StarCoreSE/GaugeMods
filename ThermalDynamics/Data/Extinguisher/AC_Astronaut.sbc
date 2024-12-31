@@ -4,23 +4,23 @@
     <Id Type="MyObjectBuilder_AnimationControllerDefinition" Subtype="Default_Astronaut" />
     <Layers>
       <Layer>
-        <Name>WeaponPinChipstix</Name>
+        <Name>WeaponPinChipstixFire</Name>
         <Mode>Replace</Mode>
-        <StateMachine>SMWeaponPinChipstix</StateMachine>
+        <StateMachine>SMWeaponPinChipstixFire</StateMachine>
         <InitialSMNode>Nothing</InitialSMNode>
         <BoneMask>BackJetpackDummy FrontJetpackDummy SE_RigHead SE_RigL_Little_1 SE_RigL_Little_2 SE_RigL_Little_3 SE_RigL_Middle_1 SE_RigL_Middle_2 SE_RigL_Middle_3 SE_RigL_Ring_1 SE_RigL_Ring_2 SE_RigL_Ring_3 SE_RigL_Thumb_1 SE_RigL_Thumb_2 SE_RigL_Thumb_3 SE_RigL_Weapon_pin SE_RigLCollarbone SE_RigLForearm1 SE_RigLForearm2 SE_RigLForearm3 SE_RigLPalm SE_RigLUpperarm SE_RigNeck SE_RigR_Index_1 SE_RigR_Index_2 SE_RigR_Index_3 SE_RigR_Little_1 SE_RigR_Little_2 SE_RigR_Little_3 SE_RigR_Middle_1 SE_RigR_Middle_2 SE_RigR_Middle_3 SE_RigR_Ring_1 SE_RigR_Ring_2 SE_RigR_Ring_3 SE_RigR_Thumb_1 SE_RigR_Thumb_2 SE_RigR_Thumb_3 SE_RigR_Weapon_pin SE_RigRCollarbone SE_RigRForearm1 SE_RigRForearm2 SE_RigRForearm3 SE_RigRPalm SE_RigRUpperarm SE_RigSpine1 SE_RigSpine2 SE_RigSpine3 SE_RigSpine4</BoneMask>
       </Layer>
       <Layer>
-        <Name>HipChipstix</Name>
+        <Name>HipChipstixFire</Name>
         <Mode>Add</Mode>
-        <StateMachine>SMHipChipstix</StateMachine>
+        <StateMachine>SMHipChipstixFire</StateMachine>
         <InitialSMNode>DontRotateHip</InitialSMNode>
         <BoneMask>BackJetpackDummy FrontJetpackDummy SE_RigPelvis SE_RigSpine1 SE_RigSpine2 SE_RigSpine3 SE_RigSpine4</BoneMask>
       </Layer>
     </Layers>
     <StateMachines>
       <StateMachine>
-        <Name>SMWeaponPinChipstix</Name>
+        <Name>SMWeaponPinChipstixFire</Name>
         <Nodes>
           <Node>
             <Name>Nothing</Name>
@@ -634,7 +634,7 @@
           </Node>
           <Node>
             <Name>HipRotation</Name>
-            <StateMachineName>SMHipChipstix</StateMachineName>
+            <StateMachineName>SMHipChipstixFire</StateMachineName>
             <EdPos>
               <X>135</X>
               <Y>-209</Y>
@@ -1914,7 +1914,6 @@
                     </EventTimes>
                     <Key>reload</Key>
                     <PathToModel>Models\Characters\Animations\rocketlauncher_3rd_reload_forward.mwm</PathToModel>
-                    <AnimationName>AnimStack::SE_astronaut_RocketLauncher_3rd_reload_jan.golmic_07</AnimationName>
                     <Loop>false</Loop>
                     <Speed>1</Speed>
                     <Interpolate>true</Interpolate>
@@ -1937,7 +1936,6 @@
                     </EventTimes>
                     <Key>reload</Key>
                     <PathToModel>Models\Characters\Animations\rocketlauncher_fp_reload_forward.mwm</PathToModel>
-                    <AnimationName>AnimStack::SE_astronaut_RocketLauncher_fp_reload_jan.golmic_11</AnimationName>
                     <Loop>false</Loop>
                     <Speed>1</Speed>
                     <Interpolate>true</Interpolate>
@@ -1956,15 +1954,15 @@
             <Name>ReloadRifle</Name>
             <AnimationTree>
               <EdPos>
-                <X>-506</X>
-                <Y>31</Y>
+                <X>-496</X>
+                <Y>67</Y>
               </EdPos>
               <EventNames />
               <EventTimes />
               <Child xsi:type="MyObjectBuilder_AnimationTreeNodeMix1D">
                 <EdPos>
-                  <X>-62</X>
-                  <Y>44</Y>
+                  <X>-83</X>
+                  <Y>234</Y>
                 </EdPos>
                 <EventNames />
                 <EventTimes />
@@ -1976,8 +1974,8 @@
                   <Param>0</Param>
                   <Node xsi:type="MyObjectBuilder_AnimationTreeNodeTrack">
                     <EdPos>
-                      <X>378</X>
-                      <Y>-175</Y>
+                      <X>388</X>
+                      <Y>-139</Y>
                     </EdPos>
                     <EventNames>
                       <string>MagazineUnplug</string>
@@ -1988,8 +1986,8 @@
                       <double>3.2000000476837158</double>
                     </EventTimes>
                     <Key>reload</Key>
-                    <PathToModel>Models\Characters\Animations\rifle_3rd_reload_forward.mwm</PathToModel>
-                    <AnimationName>AnimStack::SE_astronaut_Rifle_3rd_reload_jan.golmic_04</AnimationName>
+                    <PathToModel>Models\ExtingReload.mwm</PathToModel>
+                    <AnimationName>SE_main_root|Reload</AnimationName>
                     <Loop>false</Loop>
                     <Speed>1</Speed>
                     <Interpolate>true</Interpolate>
@@ -2024,8 +2022,7 @@
                           <double>3.2000000476837158</double>
                         </EventTimes>
                         <Key>reload</Key>
-                        <PathToModel>Models\Characters\Animations\rifle_fp_reload_forward.mwm</PathToModel>
-                        <AnimationName>AnimStack::SE_astronaut_Rifle_fp_reload_jan.golmic_13</AnimationName>
+                        <PathToModel>Models\ExtingReload.mwm</PathToModel>
                         <Loop>false</Loop>
                         <Speed>1</Speed>
                         <Interpolate>true</Interpolate>
@@ -2047,8 +2044,7 @@
                           <double>2.9000000953674316</double>
                         </EventTimes>
                         <Key>reload</Key>
-                        <PathToModel>Models\Characters\Animations\rifle_fp_reload_crouch_forward.mwm</PathToModel>
-                        <AnimationName>AnimStack::SE_astronaut_Rifle_fp_reload_crouch_jan.golmic_03</AnimationName>
+                        <PathToModel>Models\ExtingReload.mwm</PathToModel>
                         <Loop>false</Loop>
                         <Speed>1</Speed>
                         <Interpolate>true</Interpolate>
@@ -2650,14 +2646,6 @@
             </Conditions>
             <Priority xsi:nil="true" />
           </Transition>
-          <Transition From="ReloadRifle" To="RifleGunIdle" TimeInSec="0.2" Sync="Restart" Curve="Smooth">
-            <Conditions>
-              <Conjunction>
-                <Condition Lhs="@animationfinished" Op="Equal" Rhs="1" />
-              </Conjunction>
-            </Conditions>
-            <Priority xsi:nil="true" />
-          </Transition>
           <Transition Name="reload_weapon" From="RifleGunIdle" To="ReloadRifle" TimeInSec="0.2" Sync="Restart" Curve="Smooth">
             <Priority xsi:nil="true" />
           </Transition>
@@ -2700,10 +2688,18 @@
           <Transition Name="ExtinguisherGun" From="Equip" To="ExtinguisherGun" TimeInSec="0.2" Sync="Restart" Curve="Smooth">
             <Priority xsi:nil="true" />
           </Transition>
+          <Transition From="ReloadRifle" To="RifleGunIdle" TimeInSec="0.2" Sync="Restart" Curve="Smooth">
+            <Conditions>
+              <Conjunction>
+                <Condition Lhs="@animationfinished" Op="Equal" Rhs="1" />
+              </Conjunction>
+            </Conditions>
+            <Priority xsi:nil="true" />
+          </Transition>
         </Transitions>
       </StateMachine>
       <StateMachine>
-        <Name>SMHipChipstix</Name>
+        <Name>SMHipChipstixFire</Name>
         <Nodes>
           <Node>
             <Name>DontRotateHip</Name>
