@@ -165,4 +165,22 @@
   <data name="DisplayName_Gauge_SG_CoolantPump" xml:space="preserve">
     <value>Coolant Pump</value>
   </data>
+  <data name="Description_Gauge_HeatPump" xml:space="preserve">
+    <value>Functions similar to a peltia cooler. Consuming power cools one side while heating the other.</value>
+  </data>
+  <data name="Description_Gauge_Radiator" xml:space="preserve">
+    <value>A block with increased surface area and high emissivity. Use this block to vent extra heat</value>
+  </data>
+  <data name="DisplayName_Gauge_LG_HeatPump" xml:space="preserve">
+    <value>Heat Pump</value>
+  </data>
+  <data name="DisplayName_Gauge_LG_Radiator" xml:space="preserve">
+    <value>Radiator</value>
+  </data>
+  <data name="DisplayName_Gauge_SG_HeatPump" xml:space="preserve">
+    <value>Heat Pump</value>
+  </data>
+  <data name="DisplayName_Gauge_SG_Radiator" xml:space="preserve">
+    <value>Radiator</value>
+  </data>
 </root>

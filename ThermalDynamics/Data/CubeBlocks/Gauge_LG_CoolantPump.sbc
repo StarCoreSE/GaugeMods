@@ -8,7 +8,7 @@
 			</Id>
 			<DisplayName>{LOC:DisplayName_Gauge_LG_CoolantPump}</DisplayName>
 			<Description>{LOC:Description_Gauge_CoolantPump}</Description>
-			<Icon>Textures\GUI\Icons\Cubes\SurvivalKitLarge.dds</Icon>
+			<Icon>Textures\GUI\Icons\Gauge\LG_CoolantPump.dds</Icon>
 			<CubeSize>Large</CubeSize>
 			<BlockTopology>TriangleMesh</BlockTopology>
 			<Size x="1" y="1" z="1" />
