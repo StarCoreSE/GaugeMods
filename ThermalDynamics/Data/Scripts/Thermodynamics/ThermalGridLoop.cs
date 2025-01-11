@@ -13,7 +13,7 @@ namespace Thermodynamics
         {
             { "Gauge_LG_CoolantPipe_Straight", new Vector3I[0] },
             { "Gauge_LG_CoolantPipe_Straight_DoubleSink", new Vector3I[] { Vector3I.Left, Vector3I.Right } },
-            { "Gauge_LG_CoolantPipe_Straight_Sink", new Vector3I[] { Vector3I.Right } },
+            { "Gauge_LG_CoolantPipe_Straight_SingleSink", new Vector3I[] { Vector3I.Right } },
             { "Gauge_LG_CoolantPipe_Corner", new Vector3I[0]  },
             { "Gauge_LG_CoolantPipe_Corner_DoubleSink", new Vector3I[] { Vector3I.Backward, Vector3I.Right } },
             { "Gauge_LG_CoolantPipe_Corner_SingleSink", new Vector3I[] { Vector3I.Up } },
@@ -21,7 +21,7 @@ namespace Thermodynamics
             
             { "Gauge_SG_CoolantPipe_Straight", new Vector3I[0] },
             { "Gauge_SG_CoolantPipe_Straight_DoubleSink", new Vector3I[] { Vector3I.Left, Vector3I.Right } },
-            { "Gauge_SG_CoolantPipe_Straight_Sink", new Vector3I[] { Vector3I.Right } },
+            { "Gauge_SG_CoolantPipe_Straight_SingleSink", new Vector3I[] { Vector3I.Right } },
             { "Gauge_SG_CoolantPipe_Corner", new Vector3I[0]  },
             { "Gauge_SG_CoolantPipe_Corner_DoubleSink", new Vector3I[] { Vector3I.Backward, Vector3I.Right } },
             { "Gauge_SG_CoolantPipe_Corner_SingleSink", new Vector3I[] { Vector3I.Up } },
@@ -32,19 +32,19 @@ namespace Thermodynamics
         {
             { "Gauge_LG_CoolantPipe_Straight", new Vector3I[] { Vector3I.Forward, Vector3I.Backward } },
             { "Gauge_LG_CoolantPipe_Straight_DoubleSink", new Vector3I[] { Vector3I.Forward, Vector3I.Backward } },
-            { "Gauge_LG_CoolantPipe_Straight_Sink", new Vector3I[] { Vector3I.Forward, Vector3I.Backward } },
+            { "Gauge_LG_CoolantPipe_Straight_SingleSink", new Vector3I[] { Vector3I.Forward, Vector3I.Backward } },
             { "Gauge_LG_CoolantPipe_Corner", new Vector3I[] { Vector3I.Forward, Vector3I.Left } },
             { "Gauge_LG_CoolantPipe_Corner_DoubleSink", new Vector3I[] { Vector3I.Forward, Vector3I.Left } },
             { "Gauge_LG_CoolantPipe_Corner_SingleSink", new Vector3I[] { Vector3I.Forward, Vector3I.Left } },
-            { "Gauge_LG_CoolantPump", new Vector3I[] { Vector3I.Forward, Vector3I.Backward }  },
+            { "Gauge_LG_CoolantPump", new Vector3I[] { Vector3I.Forward, Vector3I.Backward } },
 
             { "Gauge_SG_CoolantPipe_Straight", new Vector3I[] { Vector3I.Forward, Vector3I.Backward } },
             { "Gauge_SG_CoolantPipe_Straight_DoubleSink", new Vector3I[] { Vector3I.Forward, Vector3I.Backward } },
-            { "Gauge_SG_CoolantPipe_Straight_Sink", new Vector3I[] { Vector3I.Forward, Vector3I.Backward } },
+            { "Gauge_SG_CoolantPipe_Straight_SingleSink", new Vector3I[] { Vector3I.Forward, Vector3I.Backward } },
             { "Gauge_SG_CoolantPipe_Corner", new Vector3I[] { Vector3I.Forward, Vector3I.Left } },
             { "Gauge_SG_CoolantPipe_Corner_DoubleSink", new Vector3I[] { Vector3I.Forward, Vector3I.Left } },
             { "Gauge_SG_CoolantPipe_Corner_SingleSink", new Vector3I[] { Vector3I.Forward, Vector3I.Left } },
-            { "Gauge_SG_CoolantPump", new Vector3I[] { Vector3I.Forward, Vector3I.Backward }  },
+            { "Gauge_SG_CoolantPump", new Vector3I[] { Vector3I.Forward, Vector3I.Backward } },
         };
 
 
@@ -145,7 +145,7 @@ namespace Thermodynamics
 
                 Vector3I next = b.Min + dir;
 
-                //MyLog.Default.Info($"{b.BlockDefinition.Id.SubtypeId.ToString()} | last: {last} --- next: {next} --- min: {b.Min + dir} --- max: {b.Max + dir}");
+                MyLog.Default.Info($"{b.BlockDefinition.Id.SubtypeId} [{next == last}] ({loop.Count}) | last: {last} --- next: {next} --- min: {b.Min + dir} --- max: {b.Max + dir}");
 
                 if (next == last) continue;
 

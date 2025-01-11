@@ -4,9 +4,9 @@
 		<Definition>
 			<Id>
 				<TypeId>CubeBlock</TypeId>
-				<SubtypeId>Gauge_LG_CoolantPipe_Straight_Sink</SubtypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Straight_SingleSink</SubtypeId>
 			</Id>
-			<DisplayName>{LOC:DisplayName_Gauge_LG_CoolantPipe_Straight}</DisplayName>
+			<DisplayName>{LOC:DisplayName_Gauge_LG_CoolantPipe_Straight_SingleSink}</DisplayName>
 			<Description>{LOC:Description_Gauge_CoolantPipe}</Description>
 			<Icon>Textures\GUI\Icons\Gauge\LG_CoolantPipeStraight_OneSink.dds</Icon>
 			<CubeSize>Large</CubeSize>

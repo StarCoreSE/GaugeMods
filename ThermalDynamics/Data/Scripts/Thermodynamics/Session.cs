@@ -29,7 +29,6 @@ namespace Thermodynamics
 
         private static StringBuilder ToolText = new StringBuilder($"");
         private static StringBuilder GridText = new StringBuilder($"");
-        private static Color GridTempColor = Color.Blue;
 
         public Session()
         {
@@ -207,16 +206,21 @@ namespace Thermodynamics
         {
             GridText.Clear();
             IMyCubeBlock controlledBlock = MyAPIGateway.Session?.Player?.Controller?.ControlledEntity as IMyCubeBlock;
-
             if (controlledBlock == null) return;
 
             MyCubeGrid grid = controlledBlock.CubeGrid as MyCubeGrid;
+            if (grid == null) return;
             ThermalGrid tg = grid.GameLogic.GetAs<ThermalGrid>();
+            if (tg == null) return;
 
-            hudStatusGrid.InitialColor = ColorExtensions.HSVtoColor(Tools.GetTemperatureColor(tg.HottestBlock.Temperature));
+            GridText.Append($"Ambient: {Tools.KelvinToCelsiusString(tg.FrameAmbientTemprature)}\n");
 
             if (tg.HottestBlock != null) 
             {
+                if (hudStatusGrid != null) 
+                {
+                    hudStatusGrid.InitialColor = ColorExtensions.HSVtoColor(Tools.GetTemperatureColor(tg.HottestBlock.Temperature));
+                }
                 GridText.Append($"Peak Temp: {Tools.KelvinToCelsiusString(tg.HottestBlock.Temperature)}\n");
             }
 
