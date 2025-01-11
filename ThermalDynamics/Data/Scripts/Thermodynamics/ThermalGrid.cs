@@ -72,16 +72,26 @@ namespace Thermodynamics
         public int CriticalBlocks = 0;
         public int CurrentCriticalBlocks = 0;
 
+        /// <summary>
+        /// total heat generation for the entire grid
+        /// </summary>
+        //public float GridHeatGeneration;
+        //public float CurrentGridHeatGeneration;
+
+
+
         public long SurfaceUpdateFrame = 0;
 
-
-        public Vector3 FrameWindDirection;
         public Vector3 FrameSolarDirection;
         public MatrixD FrameMatrix;
 
         public float FrameAmbientTemprature;
         public float FrameAmbientTempratureP4;
         public bool FrameSolarOccluded;
+        public float FrameAmbientDensity;
+        public float FrameAmbientConvectionCoefficient;
+
+
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -462,6 +472,9 @@ namespace Thermodynamics
             CriticalBlocks = CurrentCriticalBlocks;
             CurrentCriticalBlocks = 0;
 
+            //GridHeatGeneration = CurrentGridHeatGeneration;
+            //CurrentGridHeatGeneration = 0;
+
             Vector3D position = Grid.PositionComp.WorldAABB.Center;
             PrepareSolarEnvironment(ref position);
             PrepareEnvironmentTemprature(ref position);
@@ -489,8 +502,13 @@ namespace Thermodynamics
             Vector3 local = position - planet.Position;
             Vector3D surfacePointLocal = planet.Entity.GetClosestSurfacePointLocal(ref local);
             bool isUnderground = local.LengthSquared() < surfacePointLocal.LengthSquared();
-            float airDensity = planet.Entity.GetAirDensity(position);
-            float windSpeed = planet.Entity.GetWindSpeed(position);
+            FrameAmbientDensity = planet.Entity.GetAirDensity(position);
+
+            // scales off less linearly
+            float airDensityInvert = (1 - FrameAmbientDensity);
+            float airDensityCurve = 1 - (airDensityInvert * airDensityInvert * airDensityInvert * airDensityInvert);
+
+            //float windSpeed = planet.Entity.GetWindSpeed(position);
 
             float ambient = def.UndergroundTemperature;
             if (!isUnderground)
@@ -503,7 +521,8 @@ namespace Thermodynamics
                 FrameSolarOccluded = true;
             }
 
-            SetFrameAmbiantTemperature(Math.Max(Settings.Instance.VacuumTemperature, ambient * airDensity));
+            SetFrameAmbiantTemperature(Math.Max(Settings.Instance.VacuumTemperature, ambient * airDensityCurve));
+            FrameAmbientConvectionCoefficient = def.ConvectionCoefficient;
 
 
             //FrameWindDirection = Vector3.Cross(planet.GravityComponent.GetWorldGravityNormalized(position), planet.Entity.WorldMatrix.Forward).Normalized() * windSpeed;

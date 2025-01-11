@@ -106,9 +106,10 @@ namespace Thermodynamics
                 MyAPIGateway.Utilities.ShowNotification(
                     $"[Cell] {c.Block.Position} " +
                     $"T: {c.Temperature.ToString("n3")} " +
-                    $"Gain: {(c.DeltaTemperature + c.HeatGeneration).ToString("n3")} " +
                     $"dT: {c.DeltaTemperature.ToString("n3")} " +
-                    $"In: {c.HeatGeneration.ToString("n3")} " + 
+                    $"Gain: {c.HeatGeneration.ToString("n3")} " +
+                    $"dC: {c.DeltaConvection.ToString("n3")} " +
+                    $"dR: {c.DeltaRadiation.ToString("n3")} " +
                     $"ESA: {c.ExposedSurfaces.ToString("n0")} " +
                     $"", 1, "White");
 
@@ -221,8 +222,12 @@ namespace Thermodynamics
                 {
                     hudStatusGrid.InitialColor = ColorExtensions.HSVtoColor(Tools.GetTemperatureColor(tg.HottestBlock.Temperature));
                 }
-                GridText.Append($"Peak Temp: {Tools.KelvinToCelsiusString(tg.HottestBlock.Temperature)}\n");
+                GridText.Append($"Peak T: {Tools.KelvinToCelsiusString(tg.HottestBlock.Temperature)}\n");
+                
+                
+                GridText.Append($"Peak dT: {((tg.HottestBlock.DeltaTemperature + tg.HottestBlock.HeatGeneration)*Settings.Instance.PerSecond).ToString("n3")}\n");
             }
+
 
             GridText.Append($"Critical Blocks: {tg.CriticalBlocks}\n");
             GridText.Append($"Coolant Loops: {tg.ThermalLoops.Count}\n");

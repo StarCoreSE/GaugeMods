@@ -66,7 +66,7 @@ namespace Thermodynamics
         /// <param name="low">0 is black this value is blue</param>
         /// <param name="high">this value is red max value is white</param>
         /// <returns>HSV Vector3</returns>
-        public static Vector3 GetTemperatureColor(float temp, float max = 1000, float low = 265f, float high = 500f)
+        public static Vector3 GetTemperatureColor(float temp, float max = 1000, float low = 267f, float high = 500f)
         {
             // Clamp the temperature to the range 0-max
             float t = Math.Max(0, Math.Min(max, temp));

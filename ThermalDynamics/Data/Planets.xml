@@ -10,11 +10,11 @@
 			<ModExtensions>
 				<Group Name="ThermalPlanetProperties">
 					<!--The ambiant temperature when the sun is on the opposite side of the planet-->
-					<Decimal Name="NightTemperature" Value="273" />
+					<Decimal Name="NightTemperature" Value="283.15" />
 					<!--The ambiant temperature when the sun is directly overhead-->
-					<Decimal Name="DayTemperature" Value="333" />
+					<Decimal Name="DayTemperature" Value="294.261" />
 					<!--The ambiant temperature when underground-->
-					<Decimal Name="UndergroundTemperature" Value="300" />
+					<Decimal Name="UndergroundTemperature" Value="280" />
 					<!--The temperature at the center of the planet-->
 					<Decimal Name="CoreTemperature" Value="3000" />
 					<!--The distance below sealevel that remains underground temperatures-->
@@ -24,10 +24,8 @@
 					Represents the percentage of solar engery that will be lost in full atomosphere 
 					-->
 					<Decimal Name="SolarDecay" Value="0.5" />
-					<!--Earths atmospheric conductivity is roughly 1005-->
-					<Decimal Name="AtmoConductivity" Value="1005" />
-					<!--Density kg/m^3 of air at 1 atmosphere-->
-					<Decimal Name="AtmoDensity" Value="1.293" />
+					<!--W/(m^2*k)-->
+					<Decimal Name="ConvectionCoefficient" Value="50" />
 					
 				</Group>
 			</ModExtensions>

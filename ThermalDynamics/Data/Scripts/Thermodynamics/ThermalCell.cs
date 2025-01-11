@@ -22,6 +22,8 @@ namespace Thermodynamics
         public float Temperature;
         public float LastTemprature;
         public float DeltaTemperature;
+        public float DeltaConvection;
+        public float DeltaRadiation;
 
         public float EnergyProduction;
         public float EnergyConsumption;
@@ -76,17 +78,17 @@ namespace Thermodynamics
         {
             Mass = Block.Mass;
             Area = Block.CubeGrid.GridSize * Block.CubeGrid.GridSize * Definition.SurfaceAreaScaler;
-            C = 1 / (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize) * Settings.Instance.TimeScaleRatio;
-            ThermalMassInv = 1f / (Definition.SpecificHeat * Mass) * Settings.Instance.TimeScaleRatio;
+            C = (1 / (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize)) * Settings.Instance.TimeScaleRatio;
+            ThermalMassInv = (1f / (Definition.SpecificHeat * Mass)) * Settings.Instance.TimeScaleRatio;
             
             // get max conductivity then scale it by the conductivity value
             // this is not a perfect calculation but it does a good enough job
-            k = Definition.Conductivity * (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize) / (6f * Area * ((Block.Max + 1) - Block.Min).LargestFace());
+            k = Definition.Conductivity * (Definition.SpecificHeat * Mass * Block.CubeGrid.GridSize) / (5f * Area * ((Block.Max + 1) - Block.Min).LargestFace());
         }
 
         private void SetupListeners()
         {
-            if (Block.FatBlock == null) return;
+            if (Block == null || Block.FatBlock == null) return;
 
             IMyCubeBlock fat = Block.FatBlock;
             if (fat is IMyThrust)
@@ -120,63 +122,63 @@ namespace Thermodynamics
             {
                 (fat as IMyMotorBase).AttachedEntityChanged += GridGroupChanged;
             }
-            else if (fat is IMyLandingGear)
-            {
-                // had to use this crappy method because the better method is broken
-                // KEEN!!! fix your code please!
-                IMyLandingGear gear = (fat as IMyLandingGear);
-                gear.StateChanged += (state) =>
-                {
-                    ThermalCell c = Grid.Get(gear.Position);
-                    IMyEntity entity = gear.GetAttachedEntity();
+            //else if (fat is IMyLandingGear)
+            //{
+            //    // had to use this crappy method because the better method is broken
+            //    // KEEN!!! fix your code please!
+            //    IMyLandingGear gear = (fat as IMyLandingGear);
+            //    gear.StateChanged += (state) =>
+            //    {
+            //        ThermalCell c = Grid.Get(gear.Position);
+            //        IMyEntity entity = gear.GetAttachedEntity();
 
-                    // if the entity is not MyCubeGrid reset landing gear neighbors because we probably detached
-                    if (!(entity is MyCubeGrid))
-                    {
-                        c.AddAllNeighbors();
-                        return;
-                    }
+            //        // if the entity is not MyCubeGrid reset landing gear neighbors because we probably detached
+            //        if (!(entity is MyCubeGrid))
+            //        {
+            //            c.AddAllNeighbors();
+            //            return;
+            //        }
 
-                    // get the search area
-                    MyCubeGrid grid = entity as MyCubeGrid;
-                    ThermalGrid gtherms = grid.GameLogic.GetAs<ThermalGrid>();
+            //        // get the search area
+            //        MyCubeGrid grid = entity as MyCubeGrid;
+            //        ThermalGrid gtherms = grid.GameLogic.GetAs<ThermalGrid>();
 
-                    Vector3D oldMin = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Min.X, gear.Min.Y, gear.Min.Z));
-                    Vector3D oldMax = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Max.X, gear.Max.Y, gear.Min.Z));
+            //        Vector3D oldMin = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Min.X, gear.Min.Y, gear.Min.Z));
+            //        Vector3D oldMax = gear.CubeGrid.GridIntegerToWorld(new Vector3I(gear.Max.X, gear.Max.Y, gear.Min.Z));
 
-                    oldMax += gear.WorldMatrix.Down * (grid.GridSize + 0.2f);
+            //        oldMax += gear.WorldMatrix.Down * (grid.GridSize + 0.2f);
 
-                    Vector3I min = grid.WorldToGridInteger(oldMin);
-                    Vector3I max = grid.WorldToGridInteger(oldMax);
+            //        Vector3I min = grid.WorldToGridInteger(oldMin);
+            //        Vector3I max = grid.WorldToGridInteger(oldMax);
 
-                    //MyLog.Default.Info($"[{Settings.Name}] min {min} max {max}");
+            //        //MyLog.Default.Info($"[{Settings.Name}] min {min} max {max}");
 
-                    // look for active cells on the other grid that are inside the search area
-                    Vector3I temp = Vector3I.Zero;
-                    for (int x = min.X; x <= max.X; x++)
-                    {
-                        temp.X = x;
-                        for (int y = min.Y; y <= max.Y; y++)
-                        {
-                            temp.Y = y;
-                            for (int z = min.Z; z <= max.Z; z++)
-                            {
-                                temp.Z = z;
+            //        // look for active cells on the other grid that are inside the search area
+            //        Vector3I temp = Vector3I.Zero;
+            //        for (int x = min.X; x <= max.X; x++)
+            //        {
+            //            temp.X = x;
+            //            for (int y = min.Y; y <= max.Y; y++)
+            //            {
+            //                temp.Y = y;
+            //                for (int z = min.Z; z <= max.Z; z++)
+            //                {
+            //                    temp.Z = z;
 
-                                ThermalCell ncell = gtherms.Get(temp);
-                                //MyLog.Default.Info($"[{Settings.Name}] testing {temp} {ncell != null}");
-                                if (ncell != null)
-                                {
-                                    c.AddNeighbor(ncell);
-                                }
-                            }
-                        }
-                    }
+            //                    ThermalCell ncell = gtherms.Get(temp);
+            //                    //MyLog.Default.Info($"[{Settings.Name}] testing {temp} {ncell != null}");
+            //                    if (ncell != null)
+            //                    {
+            //                        c.AddNeighbor(ncell);
+            //                    }
+            //                }
+            //            }
+            //        }
 
-                    c.CalculatekA();
+            //        c.CalculatekA();
 
-                };
-            }
+            //    };
+            //}
         }
 
         private void OnComponentAdded(Type compType, IMyEntityComponentBase component)
@@ -437,7 +439,17 @@ namespace Thermodynamics
             Frame = Grid.SimulationFrame;
             LastTemprature = Temperature;
 
-            float totalRadiation = CalculateTotalRadiation();
+            DeltaRadiation = CalculateTotalRadiation() * ThermalMassInv;
+            DeltaTemperature += DeltaRadiation;
+            Temperature += DeltaRadiation;
+
+            DeltaConvection = CalculateConvection();
+            DeltaTemperature += DeltaConvection;
+            Temperature += DeltaConvection;
+
+            // update heat generation
+            HeatGeneration = ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
+            Temperature += HeatGeneration;
 
             float deltaTemperature = 0f;
             for (int i = 0; i < Neighbors.Count; i++)
@@ -446,13 +458,12 @@ namespace Thermodynamics
                 deltaTemperature += kA[i] * (neighborTemp - Temperature);
             }
 
-            DeltaTemperature = ((C * deltaTemperature) + (totalRadiation * ThermalMassInv));
+            DeltaTemperature = (C * deltaTemperature);
+            Temperature += DeltaTemperature;
+            
+            //Grid.CurrentGridHeatGeneration += DeltaRadiation + DeltaConvection + HeatGeneration;
 
-            Temperature = Math.Max(0, Temperature + DeltaTemperature);
-
-            // update heat generation
-            HeatGeneration = ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
-            Temperature += HeatGeneration;
+            Temperature = Math.Max(0, Temperature);
 
             HandleCriticalTemperature();
             DebugDrawColorsTemperature();
@@ -478,6 +489,21 @@ namespace Thermodynamics
             }
 
             return totalRadiation;
+        }
+
+        private float CalculateConvection() 
+        {
+            if (!Settings.Instance.EnableEnvironment) return 0;
+
+            float delta = Grid.FrameAmbientTemprature - Temperature;
+            float tempChange = Grid.FrameAmbientDensity * Grid.FrameAmbientConvectionCoefficient * ExposedSurfaceArea * delta * ThermalMassInv;
+
+            if (Math.Abs(tempChange) > Math.Abs(delta)) 
+            {
+                return delta;
+            }
+
+            return tempChange;
         }
 
         private void HandleCriticalTemperature()
