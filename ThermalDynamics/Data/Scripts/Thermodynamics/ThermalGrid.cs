@@ -289,7 +289,6 @@ namespace Thermodynamics
 
         private void BlockRemoved(IMySlimBlock b)
         {
-            OnBlockRemoved(b);
             MyLog.Default.Info($"[{Settings.Name}] block removed");
 
             if (Grid.EntityId != b.CubeGrid.EntityId)
@@ -297,6 +296,8 @@ namespace Thermodynamics
                 MyLog.Default.Info($"[{Settings.Name}] Removing Skipped - Grid: {Grid.EntityId} BlockGrid: {b.CubeGrid.EntityId} {b.Position}");
                 return;
             }
+
+            OnBlockRemoved(b);
 
             //MyLog.Default.Info($"[{Settings.Name}] [{Grid.EntityId}] Removed ({b.Position.Flatten()}) {b.Position}");
 
