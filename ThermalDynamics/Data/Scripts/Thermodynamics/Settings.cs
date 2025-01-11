@@ -77,12 +77,6 @@ namespace Thermodynamics
 		[ProtoMember(40)]
 		public float SolarEnergy;
 
-		[ProtoMember(140)]
-		public float PresurizedAtmoConductivity;
-
-		[ProtoMember(150)]
-		public float PresurizedAtmoSpecificHeat;
-
 
         /// <summary>
         /// Used to adjust values that are calculated in seconds, to the current time scale 
@@ -90,24 +84,25 @@ namespace Thermodynamics
         [XmlIgnore]
 		public float TimeScaleRatio;
 
+		[XmlIgnore]
+		public float PerSecond;
+
 		public static Settings GetDefaults()
 		{
 			Settings s = new Settings {
 				Version = 1,
 				DebugTextOnScreen = true,
-				DebugTemperatureBlockColors = false,
+				DebugTemperatureBlockColors = true,
 				DebugSolarRadiationBlockColors = false,
 				DebugSolarRaycast = false,
 				EnableEnvironment = true,
 				EnableSolarHeat = true,
 				EnablePlanets = true,
 				EnableDamage = true,
-				Frequency = 3,
+				Frequency = 1,
 				SimulationSpeed = 1,
 				VacuumTemperature = 2.7f,
                 SolarEnergy = 1000f,
-				PresurizedAtmoConductivity = 0.026f,
-				PresurizedAtmoSpecificHeat = 1005,
             };
 
 			s.Init();
@@ -120,6 +115,7 @@ namespace Thermodynamics
 				Frequency = 1;
 
 			TimeScaleRatio =  1f/Frequency;
+			PerSecond = Frequency * SimulationSpeed;
 		}
 
 		public static Settings Load()
