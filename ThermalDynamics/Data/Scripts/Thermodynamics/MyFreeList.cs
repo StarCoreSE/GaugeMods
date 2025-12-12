@@ -87,4 +87,112 @@ namespace Thermodynamics
 		}
 	}
 
+	/// <summary>
+	/// Optimized thermal cell array for better cache performance and parallel processing
+	/// </summary>
+	public class ThermalCellArray
+	{
+		private ThermalCell[] cells;
+		private int count;
+		private readonly Dictionary<int, int> positionToIndex = new Dictionary<int, int>();
+		private readonly List<int> freeIndices = new List<int>();
+
+		public int Count => count;
+		public ThermalCell[] Cells => cells;
+
+		public ThermalCellArray(int initialCapacity = 1024)
+		{
+			cells = new ThermalCell[initialCapacity];
+		}
+
+		public int Add(ThermalCell cell)
+		{
+			int index;
+			if (freeIndices.Count > 0)
+			{
+				index = freeIndices[freeIndices.Count - 1];
+				freeIndices.RemoveAt(freeIndices.Count - 1);
+			}
+			else
+			{
+				if (count >= cells.Length)
+				{
+					Array.Resize(ref cells, cells.Length * 2);
+				}
+				index = count++;
+			}
+
+			cells[index] = cell;
+			positionToIndex[cell.Id] = index;
+			return index;
+		}
+
+		public void Remove(int positionId)
+		{
+			int index;
+			if (positionToIndex.TryGetValue(positionId, out index))
+			{
+				cells[index] = null;
+				positionToIndex.Remove(positionId);
+				freeIndices.Add(index);
+			}
+		}
+
+		public ThermalCell GetByPosition(int positionId)
+		{
+			int index;
+			if (positionToIndex.TryGetValue(positionId, out index))
+			{
+				return cells[index];
+			}
+			return null;
+		}
+
+		public ThermalCell GetByIndex(int index)
+		{
+			if (index >= 0 && index < cells.Length)
+			{
+				return cells[index];
+			}
+			return null;
+		}
+
+		public void Compact()
+		{
+			// Move all non-null cells to the beginning of the array
+			int writeIndex = 0;
+			positionToIndex.Clear();
+			freeIndices.Clear();
+
+			for (int readIndex = 0; readIndex < cells.Length; readIndex++)
+			{
+				if (cells[readIndex] != null)
+				{
+					if (readIndex != writeIndex)
+					{
+						cells[writeIndex] = cells[readIndex];
+						cells[readIndex] = null;
+					}
+					positionToIndex[cells[writeIndex].Id] = writeIndex;
+					writeIndex++;
+				}
+			}
+
+			count = writeIndex;
+
+			// Shrink array if too much wasted space
+			if (cells.Length > count * 2 && count > 0)
+			{
+				Array.Resize(ref cells, Math.Max(count * 2, 1024));
+			}
+		}
+
+		public void Clear()
+		{
+			Array.Clear(cells, 0, cells.Length);
+			count = 0;
+			positionToIndex.Clear();
+			freeIndices.Clear();
+		}
+	}
 }

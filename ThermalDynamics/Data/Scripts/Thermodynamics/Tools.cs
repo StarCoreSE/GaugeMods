@@ -58,6 +58,48 @@ namespace Thermodynamics
             }
         }
 
+        public static Vector3I IndexToDirectionI(int index) 
+        {
+            switch (index) 
+            {
+                case 0:
+                    return new Vector3I(1, 0, 0);
+                case 1:
+                    return new Vector3I(-1, 0, 0);
+                case 2:
+                    return new Vector3I(0, 1, 0);
+                case 3:
+                    return new Vector3I(0,-1, 0);
+                case 4:
+                    return new Vector3I(0, 0, 1);
+                case 5:
+                    return new Vector3I(0, 0, -1);
+                default:
+                    return Vector3I.Zero;
+            }
+        }
+
+        public static string IndexToDirectionName(int index) 
+        {
+            switch (index) 
+            {
+                case 0:
+                    return "Forward";
+                case 1:
+                    return "Left";
+                case 2:
+                    return "Up";
+                case 3:
+                    return "Down";
+                case 4:
+                    return "Right";
+                case 5:
+                    return "Backward";
+                default:
+                    return "NotADirection";
+            }
+        }
+
         /// <summary>
         /// Generates a color based on the heat perameters
         /// </summary>

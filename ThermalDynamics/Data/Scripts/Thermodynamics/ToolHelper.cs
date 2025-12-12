@@ -7,7 +7,7 @@ using VRageMath;
 
 namespace Thermodynamics
 {
-    internal static class Helper
+    internal static class ToolHelper
     {
         private const int size = 1024;
         private const int sizeSquared = size * size;

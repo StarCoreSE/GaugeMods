@@ -11,6 +11,10 @@ using SpaceEngineers.Game.ModAPI;
 using VRage.ModAPI;
 using Sandbox.Game.Entities;
 using VRage.Game.Components.Interfaces;
+using Sandbox.Game;
+using VRage.Game.Components;
+using VRage.Game.Entity;
+using VRage.ObjectBuilders;
 
 namespace Thermodynamics
 {
@@ -24,6 +28,7 @@ namespace Thermodynamics
         public float DeltaTemperature;
         public float DeltaConvection;
         public float DeltaRadiation;
+        public float DeltaFriction;
 
         public float EnergyProduction;
         public float EnergyConsumption;
@@ -51,7 +56,7 @@ namespace Thermodynamics
         public List<int> TouchingSerfacesByNeighbor = new List<int>();
 
         public int ExposedSurfaces = 0;
-        private int[] ExposedSurfacesByDirection = new int[6];
+        private int _exposedSurfacesPacked = 0; // 6 directions packed into 5 bits each (0-31 range)
 
         public ThermalCell(ThermalGrid g) {
             // used by ThermalLoop
@@ -389,6 +394,8 @@ namespace Thermodynamics
             return totalArea;
         }
 
+
+
         internal void CalculatekA()
         {
             kA = new float[Neighbors.Count];
@@ -439,16 +446,13 @@ namespace Thermodynamics
             Frame = Grid.SimulationFrame;
             LastTemprature = Temperature;
 
-            DeltaRadiation = CalculateTotalRadiation() * ThermalMassInv;
-            DeltaTemperature += DeltaRadiation;
+            DeltaRadiation = CalculateRadiation() * ThermalMassInv;
+            DeltaFriction = CalculateFriction() * ThermalMassInv;
+
+            DeltaTemperature += DeltaRadiation + DeltaFriction;
             Temperature += DeltaRadiation;
 
-            DeltaConvection = CalculateConvection();
-            DeltaTemperature += DeltaConvection;
-            Temperature += DeltaConvection;
-
-            // update heat generation
-            HeatGeneration = ((EnergyProduction * Definition.ProducerWasteEnergy) + ((EnergyConsumption + ThrustEnergyConsumption) * Definition.ConsumerWasteEnergy)) * ThermalMassInv;
+            // heat generation is already updated by UpdateHeat() when power changes occur
             Temperature += HeatGeneration;
 
             float deltaTemperature = 0f;
@@ -466,44 +470,62 @@ namespace Thermodynamics
             Temperature = Math.Max(0, Temperature);
 
             HandleCriticalTemperature();
-            DebugDrawColorsTemperature();
+            if (Settings.Instance.DebugTemperatureBlockColors && MyAPIGateway.Session.IsServer)
+            {
+                DebugDrawColorsTemperature();
+            }
+
+            if (Settings.Instance.DebugExposedSurfaceBlockColors && MyAPIGateway.Session.IsServer)
+            {
+                DebugDrawColorsExposed();
+            }
         }
 
-        private float CalculateTotalRadiation()
+        private float CalculateRadiation()
         {
             float totalRadiation = 0;
 
             if (Settings.Instance.EnableEnvironment)
             {
-                float temperatureSquared = Temperature * Temperature;
-                totalRadiation = Boltzmann * ((temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4);
+                float t2 = Temperature * Temperature;
+                float radiation = Boltzmann * ((t2 * t2) - Grid.FrameAmbientTempratureP4);
+
+                // Enhanced convection with wind effects
+                float convectionFactor = DirectionalIntensity(ref Grid.FrameEffectiveWindDirection);
+                float convection = -Grid.FrameEffectiveConvectionCoefficient * ExposedSurfaceArea * convectionFactor * (Temperature - Grid.FrameAmbientTemprature);
+
+                totalRadiation += (1 - Grid.FrameAirDensityCurve) * radiation + Grid.FrameAirDensityCurve * convection;
                 //MyLog.Default.Info($"temp: {Temperature} - {Grid.FrameAmbientTemprature} --- {(temperatureSquared * temperatureSquared) - Grid.FrameAmbientTempratureP4} --- {Boltzmann} --- {Definition.Emissivity} --- {totalRadiation}");
             }
 
             if (Settings.Instance.EnableSolarHeat && !Grid.FrameSolarOccluded)
             {
-                float intensity = DirectionalRadiationIntensity(ref Grid.FrameSolarDirection, ref Grid.SolarRadiationNode);
+                float intensity = DirectionalIntensity(ref Grid.FrameSolarDirection);
                 IntensityDebug = intensity;
                 DebugDrawColorsSolar(intensity);
-                totalRadiation += Settings.Instance.SolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
+                totalRadiation += Grid.FrameEffectiveSolarEnergy * Definition.Emissivity * (intensity * ExposedSurfaceArea);
             }
+
+
 
             return totalRadiation;
         }
 
-        private float CalculateConvection() 
+        private float CalculateFriction()
         {
-            if (!Settings.Instance.EnableEnvironment) return 0;
-
-            float delta = Grid.FrameAmbientTemprature - Temperature;
-            float tempChange = Grid.FrameAmbientDensity * Grid.FrameAmbientConvectionCoefficient * ExposedSurfaceArea * delta * ThermalMassInv;
-
-            if (Math.Abs(tempChange) > Math.Abs(delta)) 
+            float friction = 0;
+            // Aerodynamic heating for high-speed atmospheric entry
+            if (Grid.FrameAmbientDensity > 0.01f && Grid.FrameEffectiveWindSpeed > Settings.Instance.FrictionAtSpeedsAbove)
             {
-                return delta;
+                float directionalFactor = DirectionalIntensity(ref Grid.FrameEffectiveWindDirection);
+                float v = Grid.FrameEffectiveWindSpeed;
+                float v2 = v * v;
+                friction = 0.001f * Grid.FrameAmbientDensity * (v * v2) * ExposedSurfaceArea * directionalFactor;
+
             }
 
-            return tempChange;
+            DebugDrawColorsFriction(friction);
+            return friction;
         }
 
         private void HandleCriticalTemperature()
@@ -517,12 +539,34 @@ namespace Thermodynamics
 
         internal void UpdateSurfaces()
         {
-            ExposedSurfacesByDirection = Grid.GetExposedSurfacesByDirection(Block.Min, Block.Max+1);
+            int[] surfaces = Grid.GetExposedSurfacesByDirection(Block.Min, Block.Max+1);
+            _exposedSurfacesPacked = PackSurfaceCounts(surfaces);
 
-            ExposedSurfaces = ExposedSurfacesByDirection[0] + ExposedSurfacesByDirection[1] + ExposedSurfacesByDirection[2] +
-                ExposedSurfacesByDirection[3] + ExposedSurfacesByDirection[4] + ExposedSurfacesByDirection[5];
+            ExposedSurfaces = surfaces[0] + surfaces[1] + surfaces[2] +
+                surfaces[3] + surfaces[4] + surfaces[5];
 
             UpdateExposedSurfaceArea();
+        }
+
+        /// <summary>
+        /// Packs 6 surface counts (0-31 each) into a single int using 5 bits per direction
+        /// </summary>
+        private int PackSurfaceCounts(int[] surfaces)
+        {
+            return (Math.Min(surfaces[0], 31) << 0) |
+                   (Math.Min(surfaces[1], 31) << 5) |
+                   (Math.Min(surfaces[2], 31) << 10) |
+                   (Math.Min(surfaces[3], 31) << 15) |
+                   (Math.Min(surfaces[4], 31) << 20) |
+                   (Math.Min(surfaces[5], 31) << 25);
+        }
+
+        /// <summary>
+        /// Unpacks surface count for a specific direction (0-31)
+        /// </summary>
+        private int GetSurfaceCount(int direction)
+        {
+            return (_exposedSurfacesPacked >> (direction * 5)) & 31;
         }
 
         private void UpdateExposedSurfaceArea()
@@ -531,34 +575,24 @@ namespace Thermodynamics
             Boltzmann = -1 * Definition.Emissivity * Tools.BoltzmannConstant * ExposedSurfaceArea;
         }
 
-        internal float DirectionalRadiationIntensity(ref Vector3 targetDirection, ref ThermalRadiationNode node)
+        internal float DirectionalIntensity(ref Vector3 direction)
         {
             float intensity = 0;
 
-
-
             for (int i = 0; i < 6; i++)
             {
-                int surfaceCount = ExposedSurfacesByDirection[i];
+                int surfaceCount = GetSurfaceCount(i);
                 if (surfaceCount == 0) continue;
 
-                Vector3D startDirection = Vector3D.Rotate(ThermalGrid.Directions[i], Grid.FrameMatrix);
-                float dot = Math.Max(0,Vector3.Dot(startDirection, targetDirection));
+                Vector3D faceDirection = Vector3D.Rotate(ThermalGrid.Directions[i], Grid.FrameMatrix);
+                float dot = Math.Max(0, Vector3.Dot(faceDirection, direction));
 
-                if (surfaceCount == 1)
-                {
-                    node.Sides[i] += dot * surfaceCount;
-                    node.SideSurfaces[i] += surfaceCount;
-                    intensity += dot;
-                }
-                else
-                {
-                    intensity += Math.Min(dot, node.SideAverages[i]);
-                }
+                intensity += dot * surfaceCount;
             }
-            return intensity;
-        }
 
+            // Normalize by total exposed surfaces to get average effectiveness
+            return intensity / Math.Max(ExposedSurfaces, 1);
+        }
 
         private void DebugDrawColorsTemperature()
         {
@@ -572,7 +606,7 @@ namespace Thermodynamics
             }
         }
 
-        private void DebugDrawColorsSolar(float intensity) 
+        private void DebugDrawColorsSolar(float intensity)
         {
 
             if (Settings.Instance.DebugSolarRadiationBlockColors && MyAPIGateway.Session.IsServer)
@@ -585,5 +619,30 @@ namespace Thermodynamics
             }
         }
 
+        private void DebugDrawColorsFriction(float watts)
+        {
+
+            if (Settings.Instance.DebugFrictionColors && MyAPIGateway.Session.IsServer)
+            {
+                Vector3 color = Tools.GetTemperatureColor(Math.Abs(watts), 20000, 100, 5000);
+                if (Block.ColorMaskHSV != color)
+                {
+                    Block.CubeGrid.ColorBlocks(Block.Min, Block.Max, color);
+                }
+            }
+        }
+
+        private void DebugDrawColorsExposed()
+        {
+            if (Settings.Instance.DebugExposedSurfaceBlockColors && MyAPIGateway.Session.IsServer)
+            {
+                // Color based on exposed surfaces: 0 = black/dark, 6 = bright
+                Vector3 color = Tools.GetTemperatureColor(ExposedSurfaces, 6, 0, 6);
+                if (Block.ColorMaskHSV != color)
+                {
+                    Block.CubeGrid.ColorBlocks(Block.Min, Block.Max, color);
+                }
+            }
+        }
     }
 }

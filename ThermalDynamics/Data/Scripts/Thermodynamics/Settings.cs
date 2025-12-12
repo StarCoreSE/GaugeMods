@@ -36,8 +36,14 @@ namespace Thermodynamics
         [ProtoMember(4)]
         public bool DebugSolarRadiationBlockColors;
 
-		[ProtoMember(5)]
+        [ProtoMember(5)]
 		public bool DebugSolarRaycast;
+
+        [ProtoMember(6)]
+        public bool DebugExposedSurfaceBlockColors;
+
+		[ProtoMember(7)]
+		public bool DebugWindRaycast;
 
         [ProtoMember(8)]
 		public bool EnableEnvironment;
@@ -77,6 +83,12 @@ namespace Thermodynamics
 		[ProtoMember(40)]
 		public float SolarEnergy;
 
+		[ProtoMember(50)]
+		public float FrictionAtSpeedsAbove;
+
+		[ProtoMember(60)]
+		public bool DebugFrictionColors;
+
 
         /// <summary>
         /// Used to adjust values that are calculated in seconds, to the current time scale 
@@ -94,19 +106,23 @@ namespace Thermodynamics
 				DebugTextOnScreen = true,
 				DebugTemperatureBlockColors = true,
 				DebugSolarRadiationBlockColors = false,
-				DebugSolarRaycast = false,
+				DebugExposedSurfaceBlockColors = false,
+				DebugFrictionColors = false,
+				DebugSolarRaycast = true,
+				DebugWindRaycast = true,
 				EnableEnvironment = true,
 				EnableSolarHeat = true,
 				EnablePlanets = true,
 				EnableDamage = true,
-				Frequency = 1,
+				Frequency = 4,
 				SimulationSpeed = 1,
 				VacuumTemperature = 2.7f,
                 SolarEnergy = 1000f,
+				FrictionAtSpeedsAbove = 50f,
             };
 
 			s.Init();
-			return s;	
+			return s;
 		}
 
 		private void Init() {

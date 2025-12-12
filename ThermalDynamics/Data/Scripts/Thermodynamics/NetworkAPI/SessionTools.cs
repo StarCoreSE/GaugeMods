@@ -9,9 +9,8 @@ namespace SENetworkAPI
 	[MySessionComponentDescriptor(MyUpdateOrder.NoUpdate)]
 	public class SessionTools : MySessionComponentBase
 	{
-		protected override void UnloadData()
-		{
-			NetworkAPI.Dispose();
-		}
+	protected override void UnloadData()
+	{
+	}
 	}
 }

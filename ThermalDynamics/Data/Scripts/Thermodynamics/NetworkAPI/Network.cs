@@ -49,8 +49,8 @@ namespace SENetworkAPI
 				MyAPIGateway.Utilities.MessageEntered += HandleChatInput;
 			}
 
-			MyAPIGateway.Multiplayer.UnregisterMessageHandler(ComId, HandleIncomingPacket);
-			MyAPIGateway.Multiplayer.RegisterMessageHandler(ComId, HandleIncomingPacket);
+			MyAPIGateway.Multiplayer.UnregisterSecureMessageHandler(ComId, HandleIncomingPacket);
+			MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(ComId, HandleIncomingPacket);
 
 			MyLog.Default.Info($"[NetworkAPI] Initialized. Type: {GetType().Name} ComId: {ComId} Name: {ModName} Keyword: {Keyword}");
 		}
@@ -90,12 +90,15 @@ namespace SENetworkAPI
 		/// <summary>
 		/// Unpacks commands and handles arguments
 		/// </summary>
-		/// <param name="msg">Data chunck recived from the network</param>
-		private void HandleIncomingPacket(byte[] msg)
+		/// <param name="comId">Communication ID</param>
+		/// <param name="data">Data chunk received from the network</param>
+		/// <param name="sender">Sender's Steam ID</param>
+		/// <param name="isReliable">Whether the message is reliable</param>
+		private void HandleIncomingPacket(ushort comId, byte[] data, ulong sender, bool isReliable)
 		{
 			try
 			{
-				Command cmd = MyAPIGateway.Utilities.SerializeFromBinary<Command>(msg);
+				Command cmd = MyAPIGateway.Utilities.SerializeFromBinary<Command>(data);
 
 				if (LogNetworkTraffic)
 				{
@@ -286,7 +289,7 @@ namespace SENetworkAPI
 				MyAPIGateway.Utilities.MessageEntered -= HandleChatInput;
 			}
 
-			MyAPIGateway.Multiplayer.UnregisterMessageHandler(ComId, HandleIncomingPacket);
+			MyAPIGateway.Multiplayer.UnregisterSecureMessageHandler(ComId, HandleIncomingPacket);
 
 		}
 

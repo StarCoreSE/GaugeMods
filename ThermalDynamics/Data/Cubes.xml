@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 	<CubeBlocks>
-		
 		<Definition>
 			<Id>
 				<TypeId>EnvironmentDefinition</TypeId>
@@ -10,12 +9,359 @@
 			<ModExtensions>
 				<Group Name="ThermalBlockProperties">
 					<Bool Name="IgnoreThermals" Value="false" />
-					<Decimal Name="Conductivity" Value="0.50" />
+					<Decimal Name="Conductivity" Value="0.60" />
 					<Decimal Name="SpecificHeat" Value="2" />
 					<Decimal Name="Emissivity" Value="0.125" />
 					<Decimal Name="SurfaceAreaScaler" Value ="1" />
 					<Decimal Name="ProducerWasteEnergy" Value="0.05" />
 					<Decimal Name="ConsumerWasteEnergy" Value="0.05" />
+					<Decimal Name="CriticalTemperature" Value="900" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Corner</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_SG_CoolantPipe_Corner</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Corner_DoubleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_SG_CoolantPipe_Corner_DoubleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Corner_SingleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_SG_CoolantPipe_Corner_SingleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Straight</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_SG_CoolantPipe_Straight</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Straight_DoubleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_SG_CoolantPipe_Straight_DoubleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPipe_Straight_SingleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_SG_CoolantPipe_Straight_SingleSink</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_LG_CoolantPump</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_SG_CoolantPump</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_LG_HeatPump</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0.05" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0.05" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_SG_HeatPump</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="2" />
+					<Decimal Name="Emissivity" Value="0.125" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1" />
+					<Decimal Name="ProducerWasteEnergy" Value="0.05" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0.05" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_SG_Radiator</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="1" />
+					<Decimal Name="Emissivity" Value="0.35" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
+					<Decimal Name="CriticalTemperature" Value="1000" />
+					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
+				</Group>
+			</ModExtensions>
+		</Definition>
+		<Definition>
+			<Id>
+				<TypeId>CubeBlocks</TypeId>
+				<SubtypeId>Gauge_LG_Radiator</SubtypeId>
+			</Id>
+			<ModExtensions>
+				<Group Name="ThermalBlockProperties">
+					<Bool Name="IgnoreThermals" Value="false" />
+					<Decimal Name="Conductivity" Value="1" />
+					<Decimal Name="SpecificHeat" Value="1" />
+					<Decimal Name="Emissivity" Value="0.35" />
+					<Decimal Name="SurfaceAreaScaler" Value ="1.25" />
+					<Decimal Name="ProducerWasteEnergy" Value="0" />
+					<Decimal Name="ConsumerWasteEnergy" Value="0" />
 					<Decimal Name="CriticalTemperature" Value="1000" />
 					<Decimal Name="CriticalTemperatureScaler" Value="1"/>
 				</Group>
