@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<CubeBlocks>
+        <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+            <Id>
+                <TypeId>UpgradeModule</TypeId>
+                <SubtypeId>PodRacerCoupling</SubtypeId>
+            </Id>
+            <DisplayName>Pod Racer Coupling</DisplayName>
+            <Icon>Textures\GUI\Icons\Cubes\motor.dds</Icon>
+            <Description>Line two of these up and they will automatically link</Description>
+            <CubeSize>Small</CubeSize>
+            <BlockTopology>TriangleMesh</BlockTopology>
+            <Size x="1" y="2" z="1" />
+            <ModelOffset x="0" y="-0.25" z="0" />
+            <Model>Models\Cubes\Small\MotorStator.mwm</Model>
+            <Components>
+                <Component Subtype="SteelPlate" Count="10" />
+                <Component Subtype="Construction" Count="15" />
+                <Component Subtype="SmallTube" Count="3" />
+                <Component Subtype="Motor" Count="3" />
+                <Component Subtype="Computer" Count="3" />
+                <Component Subtype="SteelPlate" Count="10" />
+            </Components>
+            <CriticalComponent Subtype="Motor" Index="0" />
+            <MountPoints>
+                <MountPoint Side="Bottom" StartX="0" StartY="0" EndX="1" EndY="1" Default="true" />
+                <MountPoint Side="Left" StartX="0.25" StartY="0" EndX="0.75" EndY="0.61" />
+                <MountPoint Side="Right" StartX="0.25" StartY="0" EndX="0.75" EndY="0.61" />
+                <MountPoint Side="Front" StartX="0.25" StartY="0" EndX="0.75" EndY="0.61" />
+                <MountPoint Side="Back" StartX="0.25" StartY="0" EndX="0.75" EndY="0.61" />
+            </MountPoints>
+            <BuildProgressModels>
+                <Model BuildPercentUpperBound="0.50" File="Models\Cubes\Small\MotorStatorConstruction_1.mwm" />
+                <Model BuildPercentUpperBound="1.00" File="Models\Cubes\Small\MotorStatorConstruction_2.mwm" />
+            </BuildProgressModels>
+            <BlockPairName>PodracerCoupling</BlockPairName>
+            <MirroringY>Z</MirroringY>
+            <MirroringZ>Y</MirroringZ>
+            <EdgeType>Light</EdgeType>
+            <Upgrades>
+                <MyUpgradeModuleInfo>
+                    <UpgradeType>Productivity</UpgradeType>
+                    <Modifier>0.5</Modifier>
+                    <ModifierType>Additive</ModifierType>
+                </MyUpgradeModuleInfo>
+            </Upgrades>
+            <PrimarySound>BlockModuleProductivity</PrimarySound>
+            <DamageEffectName>Damage_Electrical_Damaged</DamageEffectName>
+            <DamagedSound>ParticleElectrical</DamagedSound>
+            <EmissiveColorPreset>Default</EmissiveColorPreset>
+            <DestroyEffect>BlockDestroyedExplosion_Large</DestroyEffect>
+            <DestroySound>WepSmallWarheadExpl</DestroySound>
+            <PCU>1</PCU>
+            <IsAirTight>false</IsAirTight>
+        </Definition>
+    </CubeBlocks>
+</Definitions>
