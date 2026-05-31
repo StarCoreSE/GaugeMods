@@ -76,7 +76,8 @@ namespace BlinkDrive
 		public IMyTerminalBlock ModBlock;
 		public MyCubeBlock CubeBlock;
 
-		MySoundPair BlinkSoundEffect = new MySoundPair("BlinkDrive");
+		private MySoundPair SpinUpSound = new MySoundPair("SpinUp");
+		private MySoundPair WindDownSound = new MySoundPair("WindDown");
 		private MyEntity3DSoundEmitter BlinkSoundEmitter;
 		private MyResourceSinkComponent ResourceSink = new MyResourceSinkComponent();
 
@@ -272,6 +273,7 @@ namespace BlinkDrive
 				return;
 
 			drive.BlinkNextFrame.Value = true;
+			BlinkSoundEmitter?.PlaySingleSound(SpinUpSound);
 		}
 
 		private void UpdateBlinkSequence()
@@ -281,6 +283,8 @@ namespace BlinkDrive
 
 			if (BlinkNextFrame.Value)
 			{
+				if (BlinkSoundEmitter?.IsPlaying == true) return;
+
 				DoJump();
 			}
 		}
@@ -299,9 +303,6 @@ namespace BlinkDrive
 				CurrentPowerCapacity.Value = value;
 			}
 
-			BlinkSoundEmitter?.StopSound(true, true);
-			BlinkSoundEmitter?.PlaySingleSound(BlinkSoundEffect, true);
-
 			MatrixD GridJumpMatrix = Grid.WorldMatrix;
 			Vector3D distance = ModBlock.WorldMatrix.Forward * BlinkDistance;
 			GridJumpMatrix.Translation += distance;
@@ -311,6 +312,8 @@ namespace BlinkDrive
 
 			StartBlinkParticleEffect();
 			TimeTillNextBlink = CooldownBetweenBlinks;
+
+			BlinkSoundEmitter?.PlaySingleSound(WindDownSound);
 		}
 
 		private bool IsValidPlacement()

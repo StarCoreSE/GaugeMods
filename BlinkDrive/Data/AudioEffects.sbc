@@ -1,28 +1,32 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<!--
-  Encoding info:
-
-  Loopable sounds must use AdpcmEncode.exe for all <Start>, <Loop> and <End>. Adpcm supports loops.
-  Use xWMAEncode.exe for everything else. Wmaudio2 has better compression but doesn't support loops.
--->
 <Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Sounds>
-    <!-- Shield has overloaded, restarting in 20 seconds. -->
     <Sound>
       <Id>
         <TypeId>AudioDefinition</TypeId>
-        <SubtypeId>BlinkDrive</SubtypeId>
+        <SubtypeId>SpinUp</SubtypeId>
       </Id>
-      <MaxDistance>2000</MaxDistance>
-      <!--<UpdateDistance>1000</UpdateDistance>-->
-      <Volume>0.25</Volume>
-      <!--<VolumeVariation>0.2</VolumeVariation>-->
-      <!--<Pitch>-1</Pitch>-->
-      <!--<PitchVariation>0.2</PitchVariation>-->
+      <MaxDistance>4000</MaxDistance>
+      <Volume>2</Volume>
       <Loopable>false</Loopable>
       <Waves>
         <Wave Type="D3">
-          <Start>Audio\BlinkDrive_Stereo.wav</Start>
+          <Start>Audio\DB_Blink_WindUP.wav</Start>
+        </Wave>
+      </Waves>
+    </Sound>
+
+    <Sound>
+      <Id>
+        <TypeId>AudioDefinition</TypeId>
+        <SubtypeId>WindDown</SubtypeId>
+      </Id>
+      <MaxDistance>3000</MaxDistance>
+      <Volume>2</Volume>
+      <Loopable>false</Loopable>
+      <Waves>
+        <Wave Type="D3">
+          <Start>Audio\DB_BLINK.wav</Start>
         </Wave>
       </Waves>
     </Sound>
