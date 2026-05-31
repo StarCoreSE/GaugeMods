@@ -7,7 +7,7 @@
         <SubtypeId>SpinUp</SubtypeId>
       </Id>
       <MaxDistance>4000</MaxDistance>
-      <Volume>2</Volume>
+      <Volume>1</Volume>
       <Loopable>false</Loopable>
       <Waves>
         <Wave Type="D3">
@@ -22,7 +22,7 @@
         <SubtypeId>WindDown</SubtypeId>
       </Id>
       <MaxDistance>3000</MaxDistance>
-      <Volume>2</Volume>
+      <Volume>1</Volume>
       <Loopable>false</Loopable>
       <Waves>
         <Wave Type="D3">
